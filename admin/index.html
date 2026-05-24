@@ -296,7 +296,11 @@
             try {
                 const data = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
                 fileSha = data.sha;
-                const content = atob(data.content.replace(/\n/g, ''));
+                // UTF-8 安全解码（支持中文）
+                const binary = atob(data.content.replace(/\n/g, ''));
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                const content = new TextDecoder('utf-8').decode(bytes);
                 postsData = JSON.parse(content);
                 renderPosts();
                 renderMeta();
@@ -462,7 +466,12 @@
             postsData.site.footer = document.getElementById('footerInput').value.trim();
 
             const content = JSON.stringify(postsData, null, 2);
-            const encoded = btoa(unescape(encodeURIComponent(content)));
+            // UTF-8 安全编码（支持中文）
+            const encoder = new TextEncoder();
+            const dataBytes = encoder.encode(content);
+            let binaryStr = '';
+            for (let i = 0; i < dataBytes.length; i++) binaryStr += String.fromCharCode(dataBytes[i]);
+            const encoded = btoa(binaryStr);
 
             const btn = document.querySelector('.btn-lg');
             btn.disabled = true;
