@@ -28,15 +28,17 @@ function renderAll() {
 // ========== 渲染文章列表 ==========
 function renderPosts() {
     const container = document.getElementById('posts-container');
-    const html = siteData.posts.map(post => `
+    const html = siteData.posts.map(post => {
+        const imgHtml = post.image
+            ? `<img src="${post.image}" alt="${post.title}" class="img-fluid rounded-3">`
+            : `<div class="img-placeholder" style="background:${post.gradient};">
+                <span class="placeholder-icon"><i class="fa ${post.icon}"></i></span>
+               </div>`;
+        return `
         <article class="post-list list-one row blog-border">
             <div class="post-list-img">
                 <figure class="mb-4 mb-lg-0 zoom-img">
-                    <a href="${post.link}">
-                        <div class="img-placeholder" style="background:${post.gradient};">
-                            <span class="placeholder-icon"><i class="fa ${post.icon}"></i></span>
-                        </div>
-                    </a>
+                    <a href="${post.link}">${imgHtml}</a>
                 </figure>
             </div>
             <div class="post-list-content">
@@ -67,8 +69,8 @@ function renderPosts() {
                     </div>
                 </div>
             </div>
-        </article>
-    `).join('');
+        </article>`;
+    }).join('');
 
     // 分页
     const pg = siteData.pagination;
