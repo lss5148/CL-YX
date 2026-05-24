@@ -143,7 +143,7 @@
                     document.getElementById('articleViews').textContent = post.views;
                     document.getElementById('articleComments').textContent = post.comments;
                     document.getElementById('articleDescription').textContent = post.description;
-                    document.getElementById('downloadLink').href = post.link;
+                    document.getElementById('downloadLink').href = post.download || post.link;
 
                     // 封面图
                     const cover = document.getElementById('articleCover');
