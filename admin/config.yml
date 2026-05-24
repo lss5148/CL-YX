@@ -1,0 +1,92 @@
+backend:
+  name: github
+  repo: lss5148/CL-YX
+  branch: main
+  base_url: https://CL-YX.pages.dev
+  auth_endpoint: /api/auth
+
+# 媒体文件存储（如果有图片上传）
+media_folder: "img/uploads"
+public_folder: "/img/uploads"
+
+# 编辑模式
+publish_mode: editorial_workflow
+
+# 内容模型
+collections:
+  - name: "site_data"
+    label: "站点内容"
+    file: "data/posts.json"
+    format: "json"
+    editor:
+      preview: false
+    fields:
+      - label: "站点信息"
+        name: "site"
+        widget: "object"
+        collapsed: true
+        fields:
+          - { label: "标题", name: "title", widget: "string" }
+          - { label: "副标题", name: "subtitle", widget: "string" }
+          - { label: "页脚文字", name: "footer", widget: "string" }
+
+      - label: "文章列表"
+        name: "posts"
+        widget: "list"
+        hint: "在这里增删改文章"
+        fields:
+          - { label: "ID", name: "id", widget: "number", default: 1 }
+          - { label: "标题", name: "title", widget: "string" }
+          - { label: "描述", name: "description", widget: "text" }
+          - { label: "链接", name: "link", widget: "string", default: "#" }
+          - { label: "分类", name: "category", widget: "select", options: ["SLG","RPG","ADV","ACT","AZ","PC","NTR","互动","其他"] }
+          - {
+              label: "渐变背景",
+              name: "gradient",
+              widget: "string",
+              hint: "如 linear-gradient(135deg,#D87CFF,#9B59B6)",
+              default: "linear-gradient(135deg,#D87CFF,#9B59B6)"
+            }
+          - { label: "图标", name: "icon", widget: "string", hint: "Font Awesome 图标名，如 fa-gamepad", default: "fa-gamepad" }
+          - { label: "作者", name: "author", widget: "string", default: "姬姬" }
+          - { label: "头像文字", name: "authorAvatar", widget: "string", hint: "单个字符", default: "姬" }
+          - { label: "浏览数", name: "views", widget: "string", default: "0" }
+          - { label: "评论数", name: "comments", widget: "number", default: 0 }
+          - { label: "日期", name: "date", widget: "string", hint: "如 2026年5月24日" }
+
+      - label: "标签云"
+        name: "tags"
+        widget: "list"
+        hint: "每行一个标签"
+        field: { label: "标签", name: "tag", widget: "string" }
+
+      - label: "最新评论"
+        name: "comments"
+        widget: "list"
+        fields:
+          - { label: "作者", name: "author", widget: "string" }
+          - { label: "头像文字", name: "avatar", widget: "string", hint: "单个字符" }
+          - { label: "评论内容", name: "content", widget: "text" }
+
+      - label: "随机推荐"
+        name: "randomPosts"
+        widget: "list"
+        fields:
+          - { label: "标题", name: "title", widget: "string" }
+          - { label: "链接", name: "link", widget: "string", default: "#" }
+          - {
+              label: "渐变背景",
+              name: "gradient",
+              widget: "string",
+              default: "linear-gradient(135deg,#D87CFF,#8E44AD)"
+            }
+          - { label: "日期", name: "date", widget: "string" }
+
+      - label: "分页设置"
+        name: "pagination"
+        widget: "object"
+        collapsed: true
+        fields:
+          - { label: "当前页码", name: "current", widget: "number", default: 1 }
+          - { label: "总页数", name: "total", widget: "number", default: 1 }
+          - { label: "禁用上一页", name: "prevDisabled", widget: "boolean", default: true }
