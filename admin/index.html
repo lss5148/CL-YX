@@ -203,7 +203,11 @@
                         </div>
                         <div class="col-md-4 mb-3">
                             <label class="form-label fw-semibold">文章链接</label>
-                            <input class="form-control" id="formLink" value="#" placeholder="详情页链接">
+                            <input class="form-control" id="formLink" value="/article.html?id=" placeholder="/article.html?id=1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">下载链接</label>
+                            <input class="form-control" id="formDownload" value="#" placeholder="百度网盘/磁力链接">
                         </div>
                     </div>
                 </div>
@@ -381,7 +385,8 @@
             document.getElementById('formAuthor').value = '姬姬';
             document.getElementById('formAvatar').value = '姬';
             document.getElementById('formDate').value = new Date().toLocaleDateString('zh-CN').replace(/\//g, '年').replace('/', '月') + '日';
-            document.getElementById('formLink').value = '#';
+            document.getElementById('formLink').value = '/article.html?id=';
+            document.getElementById('formDownload').value = '#';
             new bootstrap.Modal(document.getElementById('postModal')).show();
         }
 
@@ -399,6 +404,7 @@
             document.getElementById('formAvatar').value = p.authorAvatar || '姬';
             document.getElementById('formDate').value = p.date || '';
             document.getElementById('formLink').value = p.link || '#';
+            document.getElementById('formDownload').value = p.download || '#';
 
             // 解析渐变色
             if (p.gradient) {
@@ -426,6 +432,7 @@
                 title: title,
                 description: document.getElementById('formDesc').value.trim(),
                 link: document.getElementById('formLink').value.trim() || '#',
+                download: document.getElementById('formDownload').value.trim() || '#',
                 category: document.getElementById('formCategory').value,
                 gradient: gradient,
                 icon: document.getElementById('formIcon').value,
