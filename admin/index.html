@@ -167,8 +167,12 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">描述</label>
+                        <label class="form-label fw-semibold">描述 <span class="text-muted small fw-normal">(首页卡片显示的摘要)</span></label>
                         <textarea class="form-control" id="formDesc" rows="2" placeholder="游戏描述..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">文章正文 <span class="text-muted small fw-normal">(支持 HTML，详情页显示)</span></label>
+                        <textarea class="form-control" id="formContent" rows="8" placeholder="文章详细内容，支持 HTML 标签如 &lt;p&gt;、&lt;img&gt;、&lt;br&gt; 等"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -387,6 +391,7 @@
             document.getElementById('formDate').value = new Date().toLocaleDateString('zh-CN').replace(/\//g, '年').replace('/', '月') + '日';
             document.getElementById('formLink').value = '/article.html?id=';
             document.getElementById('formDownload').value = '#';
+            document.getElementById('formContent').value = '';
             new bootstrap.Modal(document.getElementById('postModal')).show();
         }
 
@@ -405,6 +410,7 @@
             document.getElementById('formDate').value = p.date || '';
             document.getElementById('formLink').value = p.link || '#';
             document.getElementById('formDownload').value = p.download || '#';
+            document.getElementById('formContent').value = p.content || '';
 
             // 解析渐变色
             if (p.gradient) {
@@ -431,6 +437,7 @@
                 id: editId ? postsData.posts[parseInt(editId)].id : (postsData.posts.length > 0 ? Math.max(...postsData.posts.map(p=>p.id)) + 1 : 1),
                 title: title,
                 description: document.getElementById('formDesc').value.trim(),
+                content: document.getElementById('formContent').value.trim(),
                 link: document.getElementById('formLink').value.trim() || '#',
                 download: document.getElementById('formDownload').value.trim() || '#',
                 category: document.getElementById('formCategory').value,

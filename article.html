@@ -88,8 +88,10 @@
                         <i class="fa fa-gamepad" id="coverIcon"></i>
                     </div>
 
-                    <div class="article-body" id="articleBody">
-                        <p id="articleDescription"></p>
+                    <div class="article-body">
+                        <p class="text-muted" id="articleDescription"></p>
+                        <hr>
+                        <div id="articleContentBody"></div>
                         <hr>
                         <h5>📥 下载说明</h5>
                         <p>请点击下方下载按钮进入下载页面。解压密码见网站底部。</p>
@@ -144,6 +146,14 @@
                     document.getElementById('articleComments').textContent = post.comments;
                     document.getElementById('articleDescription').textContent = post.description;
                     document.getElementById('downloadLink').href = post.download || post.link;
+
+                    // 文章正文（支持 HTML）
+                    const contentBody = document.getElementById('articleContentBody');
+                    if (post.content) {
+                        contentBody.innerHTML = post.content;
+                    } else {
+                        contentBody.innerHTML = '<p class="text-muted">暂无详细内容</p>';
+                    }
 
                     // 封面图
                     const cover = document.getElementById('articleCover');
