@@ -1,12 +1,506 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hans">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>内容管理 - ACG游戏姬</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章管理 - ACG游戏姬</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        :root { --accent: #D87CFF; --accent-dark: #9B59B6; }
+        body { background: #f5f5f5; font-family: system-ui, -apple-system, sans-serif; }
+        .navbar-custom { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); }
+        .card { border-radius: 12px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .card-header { background: transparent; border-bottom: 2px solid var(--accent); font-weight: 700; }
+        .btn-accent { background: var(--accent); color: #fff; border: none; }
+        .btn-accent:hover { background: var(--accent-dark); color: #fff; }
+        .btn-outline-accent { border: 1px solid var(--accent); color: var(--accent); }
+        .btn-outline-accent:hover { background: var(--accent); color: #fff; }
+        .token-input { border: 2px solid var(--accent); border-radius: 8px; }
+        .token-input:focus { box-shadow: 0 0 0 3px rgba(216,124,255,0.25); }
+        .post-item { border-left: 4px solid var(--accent); margin-bottom: 0.5rem; padding: 0.8rem; border-radius: 8px; background: #fff; transition: all 0.2s; }
+        .post-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .post-item .title { font-weight: 600; }
+        .post-item .meta { font-size: 0.85rem; color: #666; }
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .gradient-preview { width: 40px; height: 40px; border-radius: 6px; }
+        #tokenSection, #adminSection { display: none; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .status-dot.online { background: #2ECC71; }
+        .status-dot.offline { background: #E74C3C; }
+    </style>
 </head>
 <body>
-    <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-custom">
+        <div class="container">
+            <a class="navbar-brand text-white fw-bold" href="#">
+                <i class="fa fa-gamepad me-2"></i>ACG游戏姬 · 文章管理
+            </a>
+            <span class="text-white-50 small">
+                <span class="status-dot offline" id="statusDot"></span>
+                <span id="statusText">未连接</span>
+            </span>
+        </div>
+    </nav>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="container py-4">
+
+        <!-- ======== 第一步：Token 配置 ======== -->
+        <div id="tokenSection" class="card mx-auto" style="max-width:560px;">
+            <div class="card-body p-4">
+                <h4 class="mb-3"><i class="fa fa-lock me-2" style="color:var(--accent);"></i>连接 GitHub</h4>
+                <p class="text-muted small">需要 GitHub Personal Access Token 才能自动保存文章。</p>
+                <ol class="small text-muted mb-3">
+                    <li>打开 <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a></li>
+                    <li>点 <strong>Generate new token (classic)</strong> → 勾选 <code>repo</code> 权限</li>
+                    <li>复制生成的 Token 粘贴到下方</li>
+                </ol>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Personal Access Token</label>
+                    <input type="password" class="form-control token-input" id="tokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">仓库</label>
+                    <input type="text" class="form-control" id="repoInput" value="lss5148/CL-YX" readonly>
+                </div>
+                <button class="btn btn-accent w-100" onclick="connectGitHub()">
+                    <i class="fa fa-link me-1"></i>连接 GitHub
+                </button>
+            </div>
+        </div>
+
+        <!-- ======== 第二步：管理面板 ======== -->
+        <div id="adminSection">
+            <!-- 工具栏 -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0"><i class="fa fa-file-text me-2" style="color:var(--accent);"></i>文章列表</h4>
+                <div>
+                    <button class="btn btn-accent me-2" onclick="showAddForm()">
+                        <i class="fa fa-plus me-1"></i>新增文章
+                    </button>
+                    <button class="btn btn-outline-accent" onclick="disconnect()">
+                        <i class="fa fa-sign-out me-1"></i>断开
+                    </button>
+                </div>
+            </div>
+
+            <!-- 加载中 -->
+            <div id="loadingPosts" class="text-center py-5">
+                <i class="fa fa-spinner fa-spin fa-2x" style="color:var(--accent);"></i>
+                <p class="mt-2 text-muted">加载文章列表...</p>
+            </div>
+
+            <!-- 文章列表 -->
+            <div id="postsList"></div>
+
+            <!-- 其他数据快捷编辑 -->
+            <div class="row mt-4">
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header">标签云 <span class="text-muted small fw-normal">(空格分隔)</span></div>
+                        <div class="card-body">
+                            <textarea class="form-control" id="tagsInput" rows="3" style="font-size:0.9rem;"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header">页脚文字</div>
+                        <div class="card-body">
+                            <input type="text" class="form-control" id="footerInput">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 保存按钮 -->
+            <div class="text-center my-4">
+                <button class="btn btn-accent btn-lg px-5" onclick="saveAll()">
+                    <i class="fa fa-cloud-upload me-2"></i>保存所有更改到 GitHub
+                </button>
+                <p class="text-muted small mt-2">
+                    <i class="fa fa-info-circle"></i> 保存后 Cloudflare Pages 会自动部署，约 1-2 分钟生效
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== 新增/编辑文章弹窗 ======== -->
+    <div class="modal fade" id="postModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border-radius:12px;">
+                <div class="modal-header" style="border-bottom:2px solid var(--accent);">
+                    <h5 class="modal-title fw-bold" id="modalTitle">新增文章</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editId">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label fw-semibold">标题</label>
+                            <input class="form-control" id="formTitle" placeholder="游戏标题">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold">分类</label>
+                            <select class="form-select" id="formCategory">
+                                <option>SLG</option><option>RPG</option><option>ADV</option>
+                                <option>ACT</option><option>AZ</option><option>PC</option>
+                                <option>NTR</option><option>互动</option><option>其他</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold">图标</label>
+                            <select class="form-select" id="formIcon">
+                                <option value="fa-gamepad">🎮</option>
+                                <option value="fa-flag">🚩</option>
+                                <option value="fa-star">⭐</option>
+                                <option value="fa-flask">🧪</option>
+                                <option value="fa-globe">🌐</option>
+                                <option value="fa-heart">❤️</option>
+                                <option value="fa-fire">🔥</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">描述</label>
+                        <textarea class="form-control" id="formDesc" rows="2" placeholder="游戏描述..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">渐变颜色</label>
+                            <div class="d-flex gap-2">
+                                <input type="color" class="form-control form-control-color w-auto" id="formColor1" value="#D87CFF">
+                                <input type="color" class="form-control form-control-color w-auto" id="formColor2" value="#9B59B6">
+                                <input type="text" class="form-control" id="formGradient" placeholder="或直接输入" style="font-size:0.85rem;">
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold">浏览数</label>
+                            <input class="form-control" id="formViews" value="0">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold">评论数</label>
+                            <input type="number" class="form-control" id="formComments" value="0">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold">作者</label>
+                            <input class="form-control" id="formAuthor" value="姬姬">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold">头像</label>
+                            <input class="form-control" id="formAvatar" value="姬" maxlength="1">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">日期</label>
+                            <input class="form-control" id="formDate" placeholder="2026年5月24日">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">文章链接</label>
+                            <input class="form-control" id="formLink" value="#" placeholder="详情页链接">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button class="btn btn-accent" onclick="savePost()">
+                        <i class="fa fa-check me-1"></i>确定
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ========== 全局状态 ==========
+        let postsData = null;  // 完整的 posts.json 数据
+        let fileSha = null;    // GitHub 文件 SHA（更新时需要）
+        const REPO = 'lss5148/CL-YX';
+        const FILE_PATH = 'data/posts.json';
+        const BRANCH = 'main';
+
+        // ========== UI 控制 ==========
+        function showSection() {
+            const token = localStorage.getItem('gh_token');
+            if (token) {
+                document.getElementById('tokenSection').style.display = 'none';
+                document.getElementById('adminSection').style.display = 'block';
+                document.getElementById('statusText').textContent = '已连接';
+                document.getElementById('statusDot').className = 'status-dot online';
+                loadPosts();
+            } else {
+                document.getElementById('tokenSection').style.display = 'block';
+                document.getElementById('adminSection').style.display = 'none';
+                document.getElementById('statusText').textContent = '未连接';
+                document.getElementById('statusDot').className = 'status-dot offline';
+            }
+        }
+
+        function toast(msg, type) {
+            const el = document.createElement('div');
+            el.className = 'toast show align-items-center text-bg-' + (type||'success') + ' border-0 mb-2';
+            el.innerHTML = '<div class="d-flex"><div class="toast-body">' + msg + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+            document.getElementById('toastContainer').appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        // ========== GitHub API ==========
+        function getHeaders() {
+            const token = localStorage.getItem('gh_token');
+            return {
+                'Authorization': 'token ' + token,
+                'Accept': 'application/vnd.github.v3+json',
+            };
+        }
+
+        async function fetchFromGitHub(url, options) {
+            const res = await fetch('https://api.github.com' + url, { ...options, headers: { ...getHeaders(), ...options?.headers } });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || 'HTTP ' + res.status);
+            }
+            return res.json();
+        }
+
+        async function connectGitHub() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (!token) { toast('请输入 Token', 'warning'); return; }
+            localStorage.setItem('gh_token', token);
+            try {
+                const user = await fetchFromGitHub('/user');
+                toast('GitHub 连接成功！欢迎 ' + user.login, 'success');
+                showSection();
+            } catch (e) {
+                localStorage.removeItem('gh_token');
+                toast('连接失败: ' + e.message, 'danger');
+            }
+        }
+
+        function disconnect() {
+            localStorage.removeItem('gh_token');
+            showSection();
+            toast('已断开连接', 'info');
+        }
+
+        // ========== 加载文章 ==========
+        async function loadPosts() {
+            document.getElementById('loadingPosts').style.display = 'block';
+            document.getElementById('postsList').innerHTML = '';
+            try {
+                const data = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
+                fileSha = data.sha;
+                const content = atob(data.content.replace(/\n/g, ''));
+                postsData = JSON.parse(content);
+                renderPosts();
+                renderMeta();
+                toast('已加载 ' + postsData.posts.length + ' 篇文章', 'success');
+            } catch (e) {
+                document.getElementById('postsList').innerHTML = '<div class="alert alert-danger">加载失败: ' + e.message + '</div>';
+            } finally {
+                document.getElementById('loadingPosts').style.display = 'none';
+            }
+        }
+
+        function renderPosts() {
+            const container = document.getElementById('postsList');
+            if (!postsData.posts.length) {
+                container.innerHTML = '<div class="text-center text-muted py-4">还没有文章，点击右上角"新增文章"添加</div>';
+                return;
+            }
+            container.innerHTML = postsData.posts.map((p, i) => `
+                <div class="post-item d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="gradient-preview" style="background:${p.gradient || 'linear-gradient(135deg,#D87CFF,#9B59B6)'}">
+                        </div>
+                        <div>
+                            <div class="title">${p.title}</div>
+                            <div class="meta">
+                                <span class="badge bg-light text-dark me-2">${p.category || '-'}</span>
+                                <i class="fa fa-eye"></i> ${p.views || 0}
+                                <i class="fa fa-comment ms-2"></i> ${p.comments || 0}
+                                <span class="ms-2">${p.date || ''}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-accent me-1" onclick="editPost(${i})">
+                            <i class="fa fa-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deletePost(${i})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // 更新随机推荐
+            updateRandomPosts();
+        }
+
+        function renderMeta() {
+            document.getElementById('tagsInput').value = (postsData.tags || []).join(' ');
+            document.getElementById('footerInput').value = postsData.site?.footer || '';
+        }
+
+        function updateRandomPosts() {
+            if (!postsData.randomPosts || !postsData.posts.length) return;
+            // 从已有文章中随机选 5 条作为推荐
+            const shuffled = [...postsData.posts].sort(() => Math.random() - 0.5);
+            postsData.randomPosts = shuffled.slice(0, 5).map(p => ({
+                title: p.title,
+                link: p.link || '#',
+                gradient: p.gradient || 'linear-gradient(135deg,#D87CFF,#8E44AD)',
+                date: p.date || '',
+            }));
+        }
+
+        // ========== 新增/编辑文章 ==========
+        function showAddForm() {
+            document.getElementById('modalTitle').textContent = '新增文章';
+            document.getElementById('editId').value = '';
+            document.getElementById('formTitle').value = '';
+            document.getElementById('formDesc').value = '';
+            document.getElementById('formCategory').value = 'SLG';
+            document.getElementById('formIcon').value = 'fa-gamepad';
+            document.getElementById('formColor1').value = '#D87CFF';
+            document.getElementById('formColor2').value = '#9B59B6';
+            document.getElementById('formGradient').value = '';
+            document.getElementById('formViews').value = '0';
+            document.getElementById('formComments').value = '0';
+            document.getElementById('formAuthor').value = '姬姬';
+            document.getElementById('formAvatar').value = '姬';
+            document.getElementById('formDate').value = new Date().toLocaleDateString('zh-CN').replace(/\//g, '年').replace('/', '月') + '日';
+            document.getElementById('formLink').value = '#';
+            new bootstrap.Modal(document.getElementById('postModal')).show();
+        }
+
+        function editPost(index) {
+            const p = postsData.posts[index];
+            document.getElementById('modalTitle').textContent = '编辑文章';
+            document.getElementById('editId').value = index;
+            document.getElementById('formTitle').value = p.title;
+            document.getElementById('formDesc').value = p.description || '';
+            document.getElementById('formCategory').value = p.category || 'SLG';
+            document.getElementById('formIcon').value = p.icon || 'fa-gamepad';
+            document.getElementById('formViews').value = p.views || '0';
+            document.getElementById('formComments').value = p.comments || 0;
+            document.getElementById('formAuthor').value = p.author || '姬姬';
+            document.getElementById('formAvatar').value = p.authorAvatar || '姬';
+            document.getElementById('formDate').value = p.date || '';
+            document.getElementById('formLink').value = p.link || '#';
+
+            // 解析渐变色
+            if (p.gradient) {
+                const match = p.gradient.match(/#([A-Fa-f0-9]{6})/g);
+                if (match && match.length >= 2) {
+                    document.getElementById('formColor1').value = match[0];
+                    document.getElementById('formColor2').value = match[1];
+                }
+                document.getElementById('formGradient').value = p.gradient;
+            }
+            new bootstrap.Modal(document.getElementById('postModal')).show();
+        }
+
+        function savePost() {
+            const editId = document.getElementById('editId').value;
+            const color1 = document.getElementById('formColor1').value;
+            const color2 = document.getElementById('formColor2').value;
+            const customGrad = document.getElementById('formGradient').value.trim();
+            const gradient = customGrad || `linear-gradient(135deg,${color1},${color2})`;
+            const title = document.getElementById('formTitle').value.trim();
+            if (!title) { toast('请输入标题', 'warning'); return; }
+
+            const post = {
+                id: editId ? postsData.posts[parseInt(editId)].id : (postsData.posts.length > 0 ? Math.max(...postsData.posts.map(p=>p.id)) + 1 : 1),
+                title: title,
+                description: document.getElementById('formDesc').value.trim(),
+                link: document.getElementById('formLink').value.trim() || '#',
+                category: document.getElementById('formCategory').value,
+                gradient: gradient,
+                icon: document.getElementById('formIcon').value,
+                author: document.getElementById('formAuthor').value.trim() || '姬姬',
+                authorAvatar: document.getElementById('formAvatar').value.trim() || '姬',
+                views: document.getElementById('formViews').value.trim() || '0',
+                comments: parseInt(document.getElementById('formComments').value) || 0,
+                date: document.getElementById('formDate').value.trim() || new Date().toLocaleDateString('zh-CN'),
+            };
+
+            if (editId) {
+                postsData.posts[parseInt(editId)] = post;
+                toast('文章已更新', 'success');
+            } else {
+                postsData.posts.unshift(post);
+                toast('文章已添加', 'success');
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('postModal')).hide();
+            renderPosts();
+            updateRandomPosts();
+        }
+
+        function deletePost(index) {
+            if (!confirm('确定删除「' + postsData.posts[index].title + '」？')) return;
+            postsData.posts.splice(index, 1);
+            toast('文章已删除', 'info');
+            renderPosts();
+            updateRandomPosts();
+        }
+
+        // ========== 保存到 GitHub ==========
+        async function saveAll() {
+            // 更新标签
+            postsData.tags = document.getElementById('tagsInput').value.split(/\s+/).filter(Boolean);
+            // 更新页脚
+            if (!postsData.site) postsData.site = {};
+            postsData.site.footer = document.getElementById('footerInput').value.trim();
+
+            const content = JSON.stringify(postsData, null, 2);
+            const encoded = btoa(unescape(encodeURIComponent(content)));
+
+            const btn = document.querySelector('.btn-lg');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>保存中...';
+
+            try {
+                await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        message: '更新文章数据',
+                        content: encoded,
+                        sha: fileSha,
+                        branch: BRANCH,
+                    }),
+                });
+                // 更新 SHA
+                const updated = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
+                fileSha = updated.sha;
+                toast('✅ 保存成功！Cloudflare Pages 正在自动部署，约 1-2 分钟后生效', 'success');
+            } catch (e) {
+                toast('❌ 保存失败: ' + e.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-cloud-upload me-2"></i>保存所有更改到 GitHub';
+            }
+        }
+
+        // ========== 自动填渐变 ==========
+        document.getElementById('formColor1').addEventListener('input', updateGradientPreview);
+        document.getElementById('formColor2').addEventListener('input', updateGradientPreview);
+        function updateGradientPreview() {
+            const c1 = document.getElementById('formColor1').value;
+            const c2 = document.getElementById('formColor2').value;
+            document.getElementById('formGradient').value = `linear-gradient(135deg,${c1},${c2})`;
+        }
+
+        // ========== 初始化 ==========
+        showSection();
+    </script>
 </body>
 </html>
