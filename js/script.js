@@ -45,9 +45,15 @@ function renderPosts() {
     const pagePosts = siteData.posts.slice(start, end);
 
     const html = pagePosts.map(post => {
-        const imgUrl = post.image && (post.image.startsWith('http') && !post.image.includes(window.location.hostname))
-            ? '/img?url=' + encodeURIComponent(post.image)
-            : post.image;
+        // 取封面图：优先 post.image，其次从正文提取第一张图
+        let coverImg = post.image || '';
+        if (!coverImg && post.content) {
+            const m = post.content.match(/src="([^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"/i);
+            if (m) coverImg = m[1];
+        }
+        const imgUrl = coverImg && (coverImg.startsWith('http') && !coverImg.includes(window.location.hostname))
+            ? '/img?url=' + encodeURIComponent(coverImg)
+            : coverImg;
         const imgHtml = imgUrl
             ? `<img src="${imgUrl}" alt="${post.title}" class="img-fluid rounded-3">`
             : `<div class="img-placeholder" style="background:${post.gradient};">
