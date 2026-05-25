@@ -43,6 +43,7 @@ function renderPosts() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const activeTag = urlParams.get('tag') || '';
+    const searchQuery = urlParams.get('q') || '';
     currentPage = parseInt(urlParams.get('page')) || 1;
 
     // 按标签筛选
@@ -58,6 +59,19 @@ function renderPosts() {
         });
     }
 
+    // 按关键词搜索
+    if (searchQuery) {
+        const qLower = searchQuery.toLowerCase();
+        filteredPosts = filteredPosts.filter(post => {
+            if (post.title && post.title.toLowerCase().includes(qLower)) return true;
+            if (post.description && post.description.toLowerCase().includes(qLower)) return true;
+            if (post.content && post.content.toLowerCase().includes(qLower)) return true;
+            if (post.tags && post.tags.some(t => t.toLowerCase().includes(qLower))) return true;
+            if (post.category && post.category.toLowerCase().includes(qLower)) return true;
+            return false;
+        });
+    }
+
     const totalPages = Math.ceil(filteredPosts.length / PER_PAGE);
     if (currentPage < 1) currentPage = 1;
     if (currentPage > totalPages) currentPage = totalPages || 1;
@@ -66,7 +80,12 @@ function renderPosts() {
     const end = start + PER_PAGE;
     const pagePosts = filteredPosts.slice(start, end);
 
-    // 筛选提示条
+    // 构建分页额外参数（保留 tag 和 q）
+    let extraParams = '';
+    if (activeTag) extraParams += '&tag=' + encodeURIComponent(activeTag);
+    if (searchQuery) extraParams += '&q=' + encodeURIComponent(searchQuery);
+
+    // 筛选/搜索提示条
     let filterBar = '';
     if (activeTag) {
         filterBar = `
@@ -78,6 +97,18 @@ function renderPosts() {
             </span>
             <a href="${window.location.pathname}" class="btn btn-sm btn-outline-accent py-0 px-2 ms-auto">
                 <i class="fa fa-times"></i> 清除筛选
+            </a>
+        </div>`;
+    } else if (searchQuery) {
+        filterBar = `
+        <div class="blog-border" style="padding:0.6rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+            <span style="font-size:0.85rem;">
+                <i class="fa fa-search" style="color:var(--accent);"></i>
+                搜索 "<strong>${searchQuery}</strong>"
+                <span class="text-muted"> — 找到 ${filteredPosts.length} 篇</span>
+            </span>
+            <a href="${window.location.pathname}" class="btn btn-sm btn-outline-accent py-0 px-2 ms-auto">
+                <i class="fa fa-times"></i> 清除搜索
             </a>
         </div>`;
     }
@@ -137,12 +168,11 @@ function renderPosts() {
     // 分页
     let paginationHtml = '';
     if (totalPages > 1) {
-        const tagParam = activeTag ? '&tag=' + encodeURIComponent(activeTag) : '';
         paginationHtml = `
         <nav class="pagination-nav" aria-label="Page navigation">
             <ul class="pagination justify-content-center">
                 <li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="?page=${currentPage - 1}${tagParam}"><i class="fa fa-angle-left"></i></a>
+                    <a class="page-link" href="?page=${currentPage - 1}${extraParams}"><i class="fa fa-angle-left"></i></a>
                 </li>`;
 
         const maxVisible = 5;
@@ -153,21 +183,21 @@ function renderPosts() {
         }
 
         if (pageStart > 1) {
-            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=1${tagParam}">1</a></li>`;
+            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=1${extraParams}">1</a></li>`;
             if (pageStart > 2) paginationHtml += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
         }
         for (let p = pageStart; p <= pageEnd; p++) {
             paginationHtml += `<li class="page-item ${p === currentPage ? 'active' : ''}">
-                <a class="page-link" href="?page=${p}${tagParam}">${p}</a></li>`;
+                <a class="page-link" href="?page=${p}${extraParams}">${p}</a></li>`;
         }
         if (pageEnd < totalPages) {
             if (pageEnd < totalPages - 1) paginationHtml += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
-            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=${totalPages}${tagParam}">${totalPages}</a></li>`;
+            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=${totalPages}${extraParams}">${totalPages}</a></li>`;
         }
 
         paginationHtml += `
                 <li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
-                    <a class="page-link" href="?page=${currentPage + 1}${tagParam}"><i class="fa fa-angle-right"></i></a>
+                    <a class="page-link" href="?page=${currentPage + 1}${extraParams}"><i class="fa fa-angle-right"></i></a>
                 </li>
             </ul>
         </nav>`;
@@ -298,6 +328,19 @@ document.addEventListener('DOMContentLoaded', function () {
             if (offcanvas) {
                 const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
                 if (bsOffcanvas) bsOffcanvas.hide();
+            }
+        });
+    });
+
+    // ========== 搜索表单提交 ==========
+    document.querySelectorAll('.search-form, .mobile-search-form').forEach(form => {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const input = this.querySelector('input[type="search"], .search-input, .mobile-search-input, .form-control');
+            if (!input) return;
+            const q = input.value.trim();
+            if (q) {
+                window.location.href = '/?q=' + encodeURIComponent(q);
             }
         });
     });
