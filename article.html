@@ -511,6 +511,9 @@
 
                     document.getElementById('loadingDetail').style.display = 'none';
                     document.getElementById('articleContent').style.display = 'block';
+                    // 渲染页脚
+                    const ft = document.getElementById('footer-text');
+                    if (ft && data.site && data.site.footer) ft.textContent = data.site.footer;
                 })
                 .catch(err => {
                     document.getElementById('loadingDetail').innerHTML =

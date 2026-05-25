@@ -537,6 +537,9 @@
             btn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>保存中...';
 
             try {
+                // 保存前刷新 SHA，避免与其他提交冲突
+                const latest = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
+                fileSha = latest.sha;
                 await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH, {
                     method: 'PUT',
                     body: JSON.stringify({
