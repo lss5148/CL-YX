@@ -181,6 +181,7 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="editId">
+                    <input type="hidden" id="formSource" value="">
                     <div class="row">
                         <div class="col-md-8 mb-3">
                             <label class="form-label fw-semibold">标题</label>
@@ -392,7 +393,9 @@
                         <div class="gradient-preview" style="background:${p.gradient || 'linear-gradient(135deg,#D87CFF,#9B59B6)'}">
                         </div>
                         <div>
-                            <div class="title">${p.title}</div>
+                            <div class="title">${p.title}
+                                ${p.source ? '<span class="badge bg-info text-dark ms-1" style="font-weight:400;font-size:0.65rem;" title="来源: ' + p.source + '"><i class="fa fa-cloud"></i></span>' : ''}
+                            </div>
                             <div class="meta">
                                 <span class="badge bg-light text-dark me-2">${p.category || '-'}</span>
                                 <i class="fa fa-eye"></i> ${p.views || 0}
@@ -453,6 +456,7 @@
             document.getElementById('formDownload').value = '#';
             document.getElementById('formContent').value = '';
             document.getElementById('formImage').value = '';
+            document.getElementById('formSource').value = '';
             new bootstrap.Modal(document.getElementById('postModal')).show();
         }
 
@@ -483,6 +487,7 @@
             }
             document.getElementById('mdPreview').style.display = 'none';
             document.getElementById('formImage').value = p.image || '';
+            document.getElementById('formSource').value = p.source || '';
 
             // 解析渐变色
             if (p.gradient) {
@@ -530,6 +535,7 @@
                 views: document.getElementById('formViews').value.trim() || '0',
                 comments: parseInt(document.getElementById('formComments').value) || 0,
                 date: document.getElementById('formDate').value.trim() || new Date().toLocaleDateString('zh-CN'),
+                source: document.getElementById('formSource').value || '',
             };
 
             if (editId) {
@@ -615,11 +621,32 @@
             const urls = text.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
             if (urls.length === 0) { toast('未找到有效的 URL', 'warning'); return; }
 
+            // ---- 第一步：筛选重复 ----
+            const newUrls = [];
+            const dupUrls = [];
+            for (const url of urls) {
+                if (isDuplicateUrl(url)) {
+                    dupUrls.push(url);
+                } else {
+                    newUrls.push(url);
+                }
+            }
+
             const status = document.getElementById('importStatus');
             const progress = document.getElementById('importProgress');
             const progressBar = document.getElementById('importProgressBar');
             const progressText = document.getElementById('importProgressText');
             const btn = document.getElementById('importBtn');
+
+            if (newUrls.length === 0) {
+                toast('所有 ' + urls.length + ' 篇文章都已存在，无新内容可导入', 'info');
+                status.innerHTML = '<span class="text-warning"><i class="fa fa-info-circle me-1"></i>全部重复: ' + dupUrls.length + ' 篇已在列表中</span>';
+                return;
+            }
+
+            if (dupUrls.length > 0) {
+                status.innerHTML = '<span class="text-warning"><i class="fa fa-info-circle me-1"></i>跳过 ' + dupUrls.length + ' 篇重复，即将导入 ' + newUrls.length + ' 篇新文章</span>';
+            }
 
             btn.disabled = true;
             progress.classList.remove('d-none');
@@ -627,12 +654,12 @@
             const successful = [];
             let failCount = 0;
 
-            for (let i = 0; i < urls.length; i++) {
-                const url = urls[i];
-                const pct = Math.round((i / urls.length) * 100);
+            for (let i = 0; i < newUrls.length; i++) {
+                const url = newUrls[i];
+                const pct = Math.round((i / newUrls.length) * 100);
                 progressBar.style.width = pct + '%';
-                progressText.textContent = '处理中 ' + (i+1) + '/' + urls.length + ': ' + url.substring(0, 50) + '...';
-                status.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>正在获取第 ' + (i+1) + '/' + urls.length + ' 篇...';
+                progressText.textContent = '处理中 ' + (i+1) + '/' + newUrls.length + ': ' + url.substring(0, 45) + '...';
+                status.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>正在获取第 ' + (i+1) + '/' + newUrls.length + ' 篇...';
 
                 try {
                     const article = await fetchAndParseArticle(url);
@@ -649,9 +676,11 @@
             btn.disabled = false;
             btn.innerHTML = '<i class="fa fa-download me-1"></i>提取并填充';
 
-            if (successful.length > 0) {
-                // 全部保存到文章列表
+            // ---- 第三步：保存 ----
+            const totalNew = successful.length;
+            if (totalNew > 0) {
                 let nextId = postsData.posts.length > 0 ? Math.max(...postsData.posts.map(p => p.id)) + 1 : 1;
+                // 反转保持原始顺序
                 successful.reverse().forEach(article => {
                     const post = {
                         id: nextId++,
@@ -669,17 +698,21 @@
                         views: article.views,
                         comments: article.comments,
                         date: article.date,
+                        source: article.source || '',  // 记录来源 URL 用于后续重复检测
                     };
                     postsData.posts.unshift(post);
                 });
                 renderPosts();
                 updateRandomPosts();
 
-                // 打开第一篇供编辑（unshift 后第一篇始终在索引 0）
                 bootstrap.Modal.getInstance(document.getElementById('importModal'))?.hide();
                 editPost(0);
-                progressText.textContent = '完成: ' + successful.length + ' 篇成功, ' + failCount + ' 篇失败 — 已自动保存到文章列表';
-                toast('成功导入 ' + successful.length + ' 篇，已保存！第一篇已打开供修改', 'success');
+
+                let summary = '成功导入 ' + totalNew + ' 篇';
+                if (dupUrls.length > 0) summary += '，跳过 ' + dupUrls.length + ' 篇重复';
+                if (failCount > 0) summary += '，' + failCount + ' 篇失败';
+                progressText.textContent = summary + ' — 已保存到文章列表';
+                toast(summary + '，已保存！第一篇已打开供修改', 'success');
             } else {
                 progressText.textContent = '全部失败 (' + failCount + ' 篇)';
                 toast('全部导入失败，请检查 URL 或代理是否可用', 'warning');
@@ -832,7 +865,25 @@
                 if (!isNaN(c)) comments = c;
             }
 
-            return { title, content, description, category, author, date, image, download, views, comments };
+            return { title, content, description, category, author, date, image, download, views, comments, source: url };
+        }
+
+        // ========== 重复检测 ==========
+        function isDuplicateUrl(importUrl) {
+            // 从导入 URL 提取数字 ID（https://acgyx.us/38730.html → 38730）
+            const idMatch = importUrl.match(/(\d+)\.html/i);
+            const sourceId = idMatch ? idMatch[1] : null;
+
+            return postsData.posts.some(p => {
+                // 1. 精确匹配 source 字段
+                if (p.source && p.source === importUrl) return true;
+                // 2. sourceId 匹配某个已有文章的 link 或 source
+                if (sourceId) {
+                    if (p.source && p.source.includes(sourceId)) return true;
+                    if (p.link && p.link.includes(sourceId)) return true;
+                }
+                return false;
+            });
         }
 
         function fillFormFromImport(article) {
@@ -856,8 +907,7 @@
             document.getElementById('formAvatar').value = '恋';
             document.getElementById('formDate').value = article.date;
             document.getElementById('formImage').value = article.image;
-
-            // 根据分类设置渐变色
+            document.getElementById('formSource').value = article.source || '';
             const gradMap = {
                 'SLG': ['#D87CFF', '#9B59B6'],
                 'RPG': ['#FF6B6B', '#C0392B'],
