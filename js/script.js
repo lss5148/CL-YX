@@ -45,8 +45,11 @@ function renderPosts() {
     const pagePosts = siteData.posts.slice(start, end);
 
     const html = pagePosts.map(post => {
-        const imgHtml = post.image
-            ? `<img src="${post.image}" alt="${post.title}" class="img-fluid rounded-3">`
+        const imgUrl = post.image && (post.image.startsWith('http') && !post.image.includes(window.location.hostname))
+            ? '/img?url=' + encodeURIComponent(post.image)
+            : post.image;
+        const imgHtml = imgUrl
+            ? `<img src="${imgUrl}" alt="${post.title}" class="img-fluid rounded-3">`
             : `<div class="img-placeholder" style="background:${post.gradient};">
                 <span class="placeholder-icon"><i class="fa ${post.icon}"></i></span>
                </div>`;
