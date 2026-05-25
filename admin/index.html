@@ -147,7 +147,11 @@
                     <div class="mb-3">
                         <label class="form-label fw-semibold">文章 URL <span class="text-muted small fw-normal">(每行一个)</span></label>
                         <textarea class="form-control" id="importUrl" rows="3" placeholder="https://acgyx.us/XXXXX.html&#10;https://acgyx.us/YYYYY.html"></textarea>
-                        <div class="form-text">粘贴 acgyx.us 的文章链接，每行一个。提取后会自动填充编辑弹窗，方便修改下载链接。</div>
+                        <div class="form-text">粘贴 acgyx.us 的文章链接，每行一个。批量导入会自动保存到文章列表。</div>
+                    </div>
+                    <div class="alert alert-info small py-2 mb-2" id="proxyStatus" style="font-size:0.8rem;">
+                        <i class="fa fa-cloud me-1"></i>代理状态: <span id="proxyStatusText">待检测</span>
+                        <button class="btn btn-sm btn-outline-accent py-0 px-2 ms-2" onclick="testProxies()">检测</button>
                     </div>
                     <div id="importStatus" class="small mb-2"></div>
                     <div id="importProgress" class="d-none">
@@ -620,7 +624,7 @@
             btn.disabled = true;
             progress.classList.remove('d-none');
 
-            let successCount = 0;
+            const successful = [];
             let failCount = 0;
 
             for (let i = 0; i < urls.length; i++) {
@@ -632,35 +636,93 @@
 
                 try {
                     const article = await fetchAndParseArticle(url);
-                    successCount++;
-                    fillFormFromImport(article);
-                    status.innerHTML = '<span class="text-success"><i class="fa fa-check me-1"></i>已提取「' + article.title.substring(0, 40) + '…」</span>';
-                    if (i < urls.length - 1) {
-                        toast('第 ' + (i+1) + ' 篇已填入编辑框，保存后可继续导入下一篇', 'info');
-                    }
+                    successful.push(article);
+                    status.innerHTML = '<span class="text-success"><i class="fa fa-check me-1"></i>✓ ' + article.title.substring(0, 40) + '…</span>';
                 } catch (e) {
                     failCount++;
-                    status.innerHTML = '<span class="text-danger"><i class="fa fa-times me-1"></i>导入失败: ' + e.message + '</span>';
-                    toast('导入失败: ' + e.message, 'danger');
+                    status.innerHTML = '<span class="text-danger"><i class="fa fa-times me-1"></i>✗ 导入失败: ' + e.message.substring(0, 60) + '</span>';
+                    toast('第 ' + (i+1) + ' 篇失败: ' + e.message, 'danger');
                 }
             }
 
             progressBar.style.width = '100%';
-            progressText.textContent = '完成: ' + successCount + ' 成功, ' + failCount + ' 失败';
             btn.disabled = false;
             btn.innerHTML = '<i class="fa fa-download me-1"></i>提取并填充';
-            if (successCount > 0) {
-                toast('成功导入 ' + successCount + ' 篇，请在编辑弹窗中修改下载链接后保存', 'success');
+
+            if (successful.length > 0) {
+                // 全部保存到文章列表
+                let nextId = postsData.posts.length > 0 ? Math.max(...postsData.posts.map(p => p.id)) + 1 : 1;
+                successful.reverse().forEach(article => {
+                    const post = {
+                        id: nextId++,
+                        title: article.title,
+                        description: article.description,
+                        content: article.content,
+                        image: article.image,
+                        link: '/article.html?id=' + (nextId - 1),
+                        download: article.download || '#',
+                        category: article.category,
+                        gradient: 'linear-gradient(135deg,#D87CFF,#9B59B6)',
+                        icon: 'fa-gamepad',
+                        author: 'CL',
+                        authorAvatar: '恋',
+                        views: article.views,
+                        comments: article.comments,
+                        date: article.date,
+                    };
+                    postsData.posts.unshift(post);
+                });
+                renderPosts();
+                updateRandomPosts();
+
+                // 打开第一篇供编辑（unshift 后第一篇始终在索引 0）
+                bootstrap.Modal.getInstance(document.getElementById('importModal'))?.hide();
+                editPost(0);
+                progressText.textContent = '完成: ' + successful.length + ' 篇成功, ' + failCount + ' 篇失败 — 已自动保存到文章列表';
+                toast('成功导入 ' + successful.length + ' 篇，已保存！第一篇已打开供修改', 'success');
+            } else {
+                progressText.textContent = '全部失败 (' + failCount + ' 篇)';
+                toast('全部导入失败，请检查 URL 或代理是否可用', 'warning');
             }
         }
 
         async function fetchAndParseArticle(url) {
-            // 通过 CORS 代理获取目标页面
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-            const res = await fetch(proxyUrl);
-            if (!res.ok) throw new Error('获取页面失败 (HTTP ' + res.status + ')');
-            const html = await res.text();
+            // CORS 代理列表（按优先级排序，依次尝试）
+            const proxies = [
+                { name: 'allorigins', url: () => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) },
+                { name: 'corsproxy',  url: () => 'https://corsproxy.io/?' + encodeURIComponent(url) },
+                { name: 'codetabs',   url: () => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url) },
+            ];
 
+            let lastErr = null;
+            let lastProxy = '';
+            // 每个代理最多重试 2 轮
+            for (let attempt = 0; attempt < 2; attempt++) {
+                for (const proxy of proxies) {
+                    lastProxy = proxy.name;
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 25000);  // 25 秒超时
+                        const proxyUrl = proxy.url();
+                        const res = await fetch(proxyUrl, { signal: controller.signal });
+                        clearTimeout(timeoutId);
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        const html = await res.text();
+                        if (!html || html.length < 500) throw new Error('页面内容过短，可能被反爬拦截');
+                        return await parseArticleHtml(html, url);
+                    } catch (e) {
+                        lastErr = e;
+                        continue;  // 尝试下一个代理
+                    }
+                }
+                // 一轮所有代理都失败，等 2 秒后重试
+                if (attempt === 0) await new Promise(r => setTimeout(r, 2000));
+            }
+            throw new Error('所有代理均失败（最后尝试: ' + lastProxy + '）: ' + (lastErr?.message || '未知'));
+        }
+
+        // 将解析逻辑分离出来，方便维护
+        async function parseArticleHtml(html, url) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
 
@@ -875,6 +937,44 @@
             const c1 = document.getElementById('formColor1').value;
             const c2 = document.getElementById('formColor2').value;
             document.getElementById('formGradient').value = `linear-gradient(135deg,${c1},${c2})`;
+        }
+
+        // ========== 代理检测 ==========
+        async function testProxies() {
+            const statusEl = document.getElementById('proxyStatusText');
+            statusEl.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 检测中...';
+            const proxies = [
+                { name: 'allorigins', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://acgyx.us/') },
+                { name: 'corsproxy',  url: 'https://corsproxy.io/?' + encodeURIComponent('https://acgyx.us/') },
+                { name: 'codetabs',   url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://acgyx.us/') },
+            ];
+            let available = [];
+            for (const p of proxies) {
+                try {
+                    const controller = new AbortController();
+                    const t = setTimeout(() => controller.abort(), 8000);
+                    const res = await fetch(p.url, { signal: controller.signal });
+                    clearTimeout(t);
+                    if (res.ok) available.push(p.name);
+                } catch (e) {}
+            }
+            const alertEl = document.getElementById('proxyStatus');
+            if (available.length > 0) {
+                statusEl.innerHTML = '<span class="text-success">' + available.join(', ') + ' 可用</span>';
+                alertEl.className = 'alert alert-success small py-2 mb-2';
+            } else {
+                statusEl.innerHTML = '<span class="text-danger">全部不可用，导入可能失败</span>';
+                alertEl.className = 'alert alert-danger small py-2 mb-2';
+            }
+        }
+
+        // 打开导入弹窗时自动检测代理
+        const importModalEl = document.getElementById('importModal');
+        if (importModalEl) {
+            importModalEl.addEventListener('shown.bs.modal', function () {
+                document.getElementById('proxyStatusText').textContent = '检测中...';
+                testProxies();
+            });
         }
 
         // ========== 初始化 ==========
