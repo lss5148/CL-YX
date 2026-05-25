@@ -476,13 +476,14 @@
             const title = document.getElementById('formTitle').value.trim();
             if (!title) { toast('请输入标题', 'warning'); return; }
 
+            const newId = editId ? postsData.posts[parseInt(editId)].id : (postsData.posts.length > 0 ? Math.max(...postsData.posts.map(p=>p.id)) + 1 : 1);
             const post = {
-                id: editId ? postsData.posts[parseInt(editId)].id : (postsData.posts.length > 0 ? Math.max(...postsData.posts.map(p=>p.id)) + 1 : 1),
+                id: newId,
                 title: title,
                 description: document.getElementById('formDesc').value.trim(),
                 content: document.getElementById('formContent').value.trim(),
                 image: document.getElementById('formImage').value.trim() || '',
-                link: document.getElementById('formLink').value.trim() || '#',
+                link: '/article.html?id=' + newId,
                 download: document.getElementById('formDownload').value.trim() || '#',
                 category: document.getElementById('formCategory').value,
                 gradient: gradient,
@@ -746,7 +747,9 @@
             document.getElementById('formTitle').value = article.title;
             document.getElementById('formDesc').value = article.description;
             document.getElementById('formContent').value = article.content;
-            document.getElementById('formLink').value = '/article.html?id=';
+            // 根据现有文章数量预估下一个ID
+            const nextId = postsData.posts.length > 0 ? Math.max(...postsData.posts.map(p=>p.id)) + 1 : 1;
+            document.getElementById('formLink').value = '/article.html?id=' + nextId;
             document.getElementById('formDownload').value = article.download || '#'; // 自动提取的下载链接，用户可修改
             document.getElementById('formCategory').value = article.category;
             document.getElementById('formViews').value = article.views;

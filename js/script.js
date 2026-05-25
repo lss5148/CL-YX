@@ -26,9 +26,25 @@ function renderAll() {
 }
 
 // ========== 渲染文章列表 ==========
+const PER_PAGE = 10;
+let currentPage = 1;
+
 function renderPosts() {
     const container = document.getElementById('posts-container');
-    const html = siteData.posts.map(post => {
+    if (!container) return;
+
+    const totalPages = Math.ceil(siteData.posts.length / PER_PAGE);
+    // URL 参数读取页码
+    const urlParams = new URLSearchParams(window.location.search);
+    currentPage = parseInt(urlParams.get('page')) || 1;
+    if (currentPage < 1) currentPage = 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+
+    const start = (currentPage - 1) * PER_PAGE;
+    const end = start + PER_PAGE;
+    const pagePosts = siteData.posts.slice(start, end);
+
+    const html = pagePosts.map(post => {
         const imgHtml = post.image
             ? `<img src="${post.image}" alt="${post.title}" class="img-fluid rounded-3">`
             : `<div class="img-placeholder" style="background:${post.gradient};">
@@ -73,28 +89,43 @@ function renderPosts() {
     }).join('');
 
     // 分页
-    const pg = siteData.pagination;
-    let paginationHtml = `
+    let paginationHtml = '';
+    if (totalPages > 1) {
+        paginationHtml = `
         <nav class="pagination-nav" aria-label="Page navigation">
             <ul class="pagination justify-content-center">
-                <li class="page-item ${pg.prevDisabled ? 'disabled' : ''}">
-                    <a class="page-link" href="#"><i class="fa fa-angle-left"></i></a>
+                <li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="?page=${currentPage - 1}"><i class="fa fa-angle-left"></i></a>
+                </li>`;
+
+        // 页码
+        const maxVisible = 5;
+        let pageStart = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+        let pageEnd = Math.min(totalPages, pageStart + maxVisible - 1);
+        if (pageEnd - pageStart + 1 < maxVisible) {
+            pageStart = Math.max(1, pageEnd - maxVisible + 1);
+        }
+
+        if (pageStart > 1) {
+            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=1">1</a></li>`;
+            if (pageStart > 2) paginationHtml += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
+        }
+        for (let p = pageStart; p <= pageEnd; p++) {
+            paginationHtml += `<li class="page-item ${p === currentPage ? 'active' : ''}">
+                <a class="page-link" href="?page=${p}">${p}</a></li>`;
+        }
+        if (pageEnd < totalPages) {
+            if (pageEnd < totalPages - 1) paginationHtml += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
+            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=${totalPages}">${totalPages}</a></li>`;
+        }
+
+        paginationHtml += `
+                <li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
+                    <a class="page-link" href="?page=${currentPage + 1}"><i class="fa fa-angle-right"></i></a>
                 </li>
-                <li class="page-item active"><a class="page-link" href="#">${pg.current}</a></li>`;
-    if (pg.current + 1 <= pg.total) {
-        paginationHtml += `<li class="page-item"><a class="page-link" href="#">${pg.current + 1}</a></li>`;
-    }
-    if (pg.current + 2 <= pg.total) {
-        paginationHtml += `<li class="page-item"><a class="page-link" href="#">${pg.current + 2}</a></li>`;
-    }
-    if (pg.current + 3 < pg.total) {
-        paginationHtml += `<li class="page-item"><a class="page-link" href="#">...</a></li>`;
-    }
-    paginationHtml += `
-                <li class="page-item"><a class="page-link" href="#">${pg.total}</a></li>
-                <li class="page-item"><a class="page-link" href="#"><i class="fa fa-angle-right"></i></a></li>
             </ul>
         </nav>`;
+    }
 
     container.innerHTML = html + paginationHtml;
 }

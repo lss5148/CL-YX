@@ -405,8 +405,7 @@
             const postId = parseInt(params.get('id'));
 
             if (!postId) {
-                document.getElementById('loadingDetail').style.display = 'none';
-                document.getElementById('article404').style.display = 'block';
+                window.location.href = '/';
                 return;
             }
 
