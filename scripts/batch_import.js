@@ -120,9 +120,10 @@ function parseArticle(html, url) {
         content = $.html(contentEl);
         // Remove the outer wrapper div tag
         content = content.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
-        // 转换懒加载图片
-        content = content.replace(/data-src=/gi, 'src=');
-        content = content.replace(/data-lazy-src=/gi, 'src=');
+        // 转换懒加载图片：先移除占位 src，再提升 data-src
+        content = content.replace(/\bsrc="[^"]*"\s+data-src="/gi, 'src="');
+        content = content.replace(/\bdata-src=/gi, 'src=');
+        content = content.replace(/\bdata-lazy-src=/gi, 'src=');
         content = content.replace(/\s+loading="lazy"/gi, '');
         content = content.replace(/\s+loading="eager"/gi, '');
         // 移除脚本和样式
@@ -198,7 +199,7 @@ function parseArticle(html, url) {
     const firstImg = $('.single-content img, article img, .entry-content img').first();
     if (firstImg.length) {
         image = firstImg.attr('src') || firstImg.attr('data-src') || '';
-        if (image && (image.includes('avatar') || image.includes('logo') || image.includes('icon') || image.includes('emoji'))) {
+        if (image && (image.includes('avatar') || image.includes('logo') || image.includes('icon') || image.includes('emoji') || image.includes('loading') || image.includes('lolimeow'))) {
             image = '';
         }
     }

@@ -433,8 +433,27 @@
                     // 文章正文
                     const contentBody = document.getElementById('articleContentRest');
                     if (post.content) {
-                        // 分离下载按钮和正文
                         contentBody.innerHTML = post.content;
+                        // 修复图片：检测并处理 loading 占位图
+                        contentBody.querySelectorAll('img').forEach(img => {
+                            const src = img.getAttribute('src') || '';
+                            // 如果 src 是 loading 占位图，检查 data-src
+                            if (src.includes('loading') || src.includes('lolimeow') || src.includes('assets/i')) {
+                                const dataSrc = img.getAttribute('data-src');
+                                if (dataSrc) {
+                                    img.src = dataSrc;
+                                } else {
+                                    // 如果图片加载失败，移除 src 以显示渐变/alt
+                                    img.addEventListener('error', function() {
+                                        this.removeAttribute('src');
+                                    });
+                                }
+                            }
+                            // 去掉 lazy class（原站懒加载标记）
+                            img.classList.remove('lazy');
+                            // 去掉 loading 属性
+                            img.removeAttribute('loading');
+                        });
                     } else {
                         contentBody.innerHTML = '<p class="text-muted">暂无详细内容</p>';
                     }

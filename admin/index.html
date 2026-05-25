@@ -642,11 +642,11 @@
             const contentEl = doc.querySelector('.single-content') || doc.querySelector('.entry-content') || doc.querySelector('article') || doc.querySelector('main');
             if (contentEl) {
                 content = contentEl.innerHTML.trim();
-                // 转换懒加载图片
-                content = content.replace(/data-src=/gi, 'src=');
-                content = content.replace(/data-lazy-src=/gi, 'src=');
-                content = content.replace(/loading="lazy"/gi, '');
-                content = content.replace(/loading="eager"/gi, '');
+                content = content.replace(/\bsrc="[^"]*"\s+data-src=/gi, 'src=');
+                content = content.replace(/\bdata-src=/gi, 'src=');
+                content = content.replace(/\bdata-lazy-src=/gi, 'src=');
+                content = content.replace(/\s+loading="lazy"/gi, '');
+                content = content.replace(/\s+loading="eager"/gi, '');
                 // 移除脚本和样式
                 content = content.replace(/<script[\s\S]*?<\/script>/gi, '');
                 content = content.replace(/<style[\s\S]*?<\/style>/gi, '');
@@ -699,7 +699,7 @@
             const firstImg = doc.querySelector('.single-content img') || doc.querySelector('article img') || doc.querySelector('.entry-content img');
             if (firstImg) {
                 image = firstImg.getAttribute('src') || firstImg.getAttribute('data-src') || '';
-                if (image && (image.includes('avatar') || image.includes('logo') || image.includes('icon') || image.includes('emoji'))) image = '';
+                if (image && (image.includes('avatar') || image.includes('logo') || image.includes('icon') || image.includes('emoji') || image.includes('loading') || image.includes('lolimeow'))) image = '';
             }
 
             // --- 下载链接（从正文中自动提取） ---
