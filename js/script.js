@@ -23,6 +23,14 @@ function renderAll() {
     renderTags();
     renderComments();
     renderRandomPosts();
+    renderFooter();
+}
+
+function renderFooter() {
+    const el = document.getElementById('footer-text');
+    if (el && siteData.site && siteData.site.footer) {
+        el.textContent = siteData.site.footer;
+    }
 }
 
 // ========== 渲染文章列表 ==========
