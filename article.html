@@ -3,68 +3,236 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文章详情 - ACG游戏姬</title>
+    <title>文章详情 - CL游戏姬</title>
+    <meta name="keywords" content="小黄油,galgame,cos福利,免费下载">
+    <meta name="description" content="小黄油,galgame,cos福利,免费下载">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="css/style.css">
     <style>
-        .article-detail { margin-top: 80px; padding: 2rem 0; }
-        .article-header { text-align: center; margin-bottom: 2rem; }
-        .article-header h1 { font-size: 1.8rem; font-weight: 800; }
-        .article-meta-bar {
-            display: flex; justify-content: center; gap: 1.5rem;
-            font-size: 0.85rem; color: var(--bs-gray-600); margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-        .article-cover {
-            width: 100%; max-height: 400px; object-fit: cover;
-            border-radius: 12px; margin-bottom: 2rem;
-        }
-        .article-cover-placeholder {
-            width: 100%; height: 300px; border-radius: 12px; margin-bottom: 2rem;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .article-cover-placeholder i { font-size: 4rem; color: rgba(255,255,255,0.6); }
-        .article-body {
-            font-size: 1rem; line-height: 1.8; color: var(--bs-body-color);
-            padding: 1.5rem; border-radius: 12px;
-            background: var(--card-bg); border: 1px solid var(--card-border);
-        }
-        .article-body p { margin-bottom: 1rem; }
-        .article-footer {
-            margin-top: 2rem; padding: 1.5rem; border-radius: 12px;
-            background: var(--card-bg); border: 1px solid var(--card-border);
-            display: flex; justify-content: space-between; align-items: center;
-            flex-wrap: wrap; gap: 1rem;
-        }
-        .download-btn {
-            display: inline-flex; align-items: center; gap: 0.5rem;
-            padding: 0.8rem 2rem; border-radius: 8px;
-            background: linear-gradient(135deg, var(--accent), #9B59B6);
-            color: #fff; font-weight: 700; font-size: 1rem;
+        .article-detail { min-height: 400px; }
+        .post-single { padding: 1.5rem; }
+        .single-title { font-size: 1.5rem; font-weight: 800; line-height: 1.4; margin-bottom: 0.5rem; }
+        .single-category { margin-bottom: 0.5rem; }
+        .single-category a {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.2rem 0.8rem; font-size: 0.8rem; border-radius: 4px;
+            background: rgba(216,124,255,0.1); color: var(--accent);
             transition: all 0.3s;
         }
-        .download-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(216,124,255,0.4); color: #fff; }
-        .back-link { color: var(--bs-body-color); font-size: 0.9rem; }
-        .back-link:hover { color: var(--accent); }
+        .single-category a:hover { background: var(--accent); color: #fff; }
+        .single-meta-box {
+            display: flex; align-items: center; gap: 1.2rem;
+            font-size: 0.82rem; color: var(--bs-gray-600); padding: 0.5rem 0;
+            flex-wrap: wrap;
+        }
+        .single-meta-box i { margin-right: 0.3rem; }
+        .single-meta-box .dot {
+            display: inline-block; width: 4px; height: 4px;
+            border-radius: 50%; background: var(--bs-gray-600);
+            vertical-align: middle;
+        }
+        .single-content {
+            font-size: 1rem; line-height: 1.8;
+            color: var(--bs-body-color); overflow-wrap: break-word;
+        }
+        .single-content p { margin-bottom: 1rem; }
+        .single-content img {
+            max-width: 100%; height: auto; border-radius: 8px; margin: 1rem 0;
+        }
+        .single-content a { color: var(--accent); }
+        .single-content a:hover { text-decoration: underline; }
+        .single-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .single-tags .tag-link {
+            display: inline-flex; align-items: center; gap: 0.2rem;
+            padding: 0.25rem 0.6rem; font-size: 0.78rem; border-radius: 4px;
+            background: rgba(216,124,255,0.08); color: var(--bs-gray-600);
+            transition: all 0.3s;
+        }
+        .single-tags .tag-link:hover { background: var(--accent); color: #fff; }
+        .post-actions { text-align: center; font-size: 0.85rem; color: var(--bs-gray-600); }
+        .post-next-previous {
+            display: flex; justify-content: space-between; gap: 1rem;
+        }
+        .post-next-previous a {
+            font-size: 0.85rem; color: var(--bs-body-color);
+            padding: 0.5rem 1rem; border-radius: 8px;
+            border: 1px solid var(--card-border); flex: 1;
+            transition: all 0.3s;
+        }
+        .post-next-previous a:hover {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(216,124,255,0.05);
+        }
+        .post-next-previous .next { text-align: right; }
+        .post-next-previous .prev-text,
+        .post-next-previous .next-text {
+            font-size: 0.72rem; color: var(--bs-gray-600); display: block;
+        }
         .loading-detail { text-align: center; padding: 5rem 0; }
         .loading-detail i { font-size: 3rem; color: var(--accent); }
+        .post-comments { padding: 1.5rem; }
+        .post-comments h4 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
+        .download-box {
+            display: flex; flex-wrap: wrap; gap: 0.8rem;
+            padding: 1rem; border-radius: 8px;
+            background: rgba(216,124,255,0.05);
+            border: 1px solid rgba(216,124,255,0.15);
+            margin-bottom: 1rem;
+        }
+        .download-box a {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.5rem 1.2rem; border-radius: 6px;
+            background: linear-gradient(135deg, var(--accent), #9B59B6);
+            color: #fff; font-size: 0.85rem; font-weight: 600;
+            transition: all 0.3s;
+        }
+        .download-box a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(216,124,255,0.4);
+            color: #fff;
+        }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
+
+    <!-- ========== NAVBAR ========== -->
     <header class="boxmoe_header">
         <nav class="navbar navbar-expand-lg w-100">
-            <div class="container">
-                <a class="navbar-brand" href="/"><span class="text-inverse">ACG游戏姬</span></a>
-                <a href="/" class="back-link"><i class="fa fa-arrow-left me-1"></i>返回首页</a>
+            <div class="container d-flex justify-content-between align-items-center">
+                <button class="navbar-toggler offcanvas-nav-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-controls="mobileNav">
+                    <span class="navbar-toggler-bar"></span>
+                    <span class="navbar-toggler-bar"></span>
+                    <span class="navbar-toggler-bar"></span>
+                </button>
+                <a class="navbar-brand mx-auto" href="/">
+                    <span class="text-inverse">CL游戏姬</span>
+                </a>
+                <div class="d-flex d-lg-none align-items-center">
+                    <form class="mobile-search-form" role="search">
+                        <input type="search" class="mobile-search-input" placeholder="搜索..." aria-label="Search">
+                        <button type="submit" class="mobile-search-btn"><i class="fa fa-search"></i></button>
+                    </form>
+                    <button class="mobile-user-btn ms-2" type="button"><i class="fa fa-user"></i></button>
+                </div>
+
+                <!-- Desktop Nav -->
+                <div class="collapse navbar-collapse" id="mainNav">
+                    <ul class="navbar-nav mx-auto align-items-lg-center">
+                        <li class="nav-item"><a href="/" class="nav-link">首页</a></li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">游戏</a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/" class="dropdown-item">AZ</a></li>
+                                <li><a href="/" class="dropdown-item">PC</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">全年龄</a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/" class="dropdown-item">全年龄AZ</a></li>
+                                <li><a href="/" class="dropdown-item">全年龄PC</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item"><a href="/" class="nav-link">免费电子书</a></li>
+                        <li class="nav-item"><a href="/" class="nav-link">解压说明</a></li>
+                        <li class="nav-item"><a href="/" class="nav-link">工具</a></li>
+                        <li class="nav-item"><a href="/" class="nav-link">免责声明</a></li>
+                        <li class="nav-item"><a href="/" class="nav-link">发布页</a></li>
+                    </ul>
+                    <div class="nav-right-section d-flex align-items-center">
+                        <div class="search-box">
+                            <form class="search-form" role="search">
+                                <input type="search" class="search-input" placeholder="搜索..." aria-label="Search">
+                                <button type="submit" class="search-btn"><i class="fa fa-search"></i></button>
+                            </form>
+                        </div>
+                        <div class="dropdown">
+                            <button class="float-btn bd-theme" type="button" data-bs-toggle="dropdown" aria-label="Toggle theme">
+                                <i class="fa fa-adjust"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end bs-theme">
+                                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false"><i class="fa fa-sun-o"></i><span class="ms-2">Light</span></button></li>
+                                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false"><i class="fa fa-moon-o"></i><span class="ms-2">Dark</span></button></li>
+                                <li><button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="auto" aria-pressed="true"><i class="fa fa-adjust"></i><span class="ms-2">Auto</span></button></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
         </nav>
     </header>
 
-    <section class="article-detail container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
+    <!-- Mobile Offcanvas Nav -->
+    <div class="offcanvas offcanvas-start offcanvas-nav" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
+        <div class="offcanvas-header">
+            <a href="/" class="text-inverse"><span>CL游戏姬</span></a>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="lighting d-lg-none">
+            <ul>
+                <li data-bs-theme-value="light" aria-pressed="false">Light</li>
+                <li data-bs-theme-value="dark" aria-pressed="false">Dark</li>
+                <li data-bs-theme-value="auto" aria-pressed="true">Auto</li>
+            </ul>
+        </div>
+        <div class="offcanvas-body pt-0">
+            <ul class="navbar-nav mx-auto align-items-lg-center">
+                <li class="nav-item"><a href="/" class="nav-link">首页</a></li>
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">游戏</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/" class="dropdown-item">AZ</a></li>
+                        <li><a href="/" class="dropdown-item">PC</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">全年龄</a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/" class="dropdown-item">全年龄AZ</a></li>
+                        <li><a href="/" class="dropdown-item">全年龄PC</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item"><a href="/" class="nav-link">免费电子书</a></li>
+                <li class="nav-item"><a href="/" class="nav-link">解压说明</a></li>
+                <li class="nav-item"><a href="/" class="nav-link">工具</a></li>
+                <li class="nav-item"><a href="/" class="nav-link">免责声明</a></li>
+                <li class="nav-item"><a href="/" class="nav-link">发布页</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ========== HERO BANNER ========== -->
+    <section class="boxmoe_header_banner">
+        <div class="boxmoe_header_banner_img">
+            <div class="banner-overlay"></div>
+            <div class="site-main">
+                <h2 class="text-gradient">小黄油,galgame,cos福利… 免费下载！</h2>
+            </div>
+        </div>
+        <div class="boxmoe_header_banner_waves">
+            <svg class="waves" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+                <defs>
+                    <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/>
+                </defs>
+                <g class="parallax">
+                    <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(216,124,255,0.7)"/>
+                    <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(216,124,255,0.5)"/>
+                    <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(216,124,255,0.3)"/>
+                    <use xlink:href="#gentle-wave" x="48" y="7" fill="var(--bs-body-bg)"/>
+                </g>
+            </svg>
+        </div>
+    </section>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <section class="boxmoe-container container">
+        <div class="breadcrumb-head">
+            <span><i class="fa fa-home"></i> <a href="/" style="color:var(--bs-body-color);">HOME</a> / 文章详情</span>
+        </div>
+        <div class="row">
+            <!-- Article Column -->
+            <div class="col-lg-8 blog-post article-detail">
                 <!-- 加载中 -->
                 <div class="loading-detail" id="loadingDetail">
                     <i class="fa fa-spinner fa-spin"></i>
@@ -73,50 +241,165 @@
 
                 <!-- 文章内容 -->
                 <div id="articleContent" style="display:none;">
-                    <div class="article-header">
-                        <h1 id="articleTitle"></h1>
-                        <div class="article-meta-bar">
-                            <span><i class="fa fa-dot-circle-o" style="color:var(--accent);"></i> <span id="articleCategory"></span></span>
-                            <span><i class="fa fa-user"></i> <span id="articleAuthor"></span></span>
-                            <span><i class="fa fa-calendar"></i> <span id="articleDate"></span></span>
-                            <span><i class="fa fa-street-view"></i> <span id="articleViews"></span> 次浏览</span>
-                            <span><i class="fa fa-comments-o"></i> <span id="articleComments"></span> 条评论</span>
+                    <div class="blog-single blog-border">
+                        <div class="post-single">
+                            <!-- 分类 -->
+                            <div class="single-category">
+                                <a href="/"><i class="fa fa-dot-circle-o"></i><span id="articleCategory"></span></a>
+                            </div>
+
+                            <!-- 标题 -->
+                            <h1 class="single-title" id="articleTitle"></h1>
+
+                            <hr class="horizontal dark">
+
+                            <!-- 元信息 -->
+                            <div class="single-meta-box">
+                                <span class="single-author-name"><i class="fa fa-user"></i><span id="articleAuthor"></span></span>
+                                <span class="dot"></span>
+                                <span class="data"><i class="fa fa-calendar"></i><span id="articleDate"></span></span>
+                                <span class="dot"></span>
+                                <span><i class="fa fa-street-view"></i><span id="articleViews"></span> 次浏览</span>
+                                <span class="dot"></span>
+                                <span><i class="fa fa-comments-o"></i><span id="articleComments"></span> 条评论</span>
+                            </div>
+
+                            <hr class="horizontal dark">
+
+                            <!-- 正文 -->
+                            <div class="single-content" id="articleContentBody">
+                                <p class="text-muted" id="articleDescription" style="font-size:0.9rem;color:var(--bs-gray-600);"></p>
+                                <hr>
+                                <!-- 下载链接区 -->
+                                <div class="download-box" id="downloadBox">
+                                    <a id="downloadLink" href="#" target="_blank">
+                                        <i class="fa fa-cloud-download"></i>前往下载页面
+                                    </a>
+                                </div>
+                                <!-- 剩余正文 -->
+                                <div id="articleContentRest"></div>
+                            </div>
+
+                            <!-- 标签 -->
+                            <hr class="horizontal dark">
+                            <div class="single-tags" id="articleTags"></div>
+
+                            <!-- 动作按钮 -->
+                            <hr class="horizontal dark">
+                            <div class="post-actions">
+                                <span><i class="fa fa-heart-o" style="color:var(--accent);"></i> 喜欢这篇文章？分享给更多人</span>
+                            </div>
+                        </div>
+
+                        <!-- 上一篇/下一篇 -->
+                        <hr class="horizontal dark" style="margin:0;">
+                        <div class="post-next-previous" id="prevNextNav">
+                            <a href="#" class="prev" id="prevLink">
+                                <span class="prev-text"><i class="fa fa-angle-left"></i> 上一篇</span>
+                                <span id="prevTitle"></span>
+                            </a>
+                            <a href="#" class="next" id="nextLink">
+                                <span class="next-text">下一篇 <i class="fa fa-angle-right"></i></span>
+                                <span id="nextTitle"></span>
+                            </a>
                         </div>
                     </div>
 
-                    <div class="article-cover-placeholder" id="articleCover">
-                        <i class="fa fa-gamepad" id="coverIcon"></i>
-                    </div>
-
-                    <div class="article-body">
-                        <p class="text-muted" id="articleDescription"></p>
-                        <hr>
-                        <div id="articleContentBody"></div>
-                        <hr>
-                        <h5>📥 下载说明</h5>
-                        <p>请点击下方下载按钮进入下载页面。解压密码见网站底部。</p>
-                        <p class="text-muted small">文件较大，建议使用下载工具以获取更快速度。</p>
-                    </div>
-
-                    <div class="article-footer">
-                        <span><i class="fa fa-info-circle" style="color:var(--accent);"></i> 解压密码: acgyxj.xyz / acgyxj.cc / acgyxj.top</span>
-                        <a class="download-btn" id="downloadLink" href="#" target="_blank">
-                            <i class="fa fa-cloud-download"></i>前往下载页面
-                        </a>
+                    <!-- 评论区 -->
+                    <div class="blog-single blog-border post-comments mt-3">
+                        <h4><i class="fa fa-comments-o" style="color:var(--accent);"></i> 评论（<span id="commentCount">0</span>）</h4>
+                        <p class="text-muted small">评论功能暂未开放，敬请期待。</p>
                     </div>
                 </div>
 
                 <!-- 404 -->
-                <div id="article404" style="display:none;" class="text-center py-5">
-                    <i class="fa fa-frown-o" style="font-size:3rem;color:var(--bs-gray-600);"></i>
-                    <h4 class="mt-3">文章不存在</h4>
-                    <a href="/" class="btn btn-accent mt-3">返回首页</a>
+                <div id="article404" style="display:none;">
+                    <div class="blog-single blog-border text-center py-5">
+                        <i class="fa fa-frown-o" style="font-size:3rem;color:var(--bs-gray-600);"></i>
+                        <h4 class="mt-3">文章不存在</h4>
+                        <p class="text-muted">可能已被删除或链接有误</p>
+                        <a href="/" class="btn btn-accent mt-2">返回首页</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== SIDEBAR ========== -->
+            <div class="col-lg-4 blog-sidebar">
+                <div class="position-sticky top">
+                    <div class="offcanvas-lg offcanvas-end" id="blog-sidebar" tabindex="-1">
+                        <div class="offcanvas-header">
+                            <h5 class="offcanvas-title h4"><span class="text-inverse">CL游戏姬</span></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#blog-sidebar"></button>
+                        </div>
+                        <div class="offcanvas-body flex-column">
+
+                            <!-- Widget: Search -->
+                            <div class="widget blog-border widget-search">
+                                <h4 class="widget-title">搜索</h4>
+                                <div class="widget-content">
+                                    <form role="search" class="search-form">
+                                        <div class="search-wrap">
+                                            <input type="search" class="form-control" placeholder="输入关键词搜索..." aria-label="Search">
+                                            <button type="submit" class="btn btn-search"><i class="fa fa-search"></i></button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Widget: Tag Cloud -->
+                            <div class="widget blog-border widget-tag">
+                                <h4 class="widget-title">标签云</h4>
+                                <div class="widget-tag-cloud" id="tags-container"></div>
+                            </div>
+
+                            <!-- Widget: Recent Comments -->
+                            <div class="widget blog-border widget-comments">
+                                <h4 class="widget-title">最新评论</h4>
+                                <ul class="widget-latest-comment" id="comments-container"></ul>
+                            </div>
+
+                            <!-- Widget: Random Posts -->
+                            <div class="widget blog-border widget-postlist">
+                                <h4 class="widget-title">随机推荐</h4>
+                                <div class="widget-content" id="random-posts-container"></div>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
+    <!-- ========== FOOTER ========== -->
+    <footer class="mt-7">
+        <hr class="horizontal dark">
+        <div class="container pb-4">
+            <div class="row">
+                <div class="col-md-8 col-lg-4 mx-auto">
+                    <div class="small mb-3 mb-lg-0 text-center">
+                        <ul class="nav flex-row align-items-center mt-sm-0 justify-content-center nav-footer">
+                            解压密码: acgyxj.xyz / acgyxj.cc / acgyxj.top
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating Action Menu -->
+    <div class="floating-action-menu d-lg-none">
+        <button class="float-btn" title="打开侧栏" data-bs-toggle="offcanvas" data-bs-target="#blog-sidebar" aria-controls="blog-sidebar">
+            <i class="fa fa-outdent"></i>
+        </button>
+    </div>
+
+    <div class="body-background"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/script.js"></script>
     <script>
+        // ========== 文章详情加载 ==========
         document.addEventListener('DOMContentLoaded', function () {
             const params = new URLSearchParams(window.location.search);
             const postId = parseInt(params.get('id'));
@@ -130,35 +413,83 @@
             fetch('/data/posts.json')
                 .then(r => r.json())
                 .then(data => {
-                    const post = data.posts.find(p => p.id === postId);
+                    const posts = data.posts;
+                    const post = posts.find(p => p.id === postId);
                     if (!post) {
                         document.getElementById('loadingDetail').style.display = 'none';
                         document.getElementById('article404').style.display = 'block';
                         return;
                     }
 
-                    document.title = post.title + ' - ACG游戏姬';
+                    document.title = post.title + ' - CL游戏姬';
                     document.getElementById('articleTitle').textContent = post.title;
                     document.getElementById('articleCategory').textContent = post.category;
                     document.getElementById('articleAuthor').textContent = post.author;
                     document.getElementById('articleDate').textContent = post.date;
                     document.getElementById('articleViews').textContent = post.views;
-                    document.getElementById('articleComments').textContent = post.comments;
-                    document.getElementById('articleDescription').textContent = post.description;
-                    document.getElementById('downloadLink').href = post.download || post.link;
+                    document.getElementById('articleComments').textContent = post.comments || '0';
+                    document.getElementById('commentCount').textContent = post.comments || '0';
+                    document.getElementById('downloadLink').href = post.download || post.link || '#';
 
-                    // 文章正文（支持 HTML）
-                    const contentBody = document.getElementById('articleContentBody');
+                    // 文章正文
+                    const contentBody = document.getElementById('articleContentRest');
                     if (post.content) {
+                        // 分离下载按钮和正文
                         contentBody.innerHTML = post.content;
                     } else {
                         contentBody.innerHTML = '<p class="text-muted">暂无详细内容</p>';
                     }
 
-                    // 封面图
-                    const cover = document.getElementById('articleCover');
-                    cover.style.background = post.gradient || 'linear-gradient(135deg,#D87CFF,#9B59B6)';
-                    document.getElementById('coverIcon').className = 'fa ' + (post.icon || 'fa-gamepad');
+                    // 描述
+                    const descEl = document.getElementById('articleDescription');
+                    if (post.description) {
+                        descEl.textContent = post.description;
+                    } else {
+                        descEl.style.display = 'none';
+                    }
+
+                    // 标签
+                    const tagsContainer = document.getElementById('articleTags');
+                    if (post.tags && post.tags.length > 0) {
+                        tagsContainer.innerHTML = post.tags.map(t =>
+                            '<span class="tag-link"><i class="tagfa fa fa-dot-circle-o"></i>' + t + '</span>'
+                        ).join('');
+                    } else {
+                        // Try to extract from category or title
+                        const tagWords = (post.title || '').match(/\[([^\]]+)\]/g);
+                        if (tagWords) {
+                            const tags = tagWords.join(',').replace(/[\[\]]/g, '').split(/[\/,、]/);
+                            tagsContainer.innerHTML = tags.map(t =>
+                                '<span class="tag-link"><i class="tagfa fa fa-dot-circle-o"></i>' + t.trim() + '</span>'
+                            ).join('');
+                        } else {
+                            tagsContainer.innerHTML = '<span class="tag-link"><i class="tagfa fa fa-dot-circle-o"></i>' + post.category + '</span>';
+                        }
+                    }
+
+                    // 上一篇/下一篇
+                    const currentIndex = posts.findIndex(p => p.id === postId);
+                    const prevPost = currentIndex < posts.length - 1 ? posts[currentIndex + 1] : null;
+                    const nextPost = currentIndex > 0 ? posts[currentIndex - 1] : null;
+
+                    const prevLink = document.getElementById('prevLink');
+                    const nextLink = document.getElementById('nextLink');
+                    const prevTitle = document.getElementById('prevTitle');
+                    const nextTitle = document.getElementById('nextTitle');
+
+                    if (prevPost) {
+                        prevLink.href = prevPost.link || '/article.html?id=' + prevPost.id;
+                        prevTitle.textContent = prevPost.title.substring(0, 40) + (prevPost.title.length > 40 ? '…' : '');
+                    } else {
+                        prevLink.style.visibility = 'hidden';
+                    }
+
+                    if (nextPost) {
+                        nextLink.href = nextPost.link || '/article.html?id=' + nextPost.id;
+                        nextTitle.textContent = nextPost.title.substring(0, 40) + (nextPost.title.length > 40 ? '…' : '');
+                    } else {
+                        nextLink.style.visibility = 'hidden';
+                    }
 
                     document.getElementById('loadingDetail').style.display = 'none';
                     document.getElementById('articleContent').style.display = 'block';
