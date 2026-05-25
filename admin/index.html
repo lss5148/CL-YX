@@ -126,6 +126,7 @@
 
             <!-- 保存按钮 -->
             <div class="text-center my-4">
+                <div id="saveError" class="alert alert-danger text-start small py-2 mb-3" style="display:none;"></div>
                 <button class="btn btn-accent btn-lg px-5" onclick="saveAll()">
                     <i class="fa fa-cloud-upload me-2"></i>保存所有更改到 GitHub
                 </button>
@@ -577,6 +578,8 @@
             const encoded = btoa(binaryStr);
 
             const btn = document.querySelector('.btn-lg');
+            const errorBox = document.getElementById('saveError');
+            if (errorBox) errorBox.style.display = 'none';
             btn.disabled = true;
             btn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>保存中...';
 
@@ -596,9 +599,32 @@
                 // 更新 SHA
                 const updated = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
                 fileSha = updated.sha;
+                if (errorBox) errorBox.style.display = 'none';
                 toast('✅ 保存成功！Cloudflare Pages 正在自动部署，约 1-2 分钟后生效', 'success');
+                return true;
             } catch (e) {
-                toast('❌ 保存失败: ' + e.message, 'danger');
+                const msg = e.message || '未知错误';
+                let detail = '';
+                if (msg.includes('409') || msg.includes('Conflict')) {
+                    detail = '文件冲突，可能是其他人刚修改了文件，请稍后重试。';
+                } else if (msg.includes('403') || msg.includes('rate limit')) {
+                    detail = 'GitHub API 频率限制，请等待几分钟后重试。';
+                } else if (msg.includes('401') || msg.includes('Bad credentials')) {
+                    detail = 'Token 已失效，请在设置中重新配置 GitHub Token。';
+                } else if (msg.includes('422') || msg.includes('too large')) {
+                    detail = '数据过大，请减少导入数量后分批保存。';
+                } else {
+                    detail = msg;
+                }
+                // 持久显示错误（不是一闪而过的 toast）
+                if (errorBox) {
+                    errorBox.innerHTML = '<i class="fa fa-exclamation-triangle me-1"></i>'
+                        + '<strong>保存失败</strong>：' + detail
+                        + ' <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-2" onclick="saveAll()"><i class="fa fa-refresh"></i> 重试</button>';
+                    errorBox.style.display = 'block';
+                }
+                toast('❌ 保存失败: ' + detail.substring(0, 80), 'danger');
+                return false;
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa fa-cloud-upload me-2"></i>保存所有更改到 GitHub';
@@ -709,13 +735,23 @@
                 updateRandomPosts();
                 bootstrap.Modal.getInstance(document.getElementById('importModal'))?.hide();
 
-                // ---- 第四步：自动保存到 GitHub ----
+                // ---- 第四步：自动保存到 GitHub（带重试） ----
                 progressText.textContent = '正在自动保存到 GitHub ...';
                 status.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>保存中...';
-                try {
-                    await saveAll();
-                } catch (e) {
-                    toast('GitHub 自动保存失败: ' + e.message + '，请手动点击"保存所有更改"', 'warning');
+                let saveOk = false;
+                for (let retry = 0; retry < 3; retry++) {
+                    if (retry > 0) {
+                        status.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>重试保存第 ' + (retry+1) + '/3 次...';
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+                    saveOk = await saveAll();
+                    if (saveOk) break;
+                }
+                if (!saveOk) {
+                    status.innerHTML = '<span class="text-warning"><i class="fa fa-exclamation-triangle me-1"></i>文章已保存到本地，但 GitHub 自动保存失败，请点击下方按钮重试</span>';
+                    progressText.textContent = '成功导入 ' + totalNew + ' 篇，但 GitHub 保存失败，请手动重试';
+                    toast('文章已添加但 GitHub 保存失败，请点击"保存所有更改"重试', 'warning');
+                    return;
                 }
 
                 // ---- 第五步：显示最终汇总 ----
