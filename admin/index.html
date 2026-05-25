@@ -151,9 +151,18 @@
                         <textarea class="form-control" id="importUrl" rows="3" placeholder="https://acgyx.us/XXXXX.html&#10;https://acgyx.us/YYYYY.html"></textarea>
                         <div class="form-text">粘贴 acgyx.us 的文章链接，每行一个。批量导入会自动保存到文章列表。</div>
                     </div>
-                    <div class="alert alert-info small py-2 mb-2" id="proxyStatus" style="font-size:0.8rem;">
-                        <i class="fa fa-cloud me-1"></i>代理状态: <span id="proxyStatusText">待检测</span>
-                        <button class="btn btn-sm btn-outline-accent py-0 px-2 ms-2" onclick="testProxies()">检测</button>
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold small mb-1">并发数</label>
+                            <input type="number" class="form-control form-control-sm" id="importConcurrency" value="5" min="1" max="20" style="width:80px;">
+                            <div class="form-text" style="font-size:0.7rem;">同时抓取数量，越大越快</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="alert alert-info small py-2 mb-0" id="proxyStatus" style="font-size:0.8rem;">
+                                <i class="fa fa-cloud me-1"></i>代理状态: <span id="proxyStatusText">待检测</span>
+                                <button class="btn btn-sm btn-outline-accent py-0 px-2 ms-2" onclick="testProxies()">检测</button>
+                            </div>
+                        </div>
                     </div>
                     <div id="importStatus" class="small mb-2"></div>
                     <div id="importProgress" class="d-none">
@@ -690,25 +699,44 @@
             btn.disabled = true;
             progress.classList.remove('d-none');
 
-            // ---- 第二步：逐篇提取 ----
+            // ---- 第二步：并行批量提取 ----
             const successful = [];
             importFailedList = [];  // 清空上次失败记录
 
-            for (let i = 0; i < newUrls.length; i++) {
-                const url = newUrls[i];
-                const pct = Math.round((i / newUrls.length) * 100);
-                progressBar.style.width = pct + '%';
-                progressText.textContent = '处理中 ' + (i+1) + '/' + newUrls.length + ': ' + url.substring(0, 45) + '...';
-                status.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>正在获取第 ' + (i+1) + '/' + newUrls.length + ' 篇...';
+            const CONCURRENCY = parseInt(document.getElementById('importConcurrency').value) || 5;
+            let completed = 0;
 
-                try {
-                    const article = await fetchAndParseArticle(url);
-                    successful.push(article);
-                    status.innerHTML = '<span class="text-success"><i class="fa fa-check me-1"></i>✓ ' + article.title.substring(0, 40) + '…</span>';
-                } catch (e) {
-                    importFailedList.push({ url: url, error: e.message });
-                    status.innerHTML = '<span class="text-danger"><i class="fa fa-times me-1"></i>✗ 导入失败: ' + e.message.substring(0, 60) + '</span>';
-                }
+            for (let batchStart = 0; batchStart < newUrls.length; batchStart += CONCURRENCY) {
+                const batch = newUrls.slice(batchStart, batchStart + CONCURRENCY);
+                const batchEnd = Math.min(batchStart + CONCURRENCY, newUrls.length);
+
+                status.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>正在批量获取第 ' + (batchStart + 1) + '-' + batchEnd + '/' + newUrls.length + ' 篇...';
+                progressText.textContent = '批量处理中: 第 ' + (batchStart + 1) + '-' + batchEnd + ' 篇 (' + CONCURRENCY + ' 篇并发)...';
+
+                const results = await Promise.allSettled(
+                    batch.map(url => fetchAndParseArticle(url))
+                );
+
+                results.forEach((result, idx) => {
+                    const url = batch[idx];
+                    completed++;
+                    const pct = Math.round((completed / newUrls.length) * 100);
+                    progressBar.style.width = pct + '%';
+
+                    if (result.status === 'fulfilled') {
+                        const article = result.value;
+                        successful.push(article);
+                        status.innerHTML = '<span class="text-success"><i class="fa fa-check me-1"></i>✓ ' + article.title.substring(0, 35) + '…</span>'
+                            + ' <span class="text-muted">(' + completed + '/' + newUrls.length + ')</span>';
+                        progressText.textContent = '成功: ' + article.title.substring(0, 40) + '… (' + completed + '/' + newUrls.length + ')';
+                    } else {
+                        const errMsg = result.reason?.message || '未知错误';
+                        importFailedList.push({ url: url, error: errMsg });
+                        status.innerHTML = '<span class="text-danger"><i class="fa fa-times me-1"></i>✗ 导入失败: ' + errMsg.substring(0, 50) + '</span>'
+                            + ' <span class="text-muted">(' + completed + '/' + newUrls.length + ')</span>';
+                        progressText.textContent = '失败: ' + url.substring(0, 40) + '… (' + errMsg.substring(0, 30) + ')';
+                    }
+                });
             }
 
             progressBar.style.width = '100%';
