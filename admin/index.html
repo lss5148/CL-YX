@@ -828,12 +828,20 @@
             const isMd = document.getElementById('mdMode').checked;
             const btn = document.getElementById('previewBtn');
             btn.style.display = isMd ? 'inline-block' : 'none';
+            const textarea = document.getElementById('formContent');
+            const val = textarea.value.trim();
             if (!isMd) {
                 document.getElementById('mdPreview').style.display = 'none';
+                // 关闭 Markdown 时，如果内容看起来是 Markdown（无 HTML 标签），转回 HTML
+                if (val && !/<[a-z][\s\S]*>/i.test(val) && typeof marked !== 'undefined') {
+                    try {
+                        textarea.value = marked.parse(val);
+                    } catch(e) {
+                        console.warn('Markdown→HTML 转换失败:', e);
+                    }
+                }
             } else {
                 // 开启 Markdown 时，如果内容是 HTML 则自动转为 Markdown
-                const textarea = document.getElementById('formContent');
-                const val = textarea.value.trim();
                 if (val && /<[a-z][\s\S]*>/i.test(val)) {
                     try {
                         const turndownService = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
