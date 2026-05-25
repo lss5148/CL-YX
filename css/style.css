@@ -607,6 +607,12 @@ p { color: var(--bs-gray-900); }
     color: #fff;
 }
 
+.widget-tag-cloud .tag-cloud-active,
+.tag-cloud-active {
+    background: var(--accent) !important;
+    color: #fff !important;
+}
+
 /* Widget: Comments */
 .widget-latest-comment { padding: 0; }
 .comment-listitem {

@@ -210,6 +210,12 @@
                             </select>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label fw-semibold">标签 <span class="text-muted small fw-normal">(空格分隔)</span></label>
+                            <input class="form-control" id="formTags" placeholder="SLG 汉化 动态 安卓">
+                        </div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">描述 <span class="text-muted small fw-normal">(首页卡片显示的摘要)</span></label>
                         <textarea class="form-control" id="formDesc" rows="2" placeholder="游戏描述..."></textarea>
@@ -444,6 +450,7 @@
             document.getElementById('editId').value = '';
             document.getElementById('formTitle').value = '';
             document.getElementById('formDesc').value = '';
+            document.getElementById('formTags').value = '';
             document.getElementById('formCategory').value = 'SLG';
             document.getElementById('formIcon').value = 'fa-gamepad';
             document.getElementById('formColor1').value = '#D87CFF';
@@ -468,6 +475,7 @@
             document.getElementById('editId').value = index;
             document.getElementById('formTitle').value = p.title;
             document.getElementById('formDesc').value = p.description || '';
+            document.getElementById('formTags').value = (p.tags || []).join(' ');
             document.getElementById('formCategory').value = p.category || 'SLG';
             document.getElementById('formIcon').value = p.icon || 'fa-gamepad';
             document.getElementById('formViews').value = p.views || '0';
@@ -524,6 +532,7 @@
                 id: newId,
                 title: title,
                 description: document.getElementById('formDesc').value.trim(),
+                tags: document.getElementById('formTags').value.trim().split(/\s+/).filter(Boolean),
                 content: content,
                 contentMd: mdMode ? document.getElementById('formContent').value.trim() : undefined,
                 image: document.getElementById('formImage').value.trim() || '',

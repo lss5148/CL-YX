@@ -41,19 +41,48 @@ function renderPosts() {
     const container = document.getElementById('posts-container');
     if (!container) return;
 
-    const totalPages = Math.ceil(siteData.posts.length / PER_PAGE);
-    // URL 参数读取页码
     const urlParams = new URLSearchParams(window.location.search);
+    const activeTag = urlParams.get('tag') || '';
     currentPage = parseInt(urlParams.get('page')) || 1;
+
+    // 按标签筛选
+    let filteredPosts = siteData.posts;
+    if (activeTag) {
+        const tagLower = activeTag.toLowerCase();
+        filteredPosts = siteData.posts.filter(post => {
+            if (post.tags && post.tags.some(t => t.toLowerCase() === tagLower)) return true;
+            if (post.category && post.category.toLowerCase() === tagLower) return true;
+            if (post.title && post.title.toLowerCase().includes(tagLower)) return true;
+            if (post.description && post.description.toLowerCase().includes(tagLower)) return true;
+            return false;
+        });
+    }
+
+    const totalPages = Math.ceil(filteredPosts.length / PER_PAGE);
     if (currentPage < 1) currentPage = 1;
-    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage > totalPages) currentPage = totalPages || 1;
 
     const start = (currentPage - 1) * PER_PAGE;
     const end = start + PER_PAGE;
-    const pagePosts = siteData.posts.slice(start, end);
+    const pagePosts = filteredPosts.slice(start, end);
+
+    // 筛选提示条
+    let filterBar = '';
+    if (activeTag) {
+        filterBar = `
+        <div class="blog-border" style="padding:0.6rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+            <span style="font-size:0.85rem;">
+                <i class="fa fa-tag" style="color:var(--accent);"></i>
+                <strong>${activeTag}</strong>
+                <span class="text-muted"> — 找到 ${filteredPosts.length} 篇</span>
+            </span>
+            <a href="${window.location.pathname}" class="btn btn-sm btn-outline-accent py-0 px-2 ms-auto">
+                <i class="fa fa-times"></i> 清除筛选
+            </a>
+        </div>`;
+    }
 
     const html = pagePosts.map(post => {
-        // 取封面图：优先 post.image，其次从正文提取第一张图
         let coverImg = post.image || '';
         if (!coverImg && post.content) {
             const m = post.content.match(/src="([^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"/i);
@@ -77,7 +106,7 @@ function renderPosts() {
             <div class="post-list-content">
                 <div class="category">
                     <div class="tags">
-                        <a href="#" class="tag-link"><i class="tagfa fa fa-dot-circle-o"></i>${post.category}</a>
+                        <a href="?tag=${encodeURIComponent(post.category)}" class="tag-link"><i class="tagfa fa fa-dot-circle-o"></i>${post.category}</a>
                     </div>
                 </div>
                 <div class="mt-2 mb-2">
@@ -108,14 +137,14 @@ function renderPosts() {
     // 分页
     let paginationHtml = '';
     if (totalPages > 1) {
+        const tagParam = activeTag ? '&tag=' + encodeURIComponent(activeTag) : '';
         paginationHtml = `
         <nav class="pagination-nav" aria-label="Page navigation">
             <ul class="pagination justify-content-center">
                 <li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
-                    <a class="page-link" href="?page=${currentPage - 1}"><i class="fa fa-angle-left"></i></a>
+                    <a class="page-link" href="?page=${currentPage - 1}${tagParam}"><i class="fa fa-angle-left"></i></a>
                 </li>`;
 
-        // 页码
         const maxVisible = 5;
         let pageStart = Math.max(1, currentPage - Math.floor(maxVisible / 2));
         let pageEnd = Math.min(totalPages, pageStart + maxVisible - 1);
@@ -124,35 +153,38 @@ function renderPosts() {
         }
 
         if (pageStart > 1) {
-            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=1">1</a></li>`;
+            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=1${tagParam}">1</a></li>`;
             if (pageStart > 2) paginationHtml += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
         }
         for (let p = pageStart; p <= pageEnd; p++) {
             paginationHtml += `<li class="page-item ${p === currentPage ? 'active' : ''}">
-                <a class="page-link" href="?page=${p}">${p}</a></li>`;
+                <a class="page-link" href="?page=${p}${tagParam}">${p}</a></li>`;
         }
         if (pageEnd < totalPages) {
             if (pageEnd < totalPages - 1) paginationHtml += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
-            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=${totalPages}">${totalPages}</a></li>`;
+            paginationHtml += `<li class="page-item"><a class="page-link" href="?page=${totalPages}${tagParam}">${totalPages}</a></li>`;
         }
 
         paginationHtml += `
                 <li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
-                    <a class="page-link" href="?page=${currentPage + 1}"><i class="fa fa-angle-right"></i></a>
+                    <a class="page-link" href="?page=${currentPage + 1}${tagParam}"><i class="fa fa-angle-right"></i></a>
                 </li>
             </ul>
         </nav>`;
     }
 
-    container.innerHTML = html + paginationHtml;
+    container.innerHTML = filterBar + html + paginationHtml;
 }
 
 // ========== 渲染标签云 ==========
 function renderTags() {
     const container = document.getElementById('tags-container');
-    container.innerHTML = siteData.tags.map(tag =>
-        `<a href="#" class="tag-cloud"><i class="tagfa fa fa-dot-circle-o"></i>${tag}</a>`
-    ).join('');
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTag = urlParams.get('tag') || '';
+    container.innerHTML = siteData.tags.map(tag => {
+        const isActive = activeTag && tag.toLowerCase() === activeTag.toLowerCase();
+        return `<a href="?tag=${encodeURIComponent(tag)}" class="tag-cloud${isActive ? ' tag-cloud-active' : ''}"><i class="tagfa fa fa-dot-circle-o"></i>${tag}</a>`;
+    }).join('');
 }
 
 // ========== 渲染最新评论 ==========
