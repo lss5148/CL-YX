@@ -724,6 +724,7 @@
                         id: nextId++,
                         title: article.title,
                         description: article.description,
+                        tags: autoGenerateTags(article),
                         content: article.content,
                         image: article.image,
                         link: '/article.html?id=' + (nextId - 1),
@@ -961,6 +962,55 @@
             return { title, content, description, category, author, date, image, download, views, comments, source: url };
         }
 
+        // ========== 自动生成标签 ==========
+        function autoGenerateTags(article) {
+            const found = new Set();
+            const haystack = (article.title + ' ' + (article.description || '') + ' ' + (article.category || '')).toLowerCase();
+
+            // 1. 从全局标签中匹配
+            const globalTags = postsData.tags || [];
+            globalTags.forEach(tag => {
+                if (haystack.includes(tag.toLowerCase())) {
+                    found.add(tag);
+                }
+            });
+
+            // 2. 分类作为标签
+            if (article.category) {
+                const catMap = {
+                    'SLG': 'SLG', 'RPG': 'RPG', 'ADV': 'ADV', 'ACT': 'ACT',
+                    'AZ': '安卓', 'NTR': 'NTR', 'PC': 'PC'
+                };
+                if (catMap[article.category]) found.add(catMap[article.category]);
+                found.add(article.category);
+            }
+
+            // 3. 标题关键词匹配
+            if (/汉化|AI/i.test(article.title)) found.add('汉化');
+            if (/更新/i.test(article.title)) found.add('更新');
+            if (/新作/i.test(article.title)) found.add('新作');
+            if (/步兵/i.test(article.title)) found.add('步兵');
+            if (/官中/i.test(article.title)) found.add('中文');
+            if (/安卓|AZ/i.test(article.title)) found.add('安卓');
+            if (/动态/i.test(article.title)) found.add('动态');
+            if (/3D/.test(article.title)) found.add('3D');
+            if (/像素|pixel/i.test(article.title)) found.add('像素');
+            if (/后宫/i.test(article.title)) found.add('后宫');
+            if (/沙盒|sandbox/i.test(article.title)) found.add('沙盒');
+            if (/作弊|cheat/i.test(article.title)) found.add('作弊');
+            if (/互动|触摸|touch/i.test(article.title)) found.add('互动');
+            if (/探索/i.test(article.title)) found.add('探索');
+            if (/巨乳/i.test(article.title) || /巨乳/i.test(article.description)) found.add('巨乳');
+            if (/爆乳/i.test(article.title) || /爆乳/i.test(article.description)) found.add('爆乳');
+            if (/NTR|寝取/i.test(article.title)) found.add('NTR');
+            if (/日式/i.test(article.title)) found.add('日式');
+            if (/欧美/i.test(article.title)) found.add('欧美');
+            if (/亚洲/i.test(article.title)) found.add('亚洲');
+            if (/存档/i.test(article.title)) found.add('存档');
+
+            return [...found].filter(Boolean);
+        }
+
         // ========== 重复检测 ==========
         function isDuplicateUrl(importUrl) {
             // 从导入 URL 提取数字 ID（https://acgyx.us/38730.html → 38730）
@@ -1001,6 +1051,7 @@
             document.getElementById('formDate').value = article.date;
             document.getElementById('formImage').value = article.image;
             document.getElementById('formSource').value = article.source || '';
+            document.getElementById('formTags').value = autoGenerateTags(article).join(' ');
             const gradMap = {
                 'SLG': ['#D87CFF', '#9B59B6'],
                 'RPG': ['#FF6B6B', '#C0392B'],
