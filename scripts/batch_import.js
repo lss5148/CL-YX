@@ -162,7 +162,7 @@ function parseArticle(html, url) {
     }
 
     // --- 作者 ---
-    let author = '姬姬';
+    let author = 'CL';
     const authorEl = $('.single-author-name, .author-name, [rel="author"], .post-author').first();
     if (authorEl.length) author = authorEl.text().trim();
 

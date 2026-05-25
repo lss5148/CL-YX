@@ -228,11 +228,11 @@
                         </div>
                         <div class="col-md-2 mb-3">
                             <label class="form-label fw-semibold">作者</label>
-                            <input class="form-control" id="formAuthor" value="姬姬">
+                            <input class="form-control" id="formAuthor" value="CL">
                         </div>
                         <div class="col-md-2 mb-3">
                             <label class="form-label fw-semibold">头像</label>
-                            <input class="form-control" id="formAvatar" value="姬" maxlength="1">
+                            <input class="form-control" id="formAvatar" value="恋" maxlength="1">
                         </div>
                     </div>
                     <div class="row">
@@ -427,8 +427,8 @@
             document.getElementById('formGradient').value = '';
             document.getElementById('formViews').value = '0';
             document.getElementById('formComments').value = '0';
-            document.getElementById('formAuthor').value = '姬姬';
-            document.getElementById('formAvatar').value = '姬';
+            document.getElementById('formAuthor').value = 'CL';
+            document.getElementById('formAvatar').value = '恋';
             document.getElementById('formDate').value = new Date().toLocaleDateString('zh-CN').replace(/\//g, '年').replace('/', '月') + '日';
             document.getElementById('formLink').value = '/article.html?id=';
             document.getElementById('formDownload').value = '#';
@@ -447,8 +447,8 @@
             document.getElementById('formIcon').value = p.icon || 'fa-gamepad';
             document.getElementById('formViews').value = p.views || '0';
             document.getElementById('formComments').value = p.comments || 0;
-            document.getElementById('formAuthor').value = p.author || '姬姬';
-            document.getElementById('formAvatar').value = p.authorAvatar || '姬';
+            document.getElementById('formAuthor').value = p.author || 'CL';
+            document.getElementById('formAvatar').value = p.authorAvatar || '恋';
             document.getElementById('formDate').value = p.date || '';
             document.getElementById('formLink').value = p.link || '#';
             document.getElementById('formDownload').value = p.download || '#';
@@ -488,8 +488,8 @@
                 category: document.getElementById('formCategory').value,
                 gradient: gradient,
                 icon: document.getElementById('formIcon').value,
-                author: document.getElementById('formAuthor').value.trim() || '姬姬',
-                authorAvatar: document.getElementById('formAvatar').value.trim() || '姬',
+                author: document.getElementById('formAuthor').value.trim() || 'CL',
+                authorAvatar: document.getElementById('formAvatar').value.trim() || '恋',
                 views: document.getElementById('formViews').value.trim() || '0',
                 comments: parseInt(document.getElementById('formComments').value) || 0,
                 date: document.getElementById('formDate').value.trim() || new Date().toLocaleDateString('zh-CN'),
@@ -673,7 +673,7 @@
             }
 
             // --- 作者 ---
-            let author = '姬姬';
+            let author = 'CL';
             const authorEl = doc.querySelector('.single-author-name') || doc.querySelector('.author-name') || doc.querySelector('[rel="author"]') || doc.querySelector('.post-author');
             if (authorEl) author = authorEl.textContent.trim();
 
@@ -755,7 +755,7 @@
             document.getElementById('formViews').value = article.views;
             document.getElementById('formComments').value = article.comments;
             document.getElementById('formAuthor').value = article.author;
-            document.getElementById('formAvatar').value = article.author.charAt(0) || '姬';
+            document.getElementById('formAvatar').value = article.author.charAt(0) || '恋';
             document.getElementById('formDate').value = article.date;
             document.getElementById('formImage').value = article.image;
 
