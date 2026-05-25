@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root { --accent: #D87CFF; --accent-dark: #9B59B6; }
         body { background: #f5f5f5; font-family: system-ui, -apple-system, sans-serif; }
@@ -614,6 +615,9 @@
             new bootstrap.Modal(document.getElementById('importModal')).show();
         }
 
+        // 全局存储本次导入的失败记录（用于导出）
+        let importFailedList = [];
+
         async function importArticles() {
             const text = document.getElementById('importUrl').value.trim();
             if (!text) { toast('请输入文章 URL', 'warning'); return; }
@@ -651,8 +655,9 @@
             btn.disabled = true;
             progress.classList.remove('d-none');
 
+            // ---- 第二步：逐篇提取 ----
             const successful = [];
-            let failCount = 0;
+            importFailedList = [];  // 清空上次失败记录
 
             for (let i = 0; i < newUrls.length; i++) {
                 const url = newUrls[i];
@@ -666,9 +671,8 @@
                     successful.push(article);
                     status.innerHTML = '<span class="text-success"><i class="fa fa-check me-1"></i>✓ ' + article.title.substring(0, 40) + '…</span>';
                 } catch (e) {
-                    failCount++;
+                    importFailedList.push({ url: url, error: e.message });
                     status.innerHTML = '<span class="text-danger"><i class="fa fa-times me-1"></i>✗ 导入失败: ' + e.message.substring(0, 60) + '</span>';
-                    toast('第 ' + (i+1) + ' 篇失败: ' + e.message, 'danger');
                 }
             }
 
@@ -676,11 +680,10 @@
             btn.disabled = false;
             btn.innerHTML = '<i class="fa fa-download me-1"></i>提取并填充';
 
-            // ---- 第三步：保存 ----
+            // ---- 第三步：自动保存到内存 ----
             const totalNew = successful.length;
             if (totalNew > 0) {
                 let nextId = postsData.posts.length > 0 ? Math.max(...postsData.posts.map(p => p.id)) + 1 : 1;
-                // 反转保持原始顺序
                 successful.reverse().forEach(article => {
                     const post = {
                         id: nextId++,
@@ -698,24 +701,69 @@
                         views: article.views,
                         comments: article.comments,
                         date: article.date,
-                        source: article.source || '',  // 记录来源 URL 用于后续重复检测
+                        source: article.source || '',
                     };
                     postsData.posts.unshift(post);
                 });
                 renderPosts();
                 updateRandomPosts();
-
                 bootstrap.Modal.getInstance(document.getElementById('importModal'))?.hide();
-                editPost(0);
 
-                let summary = '成功导入 ' + totalNew + ' 篇';
+                // ---- 第四步：自动保存到 GitHub ----
+                progressText.textContent = '正在自动保存到 GitHub ...';
+                status.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>保存中...';
+                try {
+                    await saveAll();
+                } catch (e) {
+                    toast('GitHub 自动保存失败: ' + e.message + '，请手动点击"保存所有更改"', 'warning');
+                }
+
+                // ---- 第五步：显示最终汇总 ----
+                let summary = '✅ 成功导入 ' + totalNew + ' 篇';
                 if (dupUrls.length > 0) summary += '，跳过 ' + dupUrls.length + ' 篇重复';
-                if (failCount > 0) summary += '，' + failCount + ' 篇失败';
-                progressText.textContent = summary + ' — 已保存到文章列表';
-                toast(summary + '，已保存！第一篇已打开供修改', 'success');
+                if (importFailedList.length > 0) summary += '，' + importFailedList.length + ' 篇失败';
+
+                let exportBtnHtml = '';
+                if (importFailedList.length > 0) {
+                    exportBtnHtml = ' <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-2" onclick="exportFailedUrls()" title="导出失败的 URL 列表为 Excel 文件"><i class="fa fa-file-excel-o"></i> 导出失败列表</button>';
+                }
+
+                status.innerHTML = '<span class="text-success"><i class="fa fa-check-circle"></i> ' + summary + '，已自动发布</span>' + exportBtnHtml;
+                progressText.textContent = summary;
+                toast(summary + '，已自动保存并发布到 GitHub', 'success');
             } else {
-                progressText.textContent = '全部失败 (' + failCount + ' 篇)';
-                toast('全部导入失败，请检查 URL 或代理是否可用', 'warning');
+                // 全部失败
+                let msg = '全部失败 (' + importFailedList.length + ' 篇)';
+                let exportBtnHtml = ' <button class="btn btn-sm btn-outline-danger py-0 px-2 ms-2" onclick="exportFailedUrls()"><i class="fa fa-file-excel-o"></i> 导出失败列表</button>';
+                status.innerHTML = '<span class="text-danger"><i class="fa fa-times-circle"></i> ' + msg + '</span>' + exportBtnHtml;
+                progressText.textContent = msg + '，请检查代理或 URL 是否正确';
+                toast(msg, 'warning');
+            }
+        }
+
+        // ========== 导出失败 URL 列表为 XLSX ==========
+        function exportFailedUrls() {
+            if (importFailedList.length === 0) { toast('没有失败记录可导出', 'info'); return; }
+            try {
+                const rows = importFailedList.map((item, i) => ({
+                    '序号': i + 1,
+                    '文章 URL': item.url,
+                    '失败原因': item.error,
+                    '导入时间': new Date().toLocaleString('zh-CN'),
+                }));
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws['!cols'] = [
+                    { wch: 6 },   // 序号
+                    { wch: 50 },  // URL
+                    { wch: 40 },  // 错误原因
+                    { wch: 20 },  // 时间
+                ];
+                XLSX.utils.book_append_sheet(wb, ws, '导入失败');
+                XLSX.writeFile(wb, 'acgyx_导入失败_' + new Date().toISOString().slice(0,10) + '.xlsx');
+                toast('已导出 ' + importFailedList.length + ' 条失败记录', 'success');
+            } catch (e) {
+                toast('导出失败: ' + e.message, 'danger');
             }
         }
 
