@@ -1319,11 +1319,11 @@
 
                     // 在 content 中搜索
                     const c = p.content || '';
-                    // 百度网盘：CODE
-                    const cm = c.match(/百度网盘[：:]\s*(\S{3,30}?)(?:\s|$|[\n\r]|链接)/);
+                    // 百度网盘：后面的全部内容
+                    const cm = c.match(/百度网盘[：:]\s*(\S{1,60}?)(?:\s|$|[\n\r]|链接)/);
                     if (cm) {
                         const raw = cm[1].trim();
-                        if (!/\.(zip|rar|7z)$/i.test(raw) && /^[A-Za-z0-9\-]+$/.test(raw) && raw.length >= 3) {
+                        if (raw.length >= 1) {
                             baiduCode = raw;
                             baiduType = 'code';
                         }

@@ -789,16 +789,17 @@
                 note: '',
             };
 
-            // 1) 百度网盘：CODE  (如 B925333, A531222, GAME-5963)
-            const codeMatch = text.match(/百度网盘[：:]\s*(\S{3,30}?)(?:\s|$|[\n\r]|链接)/);
+            // 1) 百度网盘：后面的全部内容（编号、文件名、任何文本）
+            const codeMatch = text.match(/百度网盘[：:]\s*(\S{1,60}?)(?:\s|$|[\n\r]|链接)/);
             if (codeMatch) {
                 let raw = codeMatch[1].trim();
-                // 过滤掉文件名（含扩展名）
-                if (/\.(zip|rar|7z|tar|gz)$/i.test(raw)) {
-                    result.note = '文件名（非编号）: ' + raw;
-                } else if (raw.length >= 3 && /^[A-Za-z0-9\-]+$/.test(raw)) {
+                if (raw.length >= 1) {
                     result.baiduCode = raw;
                     result.baiduType = 'code';
+                    // 如果是文件名格式，备注一下但不跳过
+                    if (/\.(zip|rar|7z|tar|gz)$/i.test(raw)) {
+                        result.note = '文件名格式';
+                    }
                 }
             }
 
