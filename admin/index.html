@@ -95,6 +95,23 @@
                 </div>
             </div>
 
+            <!-- Tab 导航 -->
+            <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="posts-tab" data-bs-toggle="tab" data-bs-target="#postsPanel" type="button" role="tab">
+                        <i class="fa fa-file-text me-1"></i>文章管理
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="mapping-tab" data-bs-toggle="tab" data-bs-target="#mappingPanel" type="button" role="tab" onclick="loadMappingData()">
+                        <i class="fa fa-link me-1"></i>下载链接管理
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab: 文章管理 -->
+            <div class="tab-content">
+            <div class="tab-pane fade show active" id="postsPanel" role="tabpanel">
             <!-- 加载中 -->
             <div id="loadingPosts" class="text-center py-5">
                 <i class="fa fa-spinner fa-spin fa-2x" style="color:var(--accent);"></i>
@@ -134,6 +151,63 @@
                     <i class="fa fa-info-circle"></i> 保存后 Cloudflare Pages 会自动部署，约 1-2 分钟生效
                 </p>
             </div>
+            </div><!-- /postsPanel -->
+
+            <!-- Tab: 下载链接管理 -->
+            <div class="tab-pane fade" id="mappingPanel" role="tabpanel">
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa fa-link me-2" style="color:var(--accent);"></i>百度网盘链接映射表</span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-accent me-1" onclick="downloadMappingJson()">
+                                <i class="fa fa-download me-1"></i>下载 mapping.json
+                            </button>
+                            <button class="btn btn-sm btn-accent" onclick="document.getElementById('uploadMappingXlsx').click()">
+                                <i class="fa fa-upload me-1"></i>上传 XLSX 填入新链接
+                            </button>
+                            <input type="file" id="uploadMappingXlsx" accept=".xlsx,.xls" style="display:none" onchange="uploadMappingXlsx(event)">
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info small py-2 mb-3">
+                            <i class="fa fa-info-circle me-1"></i>
+                            在 Excel 的"我的新百度链接"列填入你的分享链接、"我的提取码"列填入提取码，
+                            然后上传 XLSX 批量更新。或者直接在下方填写后点"保存到文章"。
+                        </div>
+                        <!-- 映射表 -->
+                        <div class="table-responsive" style="max-height:500px;overflow-y:auto;">
+                            <table class="table table-hover table-sm mb-0" id="mappingTable">
+                                <thead class="table-light" style="position:sticky;top:0;">
+                                    <tr>
+                                        <th style="width:30px;">#</th>
+                                        <th style="min-width:150px;">游戏标题</th>
+                                        <th style="width:100px;">百度编号</th>
+                                        <th style="width:50px;">类型</th>
+                                        <th style="min-width:200px;">我的新百度链接</th>
+                                        <th style="width:90px;">提取码</th>
+                                        <th style="width:80px;">备注</th>
+                                        <th style="width:80px;">状态</th>
+                                        <th style="width:70px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mappingBody">
+                                    <tr><td colspan="9" class="text-center text-muted py-4">加载中...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-3 d-flex gap-2">
+                            <button class="btn btn-accent" onclick="batchReplaceLinks()">
+                                <i class="fa fa-exchange me-1"></i>将新链接批量替换到文章
+                            </button>
+                            <button class="btn btn-outline-accent" onclick="saveMappingToGithub()">
+                                <i class="fa fa-cloud-upload me-1"></i>保存映射表到 GitHub
+                            </button>
+                            <span class="text-muted small align-self-center ms-2" id="mappingStatus"></span>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /mappingPanel -->
+            </div><!-- /tab-content -->
         </div>
     </div>
 
@@ -1203,6 +1277,356 @@
 
         // ========== 初始化 ==========
         showSection();
+
+        // ========== 下载链接映射管理 ==========
+        let mappingData = { version: 1, articles: [] };
+
+        async function loadMappingData() {
+            const tbody = document.getElementById('mappingBody');
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin me-1"></i>加载映射数据...</td></tr>';
+
+            // 尝试从 GitHub 加载 mapping.json
+            if (githubToken && repoName) {
+                try {
+                    const url = `https://api.github.com/repos/${repoName}/contents/data/download-mapping.json`;
+                    const res = await fetch(url, {
+                        headers: { 'Authorization': 'token ' + githubToken, 'Accept': 'application/vnd.github.v3.raw' },
+                    });
+                    if (res.ok) {
+                        const text = await res.text();
+                        const parsed = JSON.parse(text);
+                        if (parsed && parsed.articles) {
+                            mappingData = parsed;
+                            renderMappingTable();
+                            document.getElementById('mappingStatus').textContent = '✅ 已从 GitHub 加载 ' + mappingData.articles.length + ' 条';
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.log('加载 mapping.json 失败:', e.message);
+                }
+            }
+
+            // Fallback: 生成初始映射表（从 postsData 扫描）
+            if (typeof postsData !== 'undefined' && postsData && postsData.posts) {
+                mappingData.articles = postsData.posts.map(p => {
+                    let baiduCode = '';
+                    let baiduType = 'none';
+                    let baiduPhrase = '';
+                    let baiduLink = '';
+                    let xunleiLink = '';
+                    let yun139Link = '';
+
+                    // 在 content 中搜索
+                    const c = p.content || '';
+                    // 百度网盘：CODE
+                    const cm = c.match(/百度网盘[：:]\s*(\S{3,30}?)(?:\s|$|[\n\r]|链接)/);
+                    if (cm) {
+                        const raw = cm[1].trim();
+                        if (!/\.(zip|rar|7z)$/i.test(raw) && /^[A-Za-z0-9\-]+$/.test(raw) && raw.length >= 3) {
+                            baiduCode = raw;
+                            baiduType = 'code';
+                        }
+                    }
+                    // 百度口令
+                    const pm = c.match(/百度口令[：:]\s*([^\n\r<]{2,30}?)(?:\s|$|[\n\r<])/);
+                    if (pm) {
+                        const phrase = pm[1].trim();
+                        if (phrase && phrase.length > 1 && !/分享|链接/.test(phrase)) {
+                            baiduPhrase = phrase;
+                            if (!baiduCode) baiduType = 'phrase';
+                        }
+                    }
+                    // 百度链接
+                    const bum = c.match(/https?:\/\/pan\.baidu\.com\/s\/[^\s<\"')]+/);
+                    if (bum) baiduLink = bum[0];
+                    // 迅雷链接
+                    const xm = c.match(/https?:\/\/pan\.xunlei\.com\/s\/[^\s<\"')]+/);
+                    if (xm) xunleiLink = xm[0];
+                    // 云盘链接
+                    const ym = c.match(/https?:\/\/yun\.139\.com[^\s<\"')]+/);
+                    if (ym) yun139Link = ym[0];
+
+                    return {
+                        title: p.title || '',
+                        url: p.link || '',
+                        category: p.category || '',
+                        baiduCode,
+                        baiduType,
+                        baiduPhrase,
+                        originalLinks: { baiduUrl: baiduLink, xunleiUrl: xunleiLink, yun139Url: yun139Link },
+                        myLinks: { baiduUrl: '', baiduPwd: '' },
+                        note: baiduType === 'phrase' ? '⚠️ 百度口令' : '',
+                        status: 'pending',
+                    };
+                });
+                renderMappingTable();
+                document.getElementById('mappingStatus').textContent = '⚠️ 从文章生成 ' + mappingData.articles.length + ' 条（未保存）';
+            } else {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">暂无数据</td></tr>';
+            }
+        }
+
+        function renderMappingTable() {
+            const tbody = document.getElementById('mappingBody');
+            if (!mappingData.articles || mappingData.articles.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">暂无映射数据，请先提取文章</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = mappingData.articles.map((item, i) => {
+                let typeBadge = '';
+                if (item.baiduType === 'code') typeBadge = '<span class="badge bg-success">编号</span>';
+                else if (item.baiduType === 'phrase') typeBadge = '<span class="badge bg-warning text-dark">口令⚠️</span>';
+                else typeBadge = '<span class="badge bg-secondary">无</span>';
+
+                let statusBadge = '';
+                if (item.status === 'done') statusBadge = '<span class="badge bg-success">已替换</span>';
+                else if (item.myLinks && item.myLinks.baiduUrl) statusBadge = '<span class="badge bg-info text-dark">已填</span>';
+                else statusBadge = '<span class="badge bg-light text-muted">待上传</span>';
+
+                const myUrl = (item.myLinks && item.myLinks.baiduUrl) || '';
+                const myPwd = (item.myLinks && item.myLinks.baiduPwd) || '';
+
+                return `<tr>
+                    <td class="text-muted small">${i + 1}</td>
+                    <td title="${item.title.replace(/"/g, '&quot;')}">${item.title.substring(0, 35)}</td>
+                    <td><strong>${item.baiduCode || '-'}</strong></td>
+                    <td>${typeBadge}</td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm" value="${myUrl}"
+                               placeholder="https://pan.baidu.com/s/..."
+                               onchange="updateMappingField(${i}, 'myLinks.baiduUrl', this.value)">
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm" value="${myPwd}"
+                               placeholder="提取码" style="width:80px;"
+                               onchange="updateMappingField(${i}, 'myLinks.baiduPwd', this.value)">
+                    </td>
+                    <td class="small text-muted">${item.note || ''}</td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-accent py-0 px-1" onclick="applySingleLink(${i})" title="替换此文章链接">
+                            <i class="fa fa-exchange"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function updateMappingField(index, field, value) {
+            if (!mappingData.articles[index]) return;
+            const parts = field.split('.');
+            if (parts.length === 2) {
+                mappingData.articles[index][parts[0]][parts[1]] = value;
+            } else if (parts.length === 1) {
+                mappingData.articles[index][field] = value;
+            }
+            // 如果有新链接，状态自动变为已填
+            if (mappingData.articles[index].myLinks.baiduUrl) {
+                if (!mappingData.articles[index].myLinks.baiduUrl.startsWith('http')) {
+                    // 可能只是填了编号，也算
+                }
+                if (mappingData.articles[index].status === 'pending') {
+                    mappingData.articles[index].status = 'filled';
+                }
+            }
+        }
+
+        // ========== 下载 mapping.json ==========
+        function downloadMappingJson() {
+            const blob = new Blob([JSON.stringify(mappingData, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'download-mapping.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            toast('已下载 download-mapping.json', 'success');
+        }
+
+        // ========== 上传 XLSX 批量填入新链接 ==========
+        function uploadMappingXlsx(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet);
+                    if (!rows || rows.length === 0) {
+                        toast('Excel 文件为空', 'warning');
+                        return;
+                    }
+
+                    let updated = 0;
+                    rows.forEach(row => {
+                        const title = (row['游戏标题'] || '').trim();
+                        const newUrl = (row['我的新百度链接'] || '').trim();
+                        const newPwd = (row['我的提取码'] || '').trim();
+                        if (!newUrl && !newPwd) return;
+
+                        // 按标题匹配
+                        const match = mappingData.articles.find(a => a.title === title);
+                        if (match) {
+                            if (newUrl) match.myLinks.baiduUrl = newUrl;
+                            if (newPwd) match.myLinks.baiduPwd = newPwd;
+                            match.status = newUrl ? 'filled' : match.status;
+                            updated++;
+                        }
+                    });
+
+                    renderMappingTable();
+                    toast('成功更新 ' + updated + ' 条映射（匹配标题）', 'success');
+                    document.getElementById('mappingStatus').textContent = '✅ 已更新 ' + updated + ' 条';
+                } catch (err) {
+                    toast('解析 Excel 失败: ' + err.message, 'danger');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = '';
+        }
+
+        // ========== 替换单篇文章链接 ==========
+        async function applySingleLink(index) {
+            const item = mappingData.articles[index];
+            if (!item || !item.myLinks || !item.myLinks.baiduUrl) {
+                toast('请先填写新百度链接', 'warning');
+                return;
+            }
+            if (!postsData) {
+                toast('文章数据未加载', 'warning');
+                return;
+            }
+
+            // 在 postsData 中找到对应文章
+            const post = postsData.posts.find(p => p.link === item.url || p.title === item.title);
+            if (!post) {
+                toast('未找到对应文章: ' + item.title, 'warning');
+                return;
+            }
+
+            const oldUrl = item.originalLinks.baiduUrl;
+            const newUrl = item.myLinks.baiduUrl;
+            const newPwd = item.myLinks.baiduPwd || '';
+
+            if (!post.content) post.content = '';
+
+            // 替换百度链接
+            if (oldUrl && post.content.includes(oldUrl)) {
+                post.content = post.content.replaceAll(oldUrl, newUrl);
+            } else {
+                // 尝试用正则匹配任意 baidu 链接
+                post.content = post.content.replace(/https?:\/\/pan\.baidu\.com\/s\/[^\s<\"')]+/g, newUrl);
+            }
+
+            // 替换提取码
+            if (newPwd) {
+                post.content = post.content.replace(/提取码[：:]\s*\w+/g, '提取码: ' + newPwd);
+            }
+
+            item.status = 'done';
+            renderMappingTable();
+            toast('✅ 已替换: ' + item.title.substring(0, 30), 'success');
+        }
+
+        // ========== 批量替换所有链接到文章 ==========
+        async function batchReplaceLinks() {
+            const toReplace = mappingData.articles.filter(
+                a => a.myLinks && a.myLinks.baiduUrl && a.status !== 'done'
+            );
+            if (toReplace.length === 0) {
+                toast('没有待替换的链接（请先填写新链接）', 'warning');
+                return;
+            }
+            if (!postsData) {
+                toast('文章数据未加载', 'warning');
+                return;
+            }
+
+            let replaced = 0;
+            let notFound = 0;
+
+            toReplace.forEach(item => {
+                const post = postsData.posts.find(p => p.link === item.url || p.title === item.title);
+                if (!post) { notFound++; return; }
+
+                const newUrl = item.myLinks.baiduUrl;
+                const newPwd = item.myLinks.baiduPwd || '';
+                if (!post.content) post.content = '';
+
+                const oldUrl = item.originalLinks.baiduUrl;
+                if (oldUrl && post.content.includes(oldUrl)) {
+                    post.content = post.content.replaceAll(oldUrl, newUrl);
+                } else {
+                    post.content = post.content.replace(/https?:\/\/pan\.baidu\.com\/s\/[^\s<\"')]+/g, newUrl);
+                }
+
+                if (newPwd) {
+                    post.content = post.content.replace(/提取码[：:]\s*\w+/g, '提取码: ' + newPwd);
+                }
+
+                item.status = 'done';
+                replaced++;
+            });
+
+            renderMappingTable();
+            if (notFound > 0) {
+                toast('✅ 替换 ' + replaced + ' 篇 | ⚠️ 未找到 ' + notFound + ' 篇', 'warning');
+            } else {
+                toast('✅ 批量替换完成！共 ' + replaced + ' 篇文章', 'success');
+            }
+            document.getElementById('mappingStatus').textContent = '✅ 已替换 ' + replaced + ' 篇，请点击"保存所有更改到 GitHub"';
+        }
+
+        // ========== 保存映射表到 GitHub ==========
+        async function saveMappingToGithub() {
+            if (!githubToken || !repoName) {
+                toast('请先连接 GitHub', 'warning');
+                return;
+            }
+
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify(mappingData, null, 2))));
+
+            try {
+                // 获取当前文件的 SHA（如果存在）
+                let sha = '';
+                try {
+                    const resp = await fetch(`https://api.github.com/repos/${repoName}/contents/data/download-mapping.json`, {
+                        headers: { 'Authorization': 'token ' + githubToken },
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        sha = data.sha || '';
+                    }
+                } catch (e) {}
+
+                const result = await fetch(`https://api.github.com/repos/${repoName}/contents/data/download-mapping.json`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'token ' + githubToken,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: '更新下载链接映射表',
+                        content: content,
+                        sha: sha || undefined,
+                    }),
+                });
+
+                if (result.ok) {
+                    toast('映射表已保存到 GitHub', 'success');
+                    document.getElementById('mappingStatus').textContent = '✅ 已保存到 GitHub';
+                } else {
+                    const err = await result.json();
+                    toast('保存失败: ' + (err.message || result.status), 'danger');
+                }
+            } catch (e) {
+                toast('保存失败: ' + e.message, 'danger');
+            }
+        }
     </script>
 </body>
 </html>

@@ -224,6 +224,62 @@
             </div>
         </div>
 
+        <!-- ======== Step 2: 扫描百度编号 ======== -->
+        <div class="card mb-4" id="scanCard" style="display:none;">
+            <div class="card-header">
+                <i class="fa fa-barcode me-2" style="color:var(--accent);"></i>第二步：扫描百度网盘编号
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                    <span class="text-muted small">待扫描 <strong id="scanTotalCount">0</strong> 篇文章</span>
+                    <button class="btn btn-accent" onclick="startScanBaidu()" id="scanBtn">
+                        <i class="fa fa-search me-1"></i>开始扫描百度编号
+                    </button>
+                    <button class="btn btn-outline-accent" onclick="exportScanXlsx()" id="exportScanBtn" style="display:none;">
+                        <i class="fa fa-file-excel-o me-1"></i>导出映射表 XLSX
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="exportMappingJson()" id="exportJsonBtn" style="display:none;">
+                        <i class="fa fa-download me-1"></i>导出 mapping.json
+                    </button>
+                </div>
+                <div class="alert alert-info py-2 small mb-3" id="scanTip">
+                    <i class="fa fa-info-circle me-1"></i>逐个访问文章详情页，提取百度网盘编号/口令、迅雷链接、云盘链接。
+                    扫描完成后可导出 XLSX 映射表，在管理后台批量替换链接。
+                </div>
+                <!-- Scan progress -->
+                <div id="scanProgressWrap" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold" id="scanProgressLabel">扫描中...</span>
+                        <span class="badge badge-count" id="scanProgressPercent">0%</span>
+                    </div>
+                    <div class="progress extract-progress mb-2">
+                        <div class="progress-bar" id="scanProgressBar" style="width:0%;background:var(--accent);"></div>
+                    </div>
+                    <div class="small text-muted" id="scanProgressDetail">准备中...</div>
+                </div>
+                <!-- Scan results table -->
+                <div class="table-responsive" style="max-height:420px;overflow-y:auto;" id="scanTableWrap" style="display:none;">
+                    <table class="table table-hover mb-0 table-sm" id="scanResultTable">
+                        <thead class="table-light" style="position:sticky;top:0;">
+                            <tr>
+                                <th style="width:35px;">#</th>
+                                <th>游戏标题</th>
+                                <th style="width:110px;">百度编号</th>
+                                <th style="width:65px;">类型</th>
+                                <th style="max-width:180px;">百度链接</th>
+                                <th style="max-width:160px;">迅雷/云盘</th>
+                                <th style="width:120px;">备注</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scanResultBody"></tbody>
+                    </table>
+                </div>
+                <div class="text-center text-muted small p-3" id="scanEmpty">
+                    提取文章列表后，点击"开始扫描百度编号"解析每篇文章的下载链接。
+                </div>
+            </div>
+        </div>
+
         <!-- ======== 页脚 ======== -->
         <div class="text-center text-muted small mt-4">
             <i class="fa fa-info-circle me-1"></i>
@@ -584,6 +640,8 @@
                 document.getElementById('statDup').textContent = dupCount;
                 document.getElementById('statsRow').style.display = 'flex';
                 document.getElementById('resultCard').style.display = 'block';
+                document.getElementById('scanCard').style.display = 'block';
+                document.getElementById('scanTotalCount').textContent = extractedData.length;
 
                 if (failedPages.length > 0) {
                     toast('提取完成，但有 ' + failedPages.length + ' 页失败: ' + failedPages.join(', '), 'warning');
@@ -709,18 +767,330 @@
             }
         }
 
+        // ========== 百度编号扫描（第二步） ==========
+        let scanResults = [];
+        let isScanning = false;
+        let stopScanRequested = false;
+
+        function parseBaiduCodeFromHtml(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('.single-content') || doc.querySelector('.entry-content')
+                || doc.querySelector('article') || doc.querySelector('.post-content') || doc.body;
+            const text = content.textContent || '';
+
+            const result = {
+                baiduCode: '',
+                baiduType: 'none',    // 'code' | 'phrase' | 'none' | 'error'
+                baiduPhrase: '',
+                baiduLink: '',
+                xunleiLink: '',
+                yun139Link: '',
+                note: '',
+            };
+
+            // 1) 百度网盘：CODE  (如 B925333, A531222, GAME-5963)
+            const codeMatch = text.match(/百度网盘[：:]\s*(\S{3,30}?)(?:\s|$|[\n\r]|链接)/);
+            if (codeMatch) {
+                let raw = codeMatch[1].trim();
+                // 过滤掉文件名（含扩展名）
+                if (/\.(zip|rar|7z|tar|gz)$/i.test(raw)) {
+                    result.note = '文件名（非编号）: ' + raw;
+                } else if (raw.length >= 3 && /^[A-Za-z0-9\-]+$/.test(raw)) {
+                    result.baiduCode = raw;
+                    result.baiduType = 'code';
+                }
+            }
+
+            // 2) 百度口令：中文口令
+            const phraseMatch = text.match(/百度口令[：:]\s*([^\n\r<]{2,30}?)(?:\s|$|[\n\r<])/);
+            if (phraseMatch) {
+                const phrase = phraseMatch[1].trim();
+                if (phrase && phrase.length > 1 && !/分享|链接/.test(phrase)) {
+                    result.baiduPhrase = phrase;
+                    if (!result.baiduCode) {
+                        result.baiduType = 'phrase';
+                        result.note = '⚠️ 百度口令';
+                    } else {
+                        result.note = (result.note ? result.note + ' | ' : '') + '百度口令: ' + phrase;
+                    }
+                }
+            }
+
+            // 3) 百度网盘链接
+            const baiduUrlMatch = text.match(/https?:\/\/pan\.baidu\.com\/s\/[^\s<\"')]+/);
+            if (baiduUrlMatch) {
+                result.baiduLink = baiduUrlMatch[0];
+                // 如果还没提取到 code，尝试从链接中提取 pwd
+                if (!result.baiduCode) {
+                    const pwdMatch = result.baiduLink.match(/[?&]pwd=(\w+)/);
+                    if (pwdMatch) result.note = (result.note ? result.note + ' | ' : '') + '提取码: ' + pwdMatch[1];
+                }
+            }
+
+            // 4) 迅雷链接
+            const xunleiMatch = text.match(/https?:\/\/pan\.xunlei\.com\/s\/[^\s<\"')]+/);
+            if (xunleiMatch) result.xunleiLink = xunleiMatch[0];
+
+            // 5) 139 云盘链接
+            const yun139Match = text.match(/https?:\/\/yun\.139\.com[^\s<\"')]+/);
+            if (yun139Match) result.yun139Link = yun139Match[0];
+
+            // 6) 移动云盘 / 天翼云盘 / 其他
+            const other139 = text.match(/https?:\/\/yun\.139\.com[^\s<\"')]+/);
+            if (other139) result.yun139Link = other139[0];
+
+            return result;
+        }
+
+        async function startScanBaidu() {
+            if (isScanning) {
+                stopScanRequested = true;
+                document.getElementById('scanBtn').innerHTML = '<i class="fa fa-stop me-2"></i>正在停止...';
+                return;
+            }
+            if (extractedData.length === 0) {
+                toast('请先提取文章列表', 'warning');
+                return;
+            }
+
+            isScanning = true;
+            stopScanRequested = false;
+            scanResults = [];
+            const total = extractedData.length;
+
+            // Show UI
+            document.getElementById('scanCard').style.display = 'block';
+            document.getElementById('scanTotalCount').textContent = total;
+            document.getElementById('scanProgressWrap').style.display = 'block';
+            document.getElementById('exportScanBtn').style.display = 'none';
+            document.getElementById('exportJsonBtn').style.display = 'none';
+            document.getElementById('scanEmpty').style.display = 'none';
+            document.getElementById('scanBtn').innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>扫描中...';
+            document.getElementById('scanBtn').className = 'btn btn-danger';
+
+            let success = 0;
+            let failed = 0;
+            let phraseFlagged = 0;
+
+            for (let i = 0; i < total; i++) {
+                if (stopScanRequested) {
+                    toast('用户已停止扫描', 'info');
+                    break;
+                }
+
+                const item = extractedData[i];
+                const percent = Math.round(((i + 1) / total) * 100);
+                document.getElementById('scanProgressLabel').textContent = '扫描中 (' + (i + 1) + '/' + total + ')';
+                document.getElementById('scanProgressBar').style.width = percent + '%';
+                document.getElementById('scanProgressPercent').textContent = percent + '%';
+                document.getElementById('scanProgressDetail').textContent = item.title.substring(0, 55);
+
+                try {
+                    const proxyUrl = document.getElementById('proxyUrl').value.trim();
+                    const html = await fetchPageViaProxy(item.url, proxyUrl);
+                    const info = parseBaiduCodeFromHtml(html);
+
+                    scanResults.push({
+                        title: item.title,
+                        url: item.url,
+                        category: item.category || '',
+                        ...info,
+                    });
+
+                    if (info.baiduType === 'code') success++;
+                    else if (info.baiduType === 'phrase') { success++; phraseFlagged++; }
+                    else failed++;
+
+                    // 页间延迟
+                    if (i < total - 1 && !stopScanRequested) {
+                        const jitter = Math.round(Math.random() * 1500);
+                        await sleep(1000 + jitter);
+                    }
+                } catch (e) {
+                    scanResults.push({
+                        title: item.title,
+                        url: item.url,
+                        category: item.category || '',
+                        baiduCode: '',
+                        baiduType: 'error',
+                        baiduPhrase: '',
+                        baiduLink: '',
+                        xunleiLink: '',
+                        yun139Link: '',
+                        note: '❌ 扫描失败: ' + e.message,
+                    });
+                    failed++;
+                }
+            }
+
+            // 渲染结果
+            renderScanResults();
+            document.getElementById('exportScanBtn').style.display = 'inline-block';
+            document.getElementById('exportJsonBtn').style.display = 'inline-block';
+            document.getElementById('scanProgressLabel').textContent = stopScanRequested ? '已停止' : '扫描完成';
+            document.getElementById('scanProgressDetail').textContent =
+                '成功 ' + success + ' 条' +
+                (phraseFlagged > 0 ? ' (口令 ' + phraseFlagged + ' 条⚠️)' : '') +
+                ' | 失败 ' + failed + ' 条';
+
+            toast('扫描完成！成功 ' + success + ' 条' +
+                (phraseFlagged > 0 ? '，其中 ' + phraseFlagged + ' 条是百度口令⚠️' : '') +
+                '，失败 ' + failed + ' 条',
+                failed > 0 ? 'warning' : 'success');
+
+            isScanning = false;
+            document.getElementById('scanBtn').innerHTML = '<i class="fa fa-search me-1"></i>重新扫描';
+            document.getElementById('scanBtn').className = 'btn btn-accent';
+        }
+
+        function renderScanResults() {
+            const tbody = document.getElementById('scanResultBody');
+            const wrap = document.getElementById('scanTableWrap');
+            const empty = document.getElementById('scanEmpty');
+
+            if (scanResults.length === 0) {
+                empty.style.display = 'block';
+                tbody.innerHTML = '';
+                return;
+            }
+
+            empty.style.display = 'none';
+            tbody.innerHTML = scanResults.map((item, i) => {
+                // 类型徽章
+                let typeBadge = '<span class="badge bg-secondary">无</span>';
+                let rowClass = '';
+                if (item.baiduType === 'code') {
+                    typeBadge = '<span class="badge bg-success">编号</span>';
+                } else if (item.baiduType === 'phrase') {
+                    typeBadge = '<span class="badge bg-warning text-dark">口令⚠️</span>';
+                    rowClass = ' table-warning';
+                } else if (item.baiduType === 'error') {
+                    typeBadge = '<span class="badge bg-danger">失败</span>';
+                    rowClass = ' table-danger';
+                }
+
+                // 链接列
+                let linksHtml = '';
+                if (item.baiduLink) linksHtml += '<span class="small text-truncate d-block" style="max-width:180px;" title="' + item.baiduLink + '">📦 百度</span>';
+                let otherLinks = [];
+                if (item.xunleiLink) otherLinks.push('⚡迅雷');
+                if (item.yun139Link) otherLinks.push('☁️云盘');
+                const otherHtml = otherLinks.length > 0 ? otherLinks.join(' ') : '-';
+
+                return `<tr class="${rowClass}">
+                    <td class="text-muted small">${i + 1}</td>
+                    <td title="${item.title.replace(/"/g, '&quot;')}">${item.title.substring(0, 40)}</td>
+                    <td><strong>${item.baiduCode || '-'}</strong></td>
+                    <td>${typeBadge}</td>
+                    <td class="small">${linksHtml || '-'}</td>
+                    <td class="small">${otherHtml}</td>
+                    <td class="small text-muted">${item.note || ''}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // ========== 导出扫描结果 XLSX（含百度编号映射） ==========
+        function exportScanXlsx() {
+            if (scanResults.length === 0) {
+                toast('没有扫描数据，请先扫描', 'warning');
+                return;
+            }
+
+            const rows = scanResults.map((item, i) => ({
+                '序号': i + 1,
+                '游戏标题': item.title,
+                '文章链接': item.url,
+                '分类': item.category || '',
+                '百度编号': item.baiduCode || '',
+                '类型': item.baiduType === 'code' ? '编号' : item.baiduType === 'phrase' ? '口令⚠️' : item.baiduType === 'error' ? '失败' : '无',
+                '百度口令': item.baiduPhrase || '',
+                '百度链接': item.baiduLink || '',
+                '迅雷链接': item.xunleiLink || '',
+                '云盘链接': item.yun139Link || '',
+                '我的新百度链接': '',          // 用户填
+                '我的提取码': '',              // 用户填
+                '备注': item.note || '',
+                '状态': '待上传',
+            }));
+
+            try {
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws['!cols'] = [
+                    { wch: 6 }, { wch: 50 }, { wch: 40 }, { wch: 8 },
+                    { wch: 14 }, { wch: 10 }, { wch: 20 }, { wch: 45 },
+                    { wch: 40 }, { wch: 40 }, { wch: 45 }, { wch: 10 },
+                    { wch: 20 }, { wch: 10 },
+                ];
+                XLSX.utils.book_append_sheet(wb, ws, '百度映射表');
+                const now = new Date();
+                const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+                XLSX.writeFile(wb, '百度映射表_' + dateStr + '.xlsx');
+                toast('已导出 ' + rows.length + ' 条映射到百度映射表_' + dateStr + '.xlsx', 'success');
+            } catch (e) {
+                toast('导出失败: ' + e.message, 'danger');
+            }
+        }
+
+        // ========== 导出 mapping.json ==========
+        function exportMappingJson() {
+            if (scanResults.length === 0) { toast('没有数据', 'warning'); return; }
+            const mapping = {
+                version: 1,
+                exportTime: new Date().toISOString(),
+                articles: scanResults.map(item => ({
+                    title: item.title,
+                    url: item.url,
+                    category: item.category || '',
+                    baiduCode: item.baiduCode || '',
+                    baiduType: item.baiduType,
+                    baiduPhrase: item.baiduPhrase || '',
+                    originalLinks: {
+                        baiduUrl: item.baiduLink || '',
+                        xunleiUrl: item.xunleiLink || '',
+                        yun139Url: item.yun139Link || '',
+                    },
+                    myLinks: {
+                        baiduUrl: '',
+                        baiduPwd: '',
+                    },
+                    note: item.note || '',
+                    status: 'pending',
+                })),
+            };
+            const blob = new Blob([JSON.stringify(mapping, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'download-mapping.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            toast('已导出 download-mapping.json', 'success');
+        }
+
         // ========== 重置 ==========
         function resetAll() {
             if (isExtracting) {
                 stopRequested = true;
             }
             extractedData = [];
+            scanResults = [];
+            isScanning = false;
+            stopScanRequested = false;
             document.getElementById('resultBody').innerHTML = '';
             document.getElementById('resultCard').style.display = 'none';
+            document.getElementById('scanCard').style.display = 'none';
             document.getElementById('statsRow').style.display = 'none';
             document.getElementById('progressCard').style.display = 'none';
+            document.getElementById('scanResultBody').innerHTML = '';
+            document.getElementById('scanProgressWrap').style.display = 'none';
+            document.getElementById('exportScanBtn').style.display = 'none';
+            document.getElementById('exportJsonBtn').style.display = 'none';
+            document.getElementById('scanEmpty').style.display = 'block';
             document.getElementById('extractBtn').innerHTML = '<i class="fa fa-play me-2"></i>开始提取';
             document.getElementById('extractBtn').className = 'btn btn-accent btn-lg px-5';
+            document.getElementById('scanBtn').innerHTML = '<i class="fa fa-search me-1"></i>开始扫描百度编号';
+            document.getElementById('scanBtn').className = 'btn btn-accent';
             document.getElementById('resultEmpty').style.display = 'block';
             isExtracting = false;
             stopRequested = false;
