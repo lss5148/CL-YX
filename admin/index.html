@@ -844,9 +844,10 @@
         async function fetchAndParseArticle(url) {
             // CORS 代理列表（按优先级排序，依次尝试）
             const proxies = [
-                { name: 'allorigins', url: () => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) },
-                { name: 'corsproxy',  url: () => 'https://corsproxy.io/?' + encodeURIComponent(url) },
+                { name: '自托管',   url: () => window.location.origin + '/proxy?url=' + encodeURIComponent(url) },
                 { name: 'codetabs',   url: () => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(url) },
+                { name: 'corsproxy',  url: () => 'https://corsproxy.io/?' + encodeURIComponent(url) },
+                { name: 'allorigins', url: () => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) },
             ];
 
             let lastErr = null;
@@ -1166,9 +1167,10 @@
             const statusEl = document.getElementById('proxyStatusText');
             statusEl.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 检测中...';
             const proxies = [
-                { name: 'allorigins', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://acgyx.us/') },
-                { name: 'corsproxy',  url: 'https://corsproxy.io/?' + encodeURIComponent('https://acgyx.us/') },
+                { name: '自托管', url: window.location.origin + '/proxy?url=' + encodeURIComponent('https://acgyx.us/') },
                 { name: 'codetabs',   url: 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent('https://acgyx.us/') },
+                { name: 'corsproxy',  url: 'https://corsproxy.io/?' + encodeURIComponent('https://acgyx.us/') },
+                { name: 'allorigins', url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://acgyx.us/') },
             ];
             let available = [];
             for (const p of proxies) {

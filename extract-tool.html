@@ -84,8 +84,8 @@
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">CORS 代理 URL</label>
                         <input type="text" class="form-control" id="proxyUrl"
-                               value="https://api.allorigins.win/raw?url="
-                               placeholder="CORS 代理地址">
+                               value=""
+                               placeholder="留空则自动使用自托管代理">
                         <div class="form-text">用于解决跨域限制，失败时自动切换内置代理</div>
                         <button class="btn btn-sm btn-outline-accent mt-1" onclick="testProxies()">
                             <i class="fa fa-flask me-1"></i>检测可用代理
@@ -270,18 +270,16 @@
                 const fullUrl = proxy.build();
                 if (!fullUrl) continue;
                 try {
-                    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(10000) });
+                    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(10000), redirect: 'follow' });
                     const text = await res.text();
-                    if (res.ok && text.includes('acgyx')) {
-                        toast('✅ ' + proxy.name + ' — 可用', 'success');
+                    // 用 text 内容判断而非 HTTP 状态码（有些代理即使 301 也能正确代理）
+                    const isOk = text.includes('acgyx') || text.includes('ACG游戏姬') || text.includes('post-list');
+                    if (isOk) {
+                        toast('✅ ' + proxy.name + ' — 可用（返回内容正常）', 'success');
                         anyOk = true;
-                        // 自动填入第一个可用的用户配置代理
-                        if (proxy.name !== '用户配置') {
-                            document.getElementById('proxyUrl').value = PROXY_LIST.find(p => p.name === proxy.name)
-                                ?.build('')?.split('?')[0] + (proxy.name === 'corsproxy' ? '?' : '?url=') || '';
-                        }
+                        // 不自动修改用户配置的代理，让用户自己选择
                     } else {
-                        toast('❌ ' + proxy.name + ' — 返回异常 (HTTP ' + res.status + ')', 'warning');
+                        toast('❌ ' + proxy.name + ' — 返回内容异常 (HTTP ' + res.status + ')', 'warning');
                     }
                 } catch (e) {
                     toast('❌ ' + proxy.name + ' — ' + e.message, 'warning');
@@ -304,10 +302,13 @@
         let stopRequested = false;
 
         // ========== CORS 代理列表（自动切换链） ==========
+        // 优先使用自托管代理（部署在 Cloudflare Pages 上，最稳定）
+        // 其次使用第三方免费代理作为备用
         const PROXY_LIST = [
+            { name: '自托管',   build: (u) => window.location.origin + '/proxy?url=' + encodeURIComponent(u) },
+            { name: 'codetabs', build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
+            { name: 'corsproxy', build: (u) => 'https://corsproxy.io/?' + encodeURIComponent(u) },
             { name: 'allorigins', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
-            { name: 'corsproxy',  build: (u) => 'https://corsproxy.io/?' + encodeURIComponent(u) },
-            { name: 'codetabs',   build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
         ];
 
         // ========== 核心提取逻辑（带代理自动切换） ==========
