@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章批量提取工具 - ACG游戏姬</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --accent: #D87CFF; --accent-dark: #9B59B6; }
+        body { background: #f5f5f5; font-family: system-ui, -apple-system, sans-serif; }
+        .navbar-custom { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); }
+        .card { border-radius: 12px; border: none; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .card-header { background: transparent; border-bottom: 2px solid var(--accent); font-weight: 700; }
+        .btn-accent { background: var(--accent); color: #fff; border: none; }
+        .btn-accent:hover { background: var(--accent-dark); color: #fff; }
+        .btn-outline-accent { border: 1px solid var(--accent); color: var(--accent); }
+        .btn-outline-accent:hover { background: var(--accent); color: #fff; }
+        .extract-progress { height: 10px; border-radius: 5px; }
+        .stat-card { text-align: center; padding: 1rem; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .stat-card .number { font-size: 2rem; font-weight: 700; color: var(--accent); }
+        .stat-card .label { font-size: 0.85rem; color: #666; }
+        #resultTable { font-size: 0.9rem; }
+        #resultTable td { max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .extracted-url { color: var(--accent-dark); text-decoration: none; }
+        .extracted-url:hover { text-decoration: underline; }
+        .badge-count { background: var(--accent); color: #fff; }
+        .section-divider { border-top: 2px dashed #ddd; margin: 2rem 0; }
+        .btn-outline-accent.active { background: var(--accent); color: #fff; }
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-custom">
+        <div class="container">
+            <a class="navbar-brand text-white fw-bold" href="#">
+                <i class="fa fa-download me-2"></i>文章批量提取工具
+            </a>
+            <span class="text-white-50 small">
+                <i class="fa fa-globe me-1"></i>acgyx.us
+            </span>
+        </div>
+    </nav>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="container py-4">
+
+        <!-- ======== 配置面板 ======== -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fa fa-cog me-2" style="color:var(--accent);"></i>提取配置
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">目标网站 URL</label>
+                        <div class="d-flex gap-1 mb-1 flex-wrap">
+                            <span class="text-muted small me-1" style="line-height:28px;">快捷选择:</span>
+                            <button type="button" class="btn btn-sm btn-outline-accent" onclick="setCategory(this,'https://acgyx.us/category/yx/az/')">AZ 游戏</button>
+                            <button type="button" class="btn btn-sm btn-outline-accent" onclick="setCategory(this,'https://acgyx.us/category/yx/pc/')">PC 游戏</button>
+                            <button type="button" class="btn btn-sm btn-outline-accent" onclick="setCategory(this,'https://acgyx.us/')">全站首页</button>
+                            <button type="button" class="btn btn-sm btn-outline-accent" onclick="setCategory(this,'https://acgyx.us/category/zj/zjaz/')">全年龄 AZ</button>
+                            <button type="button" class="btn btn-sm btn-outline-accent" onclick="setCategory(this,'https://acgyx.us/category/zj/zjpc/')">全年龄 PC</button>
+                        </div>
+                        <input type="text" class="form-control" id="baseUrl"
+                               value="https://acgyx.us/category/yx/az/"
+                               placeholder="https://acgyx.us/category/yx/az/">
+                        <div class="form-text">支持首页、分类页、标签页等列表式页面</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">起始页码</label>
+                        <input type="number" class="form-control" id="startPage" value="1" min="1">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">结束页码</label>
+                        <input type="number" class="form-control" id="endPage" value="5" min="1">
+                        <div class="form-text">留空或输 0 则自动检测最大页</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">CORS 代理 URL</label>
+                        <input type="text" class="form-control" id="proxyUrl"
+                               value="https://api.allorigins.win/raw?url="
+                               placeholder="CORS 代理地址">
+                        <div class="form-text">用于解决跨域限制，失败时自动切换内置代理</div>
+                        <button class="btn btn-sm btn-outline-accent mt-1" onclick="testProxies()">
+                            <i class="fa fa-flask me-1"></i>检测可用代理
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">文章选择器 (CSS)</label>
+                        <input type="text" class="form-control" id="articleSelector"
+                               value="article.post-list">
+                        <div class="form-text">每条文章的外层容器</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">标题选择器 (CSS)</label>
+                        <input type="text" class="form-control" id="titleSelector"
+                               value="h3.post-title a">
+                        <div class="form-text">用于提取标题和链接</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">分类选择器 (CSS)</label>
+                        <input type="text" class="form-control" id="catSelector"
+                               value='[rel="category tag"]'>
+                        <div class="form-text">留空则不提取分类</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">延迟 (毫秒)</label>
+                        <input type="number" class="form-control" id="requestDelay" value="500" min="0" max="5000">
+                        <div class="form-text">每页之间的等待时间，防封 IP</div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="extractCategory" checked>
+                            <label class="form-check-label">提取分类信息</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="extractDate" checked>
+                            <label class="form-check-label">提取发布日期</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="extractViews" checked>
+                            <label class="form-check-label">提取浏览数</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button class="btn btn-accent btn-lg px-5" onclick="startExtract()" id="extractBtn">
+                            <i class="fa fa-play me-2"></i>开始提取
+                        </button>
+                        <button class="btn btn-outline-secondary btn-lg px-4 ms-2" onclick="resetAll()">
+                            <i class="fa fa-refresh me-1"></i>重置
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======== 进度面板 ======== -->
+        <div class="card mb-4" id="progressCard" style="display:none;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-semibold" id="progressLabel">准备中...</span>
+                    <span class="badge badge-count" id="progressPercent">0%</span>
+                </div>
+                <div class="progress extract-progress mb-2">
+                    <div class="progress-bar" id="progressBar" style="width:0%;background:var(--accent);"></div>
+                </div>
+                <div class="small text-muted" id="progressDetail">正在处理第 0 页</div>
+            </div>
+        </div>
+
+        <!-- ======== 统计面板 ======== -->
+        <div class="row mb-4" id="statsRow" style="display:none;">
+            <div class="col-md-3 col-6 mb-2">
+                <div class="stat-card">
+                    <div class="number" id="statTotal">0</div>
+                    <div class="label">提取文章总数</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-2">
+                <div class="stat-card">
+                    <div class="number" id="statPages">0</div>
+                    <div class="label">抓取页面数</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-2">
+                <div class="stat-card">
+                    <div class="number" id="statNew">0</div>
+                    <div class="label">新增数量</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-2">
+                <div class="stat-card">
+                    <div class="number" id="statDup">0</div>
+                    <div class="label">去重过滤</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======== 结果面板 ======== -->
+        <div class="card" id="resultCard" style="display:none;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fa fa-list me-2" style="color:var(--accent);"></i>提取结果</span>
+                <div>
+                    <button class="btn btn-sm btn-outline-accent me-2" onclick="copyToClipboard()" id="copyBtn">
+                        <i class="fa fa-copy me-1"></i>复制全部
+                    </button>
+                    <button class="btn btn-sm btn-accent" onclick="exportToXlsx()" id="exportBtn">
+                        <i class="fa fa-file-excel-o me-1"></i>导出 XLSX
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height:500px;overflow-y:auto;">
+                    <table class="table table-hover mb-0" id="resultTable">
+                        <thead class="table-light" style="position:sticky;top:0;">
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th style="width:50px;">
+                                    <input type="checkbox" id="selectAll" checked onchange="toggleAll()">
+                                </th>
+                                <th>游戏标题</th>
+                                <th style="min-width:220px;">文章链接</th>
+                                <th style="width:100px;">分类</th>
+                                <th style="width:110px;">发布日期</th>
+                                <th style="width:80px;">浏览</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultBody"></tbody>
+                    </table>
+                </div>
+                <div class="p-3 text-center text-muted small" id="resultEmpty">
+                    尚无数据，点击"开始提取"获取文章列表
+                </div>
+            </div>
+        </div>
+
+        <!-- ======== 页脚 ======== -->
+        <div class="text-center text-muted small mt-4">
+            <i class="fa fa-info-circle me-1"></i>
+            提取的数据保存为 XLSX 文件，可用 Excel / WPS 打开。
+            建议每次提取后检查数据，代理可能会漏部分请求。
+        </div>
+    </div>
+
+    <script>
+        // ========== 工具函数 ==========
+        function toast(msg, type) {
+            const el = document.createElement('div');
+            el.className = 'toast show align-items-center text-bg-' + (type||'success') + ' border-0 mb-2';
+            el.innerHTML = '<div class="d-flex"><div class="toast-body">' + msg + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+            document.getElementById('toastContainer').appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        // ========== 检测可用代理 ==========
+        async function testProxies() {
+            const btn = document.querySelector('button[onclick="testProxies()"]');
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>检测中...';
+
+            const testUrl = 'https://acgyx.us/';
+            const allProxies = [
+                { name: '用户配置', build: () => {
+                    const p = document.getElementById('proxyUrl').value.trim();
+                    if (!p) return null;
+                    const sep = p.endsWith('=') || p.endsWith('?') || p.endsWith('&')
+                        ? '' : (p.includes('?') ? '&' : '?');
+                    return p + sep + encodeURIComponent(testUrl);
+                }},
+                ...PROXY_LIST.map(pl => ({ name: pl.name, build: () => pl.build(testUrl) })),
+            ];
+
+            let anyOk = false;
+            for (const proxy of allProxies) {
+                const fullUrl = proxy.build();
+                if (!fullUrl) continue;
+                try {
+                    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(10000) });
+                    const text = await res.text();
+                    if (res.ok && text.includes('acgyx')) {
+                        toast('✅ ' + proxy.name + ' — 可用', 'success');
+                        anyOk = true;
+                        // 自动填入第一个可用的用户配置代理
+                        if (proxy.name !== '用户配置') {
+                            document.getElementById('proxyUrl').value = PROXY_LIST.find(p => p.name === proxy.name)
+                                ?.build('')?.split('?')[0] + (proxy.name === 'corsproxy' ? '?' : '?url=') || '';
+                        }
+                    } else {
+                        toast('❌ ' + proxy.name + ' — 返回异常 (HTTP ' + res.status + ')', 'warning');
+                    }
+                } catch (e) {
+                    toast('❌ ' + proxy.name + ' — ' + e.message, 'warning');
+                }
+            }
+
+            if (!anyOk) {
+                toast('所有代理均不可用！请更换代理地址或稍后重试', 'danger');
+            } else {
+                toast('已自动填入可用代理，可开始提取', 'info');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+
+        // ========== 状态 ==========
+        let extractedData = [];
+        let isExtracting = false;
+        let stopRequested = false;
+
+        // ========== CORS 代理列表（自动切换链） ==========
+        const PROXY_LIST = [
+            { name: 'allorigins', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+            { name: 'corsproxy',  build: (u) => 'https://corsproxy.io/?' + encodeURIComponent(u) },
+            { name: 'codetabs',   build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
+        ];
+
+        // ========== 核心提取逻辑（带代理自动切换） ==========
+        async function fetchPageViaProxy(url, proxyUrl) {
+            // 优先尝试用户配置的代理
+            const attempts = [];
+
+            // 用户配置的代理（去除末尾空格）
+            const userProxy = (proxyUrl || '').trim();
+            if (userProxy) {
+                attempts.push({ name: '用户配置', build: (u) => {
+                    // 兼容两种格式：代理本身已含 ?url= 或只有 ?
+                    const sep = userProxy.endsWith('=') || userProxy.endsWith('?') || userProxy.endsWith('&')
+                        ? '' : (userProxy.includes('?') ? '&' : '?');
+                    return userProxy + sep + encodeURIComponent(u);
+                }});
+            }
+
+            // 追加内置代理链
+            PROXY_LIST.forEach(p => {
+                // 避免与用户配置重复
+                if (userProxy && p.build(userProxy).includes(userProxy)) return;
+                attempts.push(p);
+            });
+
+            let lastErr = null;
+            for (const proxy of attempts) {
+                try {
+                    const fullUrl = proxy.build(url);
+                    const res = await fetch(fullUrl, { signal: AbortSignal.timeout(25000) });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const text = await res.text();
+                    // 检查是否返回了非 HTML 内容（代理错误页面）
+                    if (text.length < 100 && !text.includes('<')) {
+                        throw new Error('代理返回内容异常（可能被限流）');
+                    }
+                    return text;
+                } catch (err) {
+                    lastErr = err;
+                    console.warn('代理 [' + proxy.name + '] 失败:', err.message);
+                    // 继续尝试下一个代理
+                }
+            }
+            throw new Error('所有代理均失败，最后错误: ' + (lastErr ? lastErr.message : '未知'));
+        }
+
+        function parseArticlesFromHtml(html, config) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const articles = doc.querySelectorAll(config.articleSelector);
+            const results = [];
+
+            articles.forEach(article => {
+                // 标题 & 链接
+                const titleEl = article.querySelector(config.titleSelector);
+                if (!titleEl) return;
+                let url = titleEl.getAttribute('href') || '';
+                let title = titleEl.textContent.trim();
+
+                // 清理标题：去掉末尾的 " - ACG游戏姬"
+                title = title.replace(/\s*[-–—|]\s*ACG游戏姬.*$/, '').trim();
+                if (!title || !url) return;
+
+                // URL 补全
+                if (url.startsWith('/')) url = 'https://acgyx.us' + url;
+                if (!url.startsWith('http')) return;
+                // 只保留文章页链接（带数字的 .html）
+                if (!/\d+\.html/.test(url)) return;
+
+                // 分类
+                let category = '';
+                if (config.extractCategory) {
+                    const catEl = article.querySelector(config.catSelector);
+                    if (catEl) category = catEl.textContent.trim();
+                }
+
+                // 日期
+                let date = '';
+                if (config.extractDate) {
+                    const authorEl = article.querySelector('.list-post-author');
+                    if (authorEl) {
+                        const span = authorEl.querySelector('span.dot');
+                        if (span) {
+                            // 取 span 后面的文本节点
+                            let next = span.nextSibling;
+                            if (next && next.textContent) {
+                                date = next.textContent.trim();
+                            }
+                            // 如果 nextSibling 没取到，用 lastChild 兜底
+                            if (!date) {
+                                const last = authorEl.lastChild;
+                                if (last && last.textContent) date = last.textContent.trim();
+                            }
+                        }
+                        // 如果还取不到，尝试正则从全文提取年月日
+                        if (!date) {
+                            const txt = authorEl.textContent.trim();
+                            const m = txt.match(/(\d{4}年\d{1,2}月\d{1,2}日)/);
+                            if (m) date = m[1];
+                        }
+                    }
+                }
+
+                // 浏览数
+                let views = '';
+                if (config.extractViews) {
+                    const viewsEl = article.querySelector('.list-post-view');
+                    if (viewsEl) views = viewsEl.textContent.trim();
+                }
+
+                results.push({ url, title, category, date, views });
+            });
+
+            return results;
+        }
+
+        function buildPageUrl(baseUrl, page) {
+            // 支持 ?page=N 参数格式
+            if (/\?page=\d+/.test(baseUrl)) {
+                return baseUrl.replace(/\?page=\d+/, '?page=' + page);
+            }
+            // 支持 /page/N/ 路径格式
+            const base = baseUrl.replace(/\/page\/\d+\/?$/, '');
+            if (page <= 1) return base.replace(/\/?$/, '/');
+            return base.replace(/\/?$/, '') + '/page/' + page + '/';
+        }
+
+        // ========== 开始提取 ==========
+        async function startExtract() {
+            if (isExtracting) {
+                stopRequested = true;
+                document.getElementById('extractBtn').innerHTML = '<i class="fa fa-stop me-2"></i>正在停止...';
+                return;
+            }
+
+            // 读取配置
+            const config = {
+                baseUrl: document.getElementById('baseUrl').value.trim(),
+                startPage: parseInt(document.getElementById('startPage').value) || 1,
+                endPage: parseInt(document.getElementById('endPage').value) || 0,
+                proxyUrl: document.getElementById('proxyUrl').value.trim(),
+                articleSelector: document.getElementById('articleSelector').value.trim(),
+                titleSelector: document.getElementById('titleSelector').value.trim(),
+                catSelector: document.getElementById('catSelector').value.trim(),
+                delay: parseInt(document.getElementById('requestDelay').value) || 500,
+                extractCategory: document.getElementById('extractCategory').checked,
+                extractDate: document.getElementById('extractDate').checked,
+                extractViews: document.getElementById('extractViews').checked,
+            };
+
+            if (!config.baseUrl || !config.proxyUrl) {
+                toast('请填写目标 URL 和代理地址', 'warning');
+                return;
+            }
+            if (config.startPage < 1) config.startPage = 1;
+
+            // 重置状态
+            stopRequested = false;
+            isExtracting = true;
+            extractedData = [];
+            document.getElementById('extractBtn').innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>提取中...';
+            document.getElementById('extractBtn').className = 'btn btn-danger btn-lg px-5';
+            document.getElementById('progressCard').style.display = 'block';
+            document.getElementById('statsRow').style.display = 'none';
+            document.getElementById('resultCard').style.display = 'none';
+            document.getElementById('resultBody').innerHTML = '';
+            document.getElementById('resultEmpty').style.display = 'block';
+
+            const seen = new Set();  // URL 去重
+            let totalFetched = 0;
+            let totalPages = 0;
+            let dupCount = 0;
+            let failedPages = [];
+
+            try {
+                // 第一步：如果 endPage 为 0，先探测最大页码
+                if (config.endPage < config.startPage) {
+                    document.getElementById('progressLabel').textContent = '正在探测总页数...';
+                    document.getElementById('progressDetail').textContent = '请求首页中...';
+                    try {
+                        const page1Url = buildPageUrl(config.baseUrl, 1);
+                        const html = await fetchPageViaProxy(page1Url, config.proxyUrl);
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+
+                        // 在分页栏找最大页码（支持 /page/N/ 和 ?page=N 两种格式）
+                        const pageLinks = doc.querySelectorAll('.pagination .page-link');
+                        let maxPage = 1;
+                        pageLinks.forEach(link => {
+                            const href = link.getAttribute('href') || '';
+                            // 匹配 /page/N/ 格式
+                            let match = href.match(/\/page\/(\d+)/);
+                            if (match) {
+                                const p = parseInt(match[1]);
+                                if (p > maxPage) maxPage = p;
+                            }
+                            // 匹配 ?page=N 格式
+                            match = href.match(/[?&]page=(\d+)/);
+                            if (match) {
+                                const p = parseInt(match[1]);
+                                if (p > maxPage) maxPage = p;
+                            }
+                        });
+                        config.endPage = Math.max(maxPage, config.startPage);
+                        document.getElementById('endPage').value = config.endPage;
+                        toast('检测到最大页码: ' + config.endPage, 'info');
+                    } catch (e) {
+                        toast('探测页数失败: ' + e.message + '，将使用结束页码=1', 'warning');
+                        config.endPage = config.startPage;
+                    }
+                }
+
+                // 第二部：逐页提取
+                const totalToFetch = config.endPage - config.startPage + 1;
+
+                for (let p = config.startPage; p <= config.endPage; p++) {
+                    if (stopRequested) {
+                        toast('用户已停止提取', 'info');
+                        break;
+                    }
+
+                    const pageNum = p - config.startPage + 1;
+                    const percent = Math.round((pageNum / totalToFetch) * 100);
+                    document.getElementById('progressLabel').textContent = '正在提取第 ' + p + '/' + config.endPage + ' 页...';
+                    document.getElementById('progressBar').style.width = percent + '%';
+                    document.getElementById('progressPercent').textContent = percent + '%';
+                    document.getElementById('progressDetail').textContent =
+                        '已抓取 ' + totalPages + ' 页 | 已提取 ' + totalFetched + ' 条 | 去重 ' + dupCount + ' 条';
+
+                    const pageUrl = buildPageUrl(config.baseUrl, p);
+                    try {
+                        const html = await fetchPageViaProxy(pageUrl, config.proxyUrl);
+                        const items = parseArticlesFromHtml(html, config);
+
+                        let pageNew = 0;
+                        items.forEach(item => {
+                            if (!seen.has(item.url)) {
+                                seen.add(item.url);
+                                extractedData.push(item);
+                                totalFetched++;
+                                pageNew++;
+                            } else {
+                                dupCount++;
+                            }
+                        });
+
+                        totalPages++;
+                    } catch (e) {
+                        failedPages.push(p);
+                        toast('第 ' + p + ' 页获取失败: ' + e.message, 'warning');
+                    }
+
+                    // 页间延迟（用户设定值 + 0~1500ms 随机抖动）
+                    if (p < config.endPage && !stopRequested) {
+                        const jitter = Math.round(Math.random() * 1500);
+                        await sleep(config.delay + jitter);
+                    }
+                }
+
+                // 显示结果
+                renderResults();
+                document.getElementById('statTotal').textContent = extractedData.length;
+                document.getElementById('statPages').textContent = totalPages;
+                document.getElementById('statNew').textContent = totalFetched;
+                document.getElementById('statDup').textContent = dupCount;
+                document.getElementById('statsRow').style.display = 'flex';
+                document.getElementById('resultCard').style.display = 'block';
+
+                if (failedPages.length > 0) {
+                    toast('提取完成，但有 ' + failedPages.length + ' 页失败: ' + failedPages.join(', '), 'warning');
+                } else if (extractedData.length === 0) {
+                    toast('⚠️ 提取完成但 0 条数据。可能原因：①CSS 选择器不匹配当前网站 ②代理返回了空内容 ③网站结构已改版。请尝试调整选择器或点击"检测可用代理"', 'warning');
+                } else {
+                    toast('提取完成！共 ' + extractedData.length + ' 篇文章', 'success');
+                }
+
+            } catch (e) {
+                toast('提取过程出错: ' + e.message, 'danger');
+            } finally {
+                isExtracting = false;
+                document.getElementById('extractBtn').innerHTML = '<i class="fa fa-play me-2"></i>开始提取';
+                document.getElementById('extractBtn').className = 'btn btn-accent btn-lg px-5';
+                document.getElementById('progressLabel').textContent = extractedData.length > 0 ? '提取完成' : '已停止';
+            }
+        }
+
+        // ========== 渲染结果表格 ==========
+        function renderResults() {
+            const tbody = document.getElementById('resultBody');
+            const empty = document.getElementById('resultEmpty');
+
+            if (extractedData.length === 0) {
+                empty.style.display = 'block';
+                tbody.innerHTML = '';
+                return;
+            }
+
+            empty.style.display = 'none';
+            tbody.innerHTML = extractedData.map((item, i) => `
+                <tr>
+                    <td class="text-muted small">${i + 1}</td>
+                    <td><input type="checkbox" class="row-checkbox" checked data-idx="${i}"></td>
+                    <td title="${item.title.replace(/"/g, '&quot;')}">${item.title}</td>
+                    <td><a href="${item.url}" target="_blank" class="extracted-url">${item.url}</a></td>
+                    <td><span class="badge bg-light text-dark">${item.category || '-'}</span></td>
+                    <td class="small">${item.date || '-'}</td>
+                    <td class="small">${item.views || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ========== 全选 / 取消全选 ==========
+        function toggleAll() {
+            const checked = document.getElementById('selectAll').checked;
+            document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = checked);
+        }
+
+        // ========== 复制到剪贴板 ==========
+        function copyToClipboard() {
+            const selected = getSelectedData();
+            if (selected.length === 0) { toast('没有选中的数据', 'warning'); return; }
+
+            const lines = selected.map(item => item.title + '\t' + item.url);
+            const text = lines.join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                toast('已复制 ' + selected.length + ' 条数据到剪贴板', 'success');
+            }).catch(() => {
+                // 降级方案
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                toast('已复制 ' + selected.length + ' 条数据', 'success');
+            });
+        }
+
+        // ========== 获取选中数据 ==========
+        function getSelectedData() {
+            const idxs = [];
+            document.querySelectorAll('.row-checkbox:checked').forEach(cb => {
+                idxs.push(parseInt(cb.getAttribute('data-idx')));
+            });
+            return idxs.map(i => extractedData[i]).filter(Boolean);
+        }
+
+        // ========== 导出 XLSX ==========
+        function exportToXlsx() {
+            const selected = getSelectedData();
+            if (selected.length === 0) { toast('没有选中的数据，请先勾选要导出的文章', 'warning'); return; }
+
+            // 准备数据
+            const rows = selected.map((item, i) => ({
+                '序号': i + 1,
+                '游戏标题': item.title,
+                '文章链接': item.url,
+                '分类': item.category || '',
+                '发布日期': item.date || '',
+                '浏览数': item.views || '',
+            }));
+
+            try {
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(rows);
+
+                // 设置列宽
+                ws['!cols'] = [
+                    { wch: 6 },   // 序号
+                    { wch: 60 },  // 标题
+                    { wch: 45 },  // 链接
+                    { wch: 10 },  // 分类
+                    { wch: 14 },  // 日期
+                    { wch: 10 },  // 浏览
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, '文章列表');
+
+                // 生成文件名
+                const now = new Date();
+                const dateStr = now.getFullYear()
+                    + '-' + String(now.getMonth()+1).padStart(2,'0')
+                    + '-' + String(now.getDate()).padStart(2,'0');
+                const filename = 'acgyx_文章列表_' + dateStr + '.xlsx';
+
+                XLSX.writeFile(wb, filename);
+                toast('已导出 ' + selected.length + ' 条到 ' + filename, 'success');
+            } catch (e) {
+                toast('导出失败: ' + e.message, 'danger');
+            }
+        }
+
+        // ========== 重置 ==========
+        function resetAll() {
+            if (isExtracting) {
+                stopRequested = true;
+            }
+            extractedData = [];
+            document.getElementById('resultBody').innerHTML = '';
+            document.getElementById('resultCard').style.display = 'none';
+            document.getElementById('statsRow').style.display = 'none';
+            document.getElementById('progressCard').style.display = 'none';
+            document.getElementById('extractBtn').innerHTML = '<i class="fa fa-play me-2"></i>开始提取';
+            document.getElementById('extractBtn').className = 'btn btn-accent btn-lg px-5';
+            document.getElementById('resultEmpty').style.display = 'block';
+            isExtracting = false;
+            stopRequested = false;
+            document.getElementById('selectAll').checked = true;
+            toast('已重置', 'info');
+        }
+
+        // ========== 回车触发提取 ==========
+        document.getElementById('endPage').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') startExtract();
+        });
+
+        // ========== 快捷分类切换 ==========
+        function setCategory(btn, url) {
+            document.getElementById('baseUrl').value = url;
+            document.getElementById('endPage').value = '5';
+            document.getElementById('startPage').value = '1';
+            // 高亮当前按钮
+            document.querySelectorAll('.btn-outline-accent').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            toast('已切换到: ' + url.substring(0, 50) + '...', 'info');
+        }
+
+        // ========== 初始化 ==========
+        document.addEventListener('DOMContentLoaded', function() {
+            toast('配置好参数后点击"开始提取"', 'info');
+        });
+    </script>
+
+</body>
+</html>
