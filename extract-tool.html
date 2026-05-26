@@ -86,7 +86,7 @@
                         <input type="text" class="form-control" id="proxyUrl"
                                value=""
                                placeholder="留空则自动使用自托管代理">
-                        <div class="form-text">用于解决跨域限制，失败时自动切换内置代理</div>
+                        <div class="form-text">留空自动使用网站内置代理，失败时自动切换备用代理</div>
                         <button class="btn btn-sm btn-outline-accent mt-1" onclick="testProxies()">
                             <i class="fa fa-flask me-1"></i>检测可用代理
                         </button>
@@ -262,7 +262,7 @@
                         ? '' : (p.includes('?') ? '&' : '?');
                     return p + sep + encodeURIComponent(testUrl);
                 }},
-                ...PROXY_LIST.map(pl => ({ name: pl.name, build: () => pl.build(testUrl) })),
+                ...getProxyList().map(pl => ({ name: pl.name, build: () => pl.build(testUrl) })),
             ];
 
             let anyOk = false;
@@ -304,12 +304,20 @@
         // ========== CORS 代理列表（自动切换链） ==========
         // 优先使用自托管代理（部署在 Cloudflare Pages 上，最稳定）
         // 其次使用第三方免费代理作为备用
-        const PROXY_LIST = [
-            { name: '自托管',   build: (u) => window.location.origin + '/proxy?url=' + encodeURIComponent(u) },
-            { name: 'codetabs', build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
-            { name: 'corsproxy', build: (u) => 'https://corsproxy.io/?' + encodeURIComponent(u) },
-            { name: 'allorigins', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
-        ];
+        function getProxyList() {
+            const list = [];
+            // 只在网站域名下才添加自托管代理（本地 file:// 不可用）
+            const isLocal = window.location.origin === 'null' || window.location.protocol === 'file:';
+            if (!isLocal) {
+                list.push({ name: '自托管', build: (u) => window.location.origin + '/proxy?url=' + encodeURIComponent(u) });
+            }
+            list.push(
+                { name: 'codetabs', build: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
+                { name: 'corsproxy', build: (u) => 'https://corsproxy.io/?' + encodeURIComponent(u) },
+                { name: 'allorigins', build: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+            );
+            return list;
+        }
 
         // ========== 核心提取逻辑（带代理自动切换） ==========
         async function fetchPageViaProxy(url, proxyUrl) {
@@ -328,7 +336,7 @@
             }
 
             // 追加内置代理链
-            PROXY_LIST.forEach(p => {
+            getProxyList().forEach(p => {
                 // 避免与用户配置重复
                 if (userProxy && p.build(userProxy).includes(userProxy)) return;
                 attempts.push(p);
@@ -459,8 +467,8 @@
                 extractViews: document.getElementById('extractViews').checked,
             };
 
-            if (!config.baseUrl || !config.proxyUrl) {
-                toast('请填写目标 URL 和代理地址', 'warning');
+            if (!config.baseUrl) {
+                toast('请填写目标 URL', 'warning');
                 return;
             }
             if (config.startPage < 1) config.startPage = 1;
