@@ -220,7 +220,7 @@ function renderTags() {
 // ========== 渲染最新评论 ==========
 function renderComments() {
     const container = document.getElementById('comments-container');
-    container.innerHTML = siteData.comments.map(c =>
+    container.innerHTML = (siteData.comments || []).map(c =>
         `<li class="comment-listitem">
             <div class="comment-user">
                 <span class="comment-avatar">${c.avatar}</span>

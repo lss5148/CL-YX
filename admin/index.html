@@ -642,7 +642,6 @@
 
             bootstrap.Modal.getInstance(document.getElementById('postModal')).hide();
             renderPosts();
-            updateRandomPosts();
         }
 
         function deletePost(index) {
@@ -650,7 +649,6 @@
             postsData.posts.splice(index, 1);
             toast('文章已删除', 'info');
             renderPosts();
-            updateRandomPosts();
         }
 
         // ========== 保存到 GitHub ==========
@@ -844,7 +842,6 @@
                     postsData.posts.unshift(post);
                 });
                 renderPosts();
-                updateRandomPosts();
                 bootstrap.Modal.getInstance(document.getElementById('importModal'))?.hide();
 
                 // ---- 第四步：自动保存到 GitHub（带重试） ----
@@ -1286,11 +1283,12 @@
             tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin me-1"></i>加载映射数据...</td></tr>';
 
             // 尝试从 GitHub 加载 mapping.json
-            if (githubToken && repoName) {
+            const ghToken2 = localStorage.getItem('gh_token');
+            if (ghToken2 && REPO) {
                 try {
-                    const url = `https://api.github.com/repos/${repoName}/contents/data/download-mapping.json`;
+                    const url = `https://api.github.com/repos/${REPO}/contents/data/download-mapping.json`;
                     const res = await fetch(url, {
-                        headers: { 'Authorization': 'token ' + githubToken, 'Accept': 'application/vnd.github.v3.raw' },
+                        headers: { 'Authorization': 'token ' + ghToken2, 'Accept': 'application/vnd.github.v3.raw' },
                     });
                     if (res.ok) {
                         const text = await res.text();
@@ -1583,7 +1581,8 @@
 
         // ========== 保存映射表到 GitHub ==========
         async function saveMappingToGithub() {
-            if (!githubToken || !repoName) {
+            const ghToken2 = localStorage.getItem('gh_token');
+            if (!ghToken2 || !REPO) {
                 toast('请先连接 GitHub', 'warning');
                 return;
             }
@@ -1594,8 +1593,8 @@
                 // 获取当前文件的 SHA（如果存在）
                 let sha = '';
                 try {
-                    const resp = await fetch(`https://api.github.com/repos/${repoName}/contents/data/download-mapping.json`, {
-                        headers: { 'Authorization': 'token ' + githubToken },
+                    const resp = await fetch(`https://api.github.com/repos/${REPO}/contents/data/download-mapping.json`, {
+                        headers: { 'Authorization': 'token ' + ghToken2 },
                     });
                     if (resp.ok) {
                         const data = await resp.json();
@@ -1603,10 +1602,10 @@
                     }
                 } catch (e) {}
 
-                const result = await fetch(`https://api.github.com/repos/${repoName}/contents/data/download-mapping.json`, {
+                const result = await fetch(`https://api.github.com/repos/${REPO}/contents/data/download-mapping.json`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': 'token ' + githubToken,
+                        'Authorization': 'token ' + ghToken2,
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
