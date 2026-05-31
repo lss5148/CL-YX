@@ -36,8 +36,8 @@ export async function onRequest(context) {
         }
         if (files.length === 0) return json({ ok: false, error: '没有选择文件' }, 400);
 
-        const results = [];
-        for (const file of files) {
+        // 并行上传所有文件到 Telegram
+        const uploadOne = async (file) => {
             const entry = { name: file.name, size: file.size };
             try {
                 const tgForm = new FormData();
@@ -67,7 +67,17 @@ export async function onRequest(context) {
             } catch (e) {
                 entry.error = e.message;
             }
-            results.push(entry);
+            return entry;
+        };
+
+        // 并行上传，限制最多 5 个并发避免 Telegram 限流
+        const results = [];
+        const queue = files.map(f => () => uploadOne(f));
+        const CONCURRENCY = 5;
+        for (let i = 0; i < queue.length; i += CONCURRENCY) {
+            const batch = queue.slice(i, i + CONCURRENCY);
+            const batchResults = await Promise.all(batch.map(fn => fn()));
+            results.push(...batchResults);
         }
 
         const okCount = results.filter(r => r.ok).length;

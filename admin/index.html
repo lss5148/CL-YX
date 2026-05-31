@@ -335,6 +335,12 @@
                         <input type="file" class="form-control form-control-sm" id="tgImageFile" accept="image/*" multiple>
                         <div class="form-text" style="font-size:0.7rem;">支持 JPG/PNG/GIF/WebP，单文件最大 10MB，可一次选多张</div>
                     </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="compressToggle" checked>
+                        <label class="form-check-label small" for="compressToggle">
+                            上传前压缩图片（推荐）<span class="text-muted" style="font-size:0.7rem;">— 缩小到 1920px，体积减少 70-90%，上传快 5-10 倍</span>
+                        </label>
+                    </div>
                     <div class="progress mb-2 d-none" id="uploadProgress" style="height:6px;">
                         <div class="progress-bar progress-bar-striped progress-bar-animated" id="uploadProgressBar" style="width:0%;background:var(--accent);"></div>
                     </div>
@@ -2067,11 +2073,52 @@
             if (fileInput) fileInput.addEventListener('change', updateFileCount);
         });
 
+        // ========== 客户端图片压缩 ==========
+        function compressImage(file, maxWidth, quality) {
+            return new Promise((resolve, reject) => {
+                // GIF 不压缩（会丢失动画）
+                if (file.type === 'image/gif') return resolve(file);
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let w = img.width, h = img.height;
+                        // 如果宽度 <= maxWidth 且是 JPEG，跳过压缩
+                        if (w <= maxWidth && file.type === 'image/jpeg') return resolve(file);
+
+                        // 按比例缩放
+                        if (w > maxWidth) {
+                            h = Math.round(h * maxWidth / w);
+                            w = maxWidth;
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        canvas.toBlob(function(blob) {
+                            if (!blob) return reject(new Error('压缩失败'));
+                            const ext = file.name.replace(/.*\./, '');
+                            const newName = file.name.replace(/\.[^.]+$/, '') + (ext.toLowerCase() === 'jpg' || ext.toLowerCase() === 'jpeg' ? '.jpg' : '.jpg');
+                            const compressed = new File([blob], newName, { type: 'image/jpeg' });
+                            resolve(compressed);
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = () => resolve(file); // 解析失败则用原图
+                    img.src = e.target.result;
+                };
+                reader.onerror = () => resolve(file);
+                reader.readAsDataURL(file);
+            });
+        }
+
         async function uploadImages() {
             const token = document.getElementById('tgBotToken').value.trim();
             const chatId = document.getElementById('tgChannelId').value.trim();
             const fileInput = document.getElementById('tgImageFile');
             const files = Array.from(fileInput.files);
+            const shouldCompress = document.getElementById('compressToggle').checked;
 
             if (!token) { toast('请填写 Bot Token', 'warning'); return; }
             if (!chatId) { toast('请填写频道 ID', 'warning'); return; }
@@ -2090,13 +2137,34 @@
             progressText.classList.remove('d-none');
             progressBar.style.width = '0%';
 
-            // 构建 FormData（所有文件作为 files[] 数组）
+            // 第一步：压缩图片（如果启用）
+            let uploadFiles = files;
+            if (shouldCompress) {
+                progressText.textContent = `正在压缩 ${files.length} 张图片...`;
+                progressBar.style.width = '10%';
+                try {
+                    const compressed = await Promise.all(files.map(f => compressImage(f, 1920, 0.85)));
+                    uploadFiles = compressed;
+                    // 计算压缩比
+                    const origSize = files.reduce((s, f) => s + f.size, 0);
+                    const newSize = compressed.reduce((s, f) => s + f.size, 0);
+                    if (origSize > 0) {
+                        const ratio = ((1 - newSize / origSize) * 100).toFixed(0);
+                        console.log(`压缩完成: ${(origSize/1024).toFixed(0)}KB → ${(newSize/1024).toFixed(0)}KB (-${ratio}%)`);
+                    }
+                } catch (e) {
+                    console.warn('压缩失败，使用原图:', e);
+                    uploadFiles = files;
+                }
+            }
+
+            // 构建 FormData
             const formData = new FormData();
-            files.forEach(f => formData.append('files', f));
+            uploadFiles.forEach(f => formData.append('files', f));
             formData.append('token', token);
             formData.append('chatId', chatId);
 
-            progressText.textContent = `正在上传 ${files.length} 张图片...`;
+            progressText.textContent = `正在上传 ${uploadFiles.length} 张图片...`;
             progressBar.style.width = '30%';
 
             try {
