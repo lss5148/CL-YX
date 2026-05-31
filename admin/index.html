@@ -2066,7 +2066,15 @@
 
                 progressBar.style.width = '100%';
 
-                const data = await resp.json();
+                // 安全解析 JSON（处理空响应或 HTML 错误页）
+                let data;
+                const text = await resp.text();
+                try {
+                    data = JSON.parse(text);
+                } catch (parseErr) {
+                    const preview = text.substring(0, 200) || '(空响应)';
+                    throw new Error('服务器返回了非 JSON 响应(' + resp.status + '): ' + preview);
+                }
 
                 if (data.ok) {
                     document.getElementById('uploadedUrl').value = data.url;
