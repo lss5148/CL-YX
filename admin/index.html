@@ -1969,56 +1969,32 @@
                 return;
             }
 
-            if (!post.content) post.content = '';
+            // 1) 清除 content 中所有原始下载链接
+            post.content = cleanDownloadSections(post.content || '');
 
-            const results = [];
-            // 按 URL 长度降序替换，避免短 URL 误匹配长 URL
-            const sorted = [...PLATFORMS].sort((a, b) => {
-                const aLen = (item.myLinks[a.key] && item.myLinks[a.key].url) ? item.myLinks[a.key].url.length : 0;
-                const bLen = (item.myLinks[b.key] && item.myLinks[b.key].url) ? item.myLinks[b.key].url.length : 0;
-                return bLen - aLen;
-            });
-
-            sorted.forEach(plat => {
-                const myUrl = item.myLinks[plat.key].url;
-                const myPwd = item.myLinks[plat.key].pwd;
+            // 2) 构建新下载链接 HTML
+            let downloadHtml = '';
+            PLATFORMS.forEach(plat => {
+                const myUrl = item.myLinks[plat.key]?.url?.trim();
+                const myPwd = item.myLinks[plat.key]?.pwd?.trim();
                 if (!myUrl) return;
-
-                const origUrls = item.originalLinks[plat.key + 'Urls'] || [];
-
-                // 精确替换原始链接
-                origUrls.forEach(oldUrl => {
-                    if (oldUrl && post.content.includes(oldUrl)) {
-                        post.content = post.content.replaceAll(oldUrl, myUrl);
-                    }
-                });
-
-                // 回退：正则替换
-                if (!origUrls.length || (origUrls.length > 0 && !origUrls.some(u => post.content.includes(u)))) {
-                    post.content = post.content.replace(plat.urlRegex, myUrl);
-                }
-
-                // 替换提取码
                 if (myPwd) {
-                    const pwdPatterns = [
-                        new RegExp('(提取码|密码|访问码)[：:]\\s*\\w+', 'g'),
-                    ];
-                    pwdPatterns.forEach(re => {
-                        // 只替换匹配的第一个密码
-                        post.content = post.content.replace(re, (match) => {
-                            const prefix = match.match(/(?:提取码|密码|访问码)[：:]\s*/)[0];
-                            return prefix + myPwd;
-                        });
-                    });
+                    downloadHtml += `<p>${plat.label}：${myPwd}<br>链接：${myUrl}</p>`;
+                } else {
+                    downloadHtml += `<p>链接：${myUrl}</p>`;
                 }
-
-                results.push(plat.label);
             });
 
-            // 更新 download 字段
+            if (downloadHtml) {
+                // 加分隔线和标题
+                downloadHtml = '<hr>\n<p><strong>— 下载 —</strong></p>\n' + downloadHtml;
+                post.content = (post.content || '') + '\n' + downloadHtml;
+            }
+
+            // 3) 更新 download 字段
             const cleanDownload = (str) => str ? str.replace(/<[^>]*>/g, '').replace(/"/g, '') : '';
             for (const plat of PLATFORMS) {
-                const u = item.myLinks[plat.key].url;
+                const u = item.myLinks[plat.key]?.url?.trim();
                 if (u) { post.download = cleanDownload(u); break; }
             }
 
@@ -2050,42 +2026,33 @@
             toReplace.forEach(item => {
                 const post = postsData.posts.find(p => p.link === item.url || p.title === item.title);
                 if (!post) { notFound++; return; }
-                if (!post.content) post.content = '';
 
-                const sorted = [...PLATFORMS].sort((a, b) => {
-                    const aLen = (item.myLinks[a.key] && item.myLinks[a.key].url) ? item.myLinks[a.key].url.length : 0;
-                    const bLen = (item.myLinks[b.key] && item.myLinks[b.key].url) ? item.myLinks[b.key].url.length : 0;
-                    return bLen - aLen;
-                });
+                // 1) 清除所有原始下载链接
+                post.content = cleanDownloadSections(post.content || '');
 
-                sorted.forEach(plat => {
-                    const myUrl = item.myLinks[plat.key].url;
-                    const myPwd = item.myLinks[plat.key].pwd;
+                // 2) 构建新下载链接 HTML
+                let downloadHtml = '';
+                PLATFORMS.forEach(plat => {
+                    const myUrl = item.myLinks[plat.key]?.url?.trim();
+                    const myPwd = item.myLinks[plat.key]?.pwd?.trim();
                     if (!myUrl) return;
-
-                    const origUrls = item.originalLinks[plat.key + 'Urls'] || [];
-                    origUrls.forEach(oldUrl => {
-                        if (oldUrl && post.content.includes(oldUrl)) {
-                            post.content = post.content.replaceAll(oldUrl, myUrl);
-                        }
-                    });
-                    if (!origUrls.length || (origUrls.length > 0 && !origUrls.some(u => post.content.includes(u)))) {
-                        post.content = post.content.replace(plat.urlRegex, myUrl);
-                    }
-
                     if (myPwd) {
-                        post.content = post.content.replace(/(?:提取码|密码|访问码)[：:]\s*\w+/g, (match) => {
-                            const prefix = match.match(/(?:提取码|密码|访问码)[：:]\s*/)[0];
-                            return prefix + myPwd;
-                        });
+                        downloadHtml += `<p>${plat.label}：${myPwd}<br>链接：${myUrl}</p>`;
+                    } else {
+                        downloadHtml += `<p>链接：${myUrl}</p>`;
                     }
-
                     platCounts[plat.key] = (platCounts[plat.key] || 0) + 1;
                 });
 
+                if (downloadHtml) {
+                    downloadHtml = '<hr>\n<p><strong>— 下载 —</strong></p>\n' + downloadHtml;
+                    post.content = (post.content || '') + '\n' + downloadHtml;
+                }
+
+                // 3) 更新 download 字段
                 const cleanDownload = (str) => str ? str.replace(/<[^>]*>/g, '').replace(/"/g, '') : '';
                 for (const plat of PLATFORMS) {
-                    const u = item.myLinks[plat.key].url;
+                    const u = item.myLinks[plat.key]?.url?.trim();
                     if (u) { post.download = cleanDownload(u); break; }
                 }
 
