@@ -227,6 +227,9 @@
                             <button class="btn btn-outline-accent" onclick="saveMappingToGithub()">
                                 <i class="fa fa-cloud-upload me-1"></i>保存映射表到 GitHub
                             </button>
+                            <button class="btn btn-outline-secondary" onclick="loadMappingData()">
+                                <i class="fa fa-refresh me-1"></i>重新扫描
+                            </button>
                             <span class="text-muted small" id="mappingStatus"></span>
                         </div>
                     </div>
@@ -1725,7 +1728,7 @@
                 renderMappingTable();
                 document.getElementById('mappingStatus').textContent = '⚠️ 从文章生成 ' + mappingData.articles.length + ' 条（未保存）';
             } else {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">暂无数据</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">暂无数据 — 请先切换到「文章管理」标签等文章加载完成，再点「重新扫描」按钮</td></tr>';
             }
         }
 
