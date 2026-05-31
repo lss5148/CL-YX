@@ -694,6 +694,42 @@
                 // 更新 SHA
                 const updated = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
                 fileSha = updated.sha;
+
+                // 同步保存轻量索引（去掉 content 字段，首页加载用）
+                try {
+                    const indexData = JSON.parse(JSON.stringify(postsData));
+                    indexData.posts = indexData.posts.map(({ content, ...rest }) => rest);
+                    const idxJson = JSON.stringify(indexData, null, 2);
+                    const idxBytes = new TextEncoder().encode(idxJson);
+                    let idxStr = '';
+                    for (let i = 0; i < idxBytes.length; i++) idxStr += String.fromCharCode(idxBytes[i]);
+                    const idxEncoded = btoa(idxStr);
+
+                    let idxSha = '';
+                    try {
+                        const idxResp = await fetch('https://api.github.com/repos/' + REPO + '/contents/data/posts-index.json', {
+                            headers: { 'Authorization': 'token ' + localStorage.getItem('gh_token') },
+                        });
+                        if (idxResp.ok) { const d = await idxResp.json(); idxSha = d.sha || ''; }
+                    } catch (e) {}
+
+                    await fetch('https://api.github.com/repos/' + REPO + '/contents/data/posts-index.json', {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': 'token ' + localStorage.getItem('gh_token'),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: '更新文章索引',
+                            content: idxEncoded,
+                            sha: idxSha || undefined,
+                            branch: BRANCH,
+                        }),
+                    });
+                } catch (e) {
+                    console.warn('保存 posts-index.json 失败（不影响主保存）:', e.message);
+                }
+
                 if (errorBox) errorBox.style.display = 'none';
                 toast('✅ 保存成功！Cloudflare Pages 正在自动部署，约 1-2 分钟后生效', 'success');
                 return true;

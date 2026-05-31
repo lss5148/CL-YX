@@ -7,7 +7,7 @@ let siteData = null;
 
 async function loadData() {
     try {
-        const res = await fetch('data/posts.json');
+        const res = await fetch('data/posts-index.json');
         siteData = await res.json();
         renderAll();
     } catch (err) {
@@ -65,7 +65,6 @@ function renderPosts() {
         filteredPosts = filteredPosts.filter(post => {
             if (post.title && post.title.toLowerCase().includes(qLower)) return true;
             if (post.description && post.description.toLowerCase().includes(qLower)) return true;
-            if (post.content && post.content.toLowerCase().includes(qLower)) return true;
             if (post.tags && post.tags.some(t => t.toLowerCase().includes(qLower))) return true;
             if (post.category && post.category.toLowerCase().includes(qLower)) return true;
             return false;
