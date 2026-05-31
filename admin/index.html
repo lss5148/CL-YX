@@ -110,6 +110,11 @@
                         <i class="fa fa-link me-1"></i>下载链接管理
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="images-tab" data-bs-toggle="tab" data-bs-target="#imagesPanel" type="button" role="tab" onclick="loadImageRecords()">
+                        <i class="fa fa-image me-1"></i>图片记录
+                    </button>
+                </li>
             </ul>
 
             <!-- Tab: 文章管理 -->
@@ -215,6 +220,46 @@
                     </div>
                 </div>
             </div><!-- /mappingPanel -->
+
+            <!-- Tab: 图片记录 -->
+            <div class="tab-pane fade" id="imagesPanel" role="tabpanel">
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fa fa-image me-2" style="color:var(--accent);"></i>图片上传记录</span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-accent me-1" onclick="exportImageRecordsXlsx()">
+                                <i class="fa fa-file-excel-o me-1"></i>导出 Excel
+                            </button>
+                            <button class="btn btn-sm btn-accent" onclick="saveImageRecordsToGithub()">
+                                <i class="fa fa-cloud-upload me-1"></i>保存到 GitHub
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height:500px;overflow-y:auto;">
+                            <table class="table table-hover table-sm mb-0">
+                                <thead class="table-light" style="position:sticky;top:0;">
+                                    <tr>
+                                        <th style="width:30px;">#</th>
+                                        <th style="min-width:180px;">文件名</th>
+                                        <th style="min-width:120px;">时间</th>
+                                        <th style="width:80px;">大小</th>
+                                        <th style="width:70px;">尺寸</th>
+                                        <th style="min-width:100px;">复制次数</th>
+                                        <th style="min-width:250px;">图片 URL</th>
+                                        <th style="width:60px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="imageRecordsBody">
+                                    <tr><td colspan="8" class="text-center text-muted py-4">点击「图片记录」标签加载数据</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-2 text-muted small" id="imageRecordsStatus"></div>
+                    </div>
+                </div>
+            </div><!-- /imagesPanel -->
+
             </div><!-- /tab-content -->
         </div>
     </div>
@@ -2081,6 +2126,7 @@
                     renderUploadHistory();
                     fileInput.value = '';
                     updateFileCount();
+                    addImageRecords(data.results);
                     toast(`上传完成: ${data.okCount}/${data.total} 成功`, data.okCount > 0 ? 'success' : 'danger');
                 } else {
                     toast('上传失败: ' + (data.error || '未知错误'), 'danger');
@@ -2153,6 +2199,156 @@
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
+        }
+
+        // ========== 图片上传记录管理 ==========
+        let imageRecords = []; // { id, name, url, size, width, height, time, copyCount }
+
+        // 上传成功后自动记录（在 uploadImages 的 finally 中调用）
+        function addImageRecords(results) {
+            if (!results || !results.length) return;
+            const now = new Date().toLocaleString('zh-CN');
+            results.forEach(r => {
+                if (r.ok && r.url) {
+                    imageRecords.push({
+                        id: Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                        name: r.name,
+                        url: r.url,
+                        size: r.size,
+                        width: r.width || 0,
+                        height: r.height || 0,
+                        time: now,
+                        copyCount: 0,
+                    });
+                }
+            });
+            // 同时更新上传弹窗里的复制功能
+            renderImageRecordsTable();
+        }
+
+        function recordCopy(url) {
+            const record = imageRecords.find(r => r.url === url);
+            if (record) {
+                record.copyCount = (record.copyCount || 0) + 1;
+                renderImageRecordsTable();
+            }
+        }
+
+        async function loadImageRecords() {
+            const tbody = document.getElementById('imageRecordsBody');
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin me-1"></i>加载中...</td></tr>';
+
+            const ghToken2 = localStorage.getItem('gh_token');
+            if (ghToken2 && REPO) {
+                try {
+                    const url = `https://api.github.com/repos/${REPO}/contents/data/image-records.json`;
+                    const res = await fetch(url, {
+                        headers: { 'Authorization': 'token ' + ghToken2, 'Accept': 'application/vnd.github.v3.raw' },
+                    });
+                    if (res.ok) {
+                        const text = await res.text();
+                        const parsed = JSON.parse(text);
+                        if (parsed && parsed.records) {
+                            imageRecords = parsed.records;
+                            renderImageRecordsTable();
+                            document.getElementById('imageRecordsStatus').textContent = '✅ 已从 GitHub 加载 ' + imageRecords.length + ' 条记录';
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.log('加载 image-records.json 失败:', e.message);
+                }
+            }
+            renderImageRecordsTable();
+            document.getElementById('imageRecordsStatus').textContent = imageRecords.length > 0
+                ? '⚠️ 本地 ' + imageRecords.length + ' 条（未同步到 GitHub）'
+                : '暂无记录，上传图片后会自动记录';
+        }
+
+        function renderImageRecordsTable() {
+            const tbody = document.getElementById('imageRecordsBody');
+            if (!imageRecords.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">暂无记录，上传图片后会自动出现在这里</td></tr>';
+                return;
+            }
+            tbody.innerHTML = imageRecords.slice().reverse().map((r, i) => {
+                const sizeStr = r.size ? (r.size / 1024).toFixed(0) + 'KB' : '';
+                const dimStr = r.width > 0 ? r.width + 'x' + r.height : '';
+                return `<tr>
+                    <td class="text-muted small">${imageRecords.length - i}</td>
+                    <td><small>${escHtml(r.name)}</small></td>
+                    <td><small>${r.time}</small></td>
+                    <td><small>${sizeStr}</small></td>
+                    <td><small>${dimStr}</small></td>
+                    <td><span class="badge ${r.copyCount > 0 ? 'bg-info text-dark' : 'bg-light text-muted'}">${r.copyCount || 0}</span></td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm" value="${r.url}" readonly
+                               style="font-size:0.65rem;font-family:monospace;" onclick="this.select()">
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-accent py-0 px-1" title="复制并记录"
+                                onclick="copyAndRecord('${r.url.replace(/'/g, "\\'")}')">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+            document.getElementById('imageRecordsStatus').textContent = '共 ' + imageRecords.length + ' 条记录';
+        }
+
+        function copyAndRecord(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                recordCopy(url);
+                toast('已复制！复制次数已更新', 'success');
+            }).catch(() => toast('复制失败', 'warning'));
+        }
+
+        function exportImageRecordsXlsx() {
+            if (!imageRecords.length) { toast('暂无记录可导出', 'warning'); return; }
+            const rows = imageRecords.map((r, i) => ({
+                '序号': i + 1,
+                '文件名': r.name,
+                '上传时间': r.time,
+                '大小': r.size ? (r.size / 1024).toFixed(1) + 'KB' : '',
+                '尺寸': r.width > 0 ? r.width + 'x' + r.height : '',
+                '图片URL': r.url,
+                '复制次数': r.copyCount || 0,
+            }));
+            const ws = XLSX.utils.json_to_sheet(rows);
+            ws['!cols'] = [
+                { wch: 6 }, { wch: 40 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 60 }, { wch: 10 },
+            ];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '图片记录');
+            XLSX.writeFile(wb, 'CL游戏姬_图片记录_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+            toast('已导出 ' + imageRecords.length + ' 条记录', 'success');
+        }
+
+        async function saveImageRecordsToGithub() {
+            const ghToken2 = localStorage.getItem('gh_token');
+            if (!ghToken2 || !REPO) { toast('请先连接 GitHub', 'warning'); return; }
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify({ version: 1, records: imageRecords }, null, 2))));
+            try {
+                let sha = '';
+                try {
+                    const resp = await fetch(`https://api.github.com/repos/${REPO}/contents/data/image-records.json`, {
+                        headers: { 'Authorization': 'token ' + ghToken2 },
+                    });
+                    if (resp.ok) { const d = await resp.json(); sha = d.sha || ''; }
+                } catch (e) {}
+                const result = await fetch(`https://api.github.com/repos/${REPO}/contents/data/image-records.json`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'token ' + ghToken2, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: '更新图片上传记录', content, sha: sha || undefined, branch: BRANCH }),
+                });
+                if (result.ok) {
+                    toast('图片记录已保存到 GitHub', 'success');
+                    document.getElementById('imageRecordsStatus').textContent = '✅ 已保存 ' + imageRecords.length + ' 条记录';
+                } else {
+                    const err = await result.json();
+                    toast('保存失败: ' + (err.message || result.status), 'danger');
+                }
+            } catch (e) { toast('保存失败: ' + e.message, 'danger'); }
         }
     </script>
 </body>
