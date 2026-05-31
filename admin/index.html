@@ -698,7 +698,15 @@
                 // 同步保存轻量索引（去掉 content 字段，首页加载用）
                 try {
                     const indexData = JSON.parse(JSON.stringify(postsData));
-                    indexData.posts = indexData.posts.map(({ content, ...rest }) => rest);
+                    indexData.posts = indexData.posts.map(post => {
+                        // 从 content 中提取封面图放到 image 字段
+                        if (!post.image && post.content) {
+                            const m = post.content.match(/src="([^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"/i);
+                            if (m) post.image = m[1];
+                        }
+                        const { content, ...rest } = post;
+                        return rest;
+                    });
                     const idxJson = JSON.stringify(indexData, null, 2);
                     const idxBytes = new TextEncoder().encode(idxJson);
                     let idxStr = '';
