@@ -31,6 +31,10 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .status-dot.online { background: #2ECC71; }
         .status-dot.offline { background: #E74C3C; }
+        .post-item.selected { border-left-color: #ffc107 !important; background: #fffdf0; }
+        .img-replace-list { max-height: 280px; overflow-y: auto; font-size: 0.75rem; }
+        .img-replace-list .url-item { padding: 3px 6px; border-bottom: 1px solid #eee; word-break: break-all; display: flex; align-items: center; gap: 6px; }
+        .img-replace-list .url-item .badge { flex-shrink: 0; }
     </style>
 </head>
 <body>
@@ -83,6 +87,9 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4 class="mb-0"><i class="fa fa-file-text me-2" style="color:var(--accent);"></i>文章列表</h4>
                 <div>
+                    <button class="btn btn-outline-danger me-2" id="batchDeleteBtn" style="display:none;" onclick="batchDeletePosts()">
+                        <i class="fa fa-trash me-1"></i>批量删除 (<span id="batchDeleteCount">0</span>)
+                    </button>
                     <button class="btn btn-accent me-2" onclick="showAddForm()">
                         <i class="fa fa-plus me-1"></i>新增文章
                     </button>
@@ -113,6 +120,11 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="images-tab" data-bs-toggle="tab" data-bs-target="#imagesPanel" type="button" role="tab" onclick="loadImageRecords()">
                         <i class="fa fa-image me-1"></i>图片记录
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="imgReplace-tab" data-bs-toggle="tab" data-bs-target="#imgReplacePanel" type="button" role="tab">
+                        <i class="fa fa-exchange me-1"></i>图片链接替换
                     </button>
                 </li>
             </ul>
@@ -259,6 +271,59 @@
                     </div>
                 </div>
             </div><!-- /imagesPanel -->
+
+            <!-- Tab: 图片链接批量替换 -->
+            <div class="tab-pane fade" id="imgReplacePanel" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <span><i class="fa fa-exchange me-2" style="color:var(--accent);"></i>图片链接批量替换</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info small py-2 mb-3">
+                            <i class="fa fa-info-circle me-1"></i>
+                            扫描所有文章中的 <code>&lt;img&gt;</code> 图片链接，批量替换为新的图片地址（如更换图床后使用）。
+                        </div>
+
+                        <!-- 第 1 步：扫描 -->
+                        <div class="mb-3">
+                            <button class="btn btn-accent" onclick="scanImageUrls()">
+                                <i class="fa fa-search me-1"></i>扫描全部文章
+                            </button>
+                            <span class="text-muted small ms-2" id="imgScanStatus">尚未扫描</span>
+                        </div>
+
+                        <!-- 第 2 步：显示找到的链接 -->
+                        <div id="imgScanResults" style="display:none;">
+                            <label class="form-label fw-semibold small mb-1">
+                                找到的图片链接 <span class="text-muted fw-normal" id="imgFoundSummary"></span>
+                            </label>
+                            <div class="border rounded p-2 mb-3 img-replace-list" id="imgUrlList"></div>
+                        </div>
+
+                        <!-- 第 3 步：查找和替换 -->
+                        <div class="border-top pt-3 mt-1">
+                            <label class="form-label fw-semibold small mb-2">批量查找替换</label>
+                            <div class="row g-2 mb-2">
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control form-control-sm" id="imgFindStr"
+                                           placeholder="查找（原图片 URL 片段）" oninput="updateReplacePreview()">
+                                </div>
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control form-control-sm" id="imgReplaceStr"
+                                           placeholder="替换为（新图片 URL 片段）" oninput="updateReplacePreview()">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-accent w-100" onclick="executeBatchImageReplace()">
+                                        <i class="fa fa-exchange me-1"></i>执行替换
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="small text-muted" id="imgReplacePreview">填写查找内容后点击「扫描全部文章」查看预览</div>
+                            <div id="imgReplaceStatus" class="small mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /imgReplacePanel -->
 
             </div><!-- /tab-content -->
         </div>
@@ -489,6 +554,7 @@
         // ========== 全局状态 ==========
         let postsData = null;  // 完整的 posts.json 数据
         let fileSha = null;    // GitHub 文件 SHA（更新时需要）
+        let selectedPostIndices = new Set(); // 批量删除选中的文章索引
         const REPO = 'lss5148/CL-YX';
         const FILE_PATH = 'data/posts.json';
         const BRANCH = 'main';
@@ -583,16 +649,40 @@
             const container = document.getElementById('postsList');
             if (!postsData.posts.length) {
                 container.innerHTML = '<div class="text-center text-muted py-4">还没有文章，点击右上角"新增文章"添加</div>';
+                document.getElementById('batchDeleteBtn').style.display = 'none';
                 return;
             }
-            container.innerHTML = postsData.posts.map((p, i) => `
-                <div class="post-item d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="gradient-preview" style="background:${p.gradient || 'linear-gradient(135deg,#D87CFF,#9B59B6)'}">
+
+            // 全选行
+            const total = postsData.posts.length;
+            const selCount = selectedPostIndices.size;
+            const allSelected = selCount === total;
+            const someSelected = selCount > 0 && selCount < total;
+
+            let html = '';
+            html += `
+                <div class="d-flex align-items-center mb-2 pb-2 border-bottom" style="font-size:0.85rem;">
+                    <input type="checkbox" class="form-check-input me-2" id="selectAllCheckbox"
+                           onchange="toggleSelectAll(this.checked)"
+                           ${allSelected ? 'checked' : ''}>
+                    <label class="text-muted mb-0 user-select-none" for="selectAllCheckbox" style="cursor:pointer;">
+                        <small>全选</small>
+                    </label>
+                    <span class="text-muted ms-3"><small>共 ${total} 篇</small></span>
+                </div>`;
+
+            html += postsData.posts.map((p, i) => {
+                const isSelected = selectedPostIndices.has(i);
+                return `
+                <div class="post-item d-flex justify-content-between align-items-center ${isSelected ? 'selected' : ''}">
+                    <div class="d-flex align-items-center gap-3 flex-grow-1" style="min-width:0;">
+                        <input type="checkbox" class="form-check-input" ${isSelected ? 'checked' : ''}
+                               onchange="toggleSelectPost(${i}, this.checked)">
+                        <div class="gradient-preview" style="background:${p.gradient || 'linear-gradient(135deg,#D87CFF,#9B59B6)'};flex-shrink:0;">
                         </div>
-                        <div>
-                            <div class="title">${p.title}
-                                ${p.source ? '<span class="badge bg-info text-dark ms-1" style="font-weight:400;font-size:0.65rem;" title="来源: ' + p.source + '"><i class="fa fa-cloud"></i></span>' : ''}
+                        <div class="text-truncate">
+                            <div class="title text-truncate">${escHtml(p.title)}
+                                ${p.source ? '<span class="badge bg-info text-dark ms-1" style="font-weight:400;font-size:0.65rem;" title="来源: ' + escHtml(p.source) + '"><i class="fa fa-cloud"></i></span>' : ''}
                             </div>
                             <div class="meta">
                                 <span class="badge bg-light text-dark me-2">${p.category || '-'}</span>
@@ -602,7 +692,7 @@
                             </div>
                         </div>
                     </div>
-                    <div>
+                    <div class="flex-shrink-0">
                         <button class="btn btn-sm btn-outline-accent me-1" onclick="editPost(${i})">
                             <i class="fa fa-pencil"></i>
                         </button>
@@ -610,11 +700,18 @@
                             <i class="fa fa-trash"></i>
                         </button>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
 
-            // 更新随机推荐
+            container.innerHTML = html;
+
+            // 设置 indeterminate 状态
+            const selectAll = document.getElementById('selectAllCheckbox');
+            if (selectAll) selectAll.indeterminate = someSelected;
+
+            // 更新随机推荐和批量删除按钮
             updateRandomPosts();
+            updateBatchDeleteUI();
         }
 
         function renderMeta() {
@@ -753,6 +850,15 @@
 
         function deletePost(index) {
             if (!confirm('确定删除「' + postsData.posts[index].title + '」？')) return;
+
+            // 调整选中索引：被删索引之后的选中项前移一位
+            selectedPostIndices.delete(index);
+            const newSet = new Set();
+            selectedPostIndices.forEach(i => {
+                newSet.add(i > index ? i - 1 : i);
+            });
+            selectedPostIndices = newSet;
+
             postsData.posts.splice(index, 1);
             toast('文章已删除', 'info');
             renderPosts();
@@ -992,6 +1098,7 @@
                     };
                     postsData.posts.unshift(post);
                 });
+                selectedPostIndices.clear();
                 renderPosts();
                 bootstrap.Modal.getInstance(document.getElementById('importModal'))?.hide();
 
@@ -2417,6 +2524,204 @@
                     toast('保存失败: ' + (err.message || result.status), 'danger');
                 }
             } catch (e) { toast('保存失败: ' + e.message, 'danger'); }
+        }
+
+        // ========== 批量删除：全选/取消 ==========
+        function toggleSelectPost(index, checked) {
+            if (checked) {
+                selectedPostIndices.add(index);
+            } else {
+                selectedPostIndices.delete(index);
+            }
+            // 更新全选复选框状态
+            const selectAll = document.getElementById('selectAllCheckbox');
+            if (selectAll) {
+                const total = postsData.posts.length;
+                selectAll.checked = selectedPostIndices.size === total;
+                selectAll.indeterminate = selectedPostIndices.size > 0 && selectedPostIndices.size < total;
+            }
+            updateBatchDeleteUI();
+            // 高亮行
+            const items = document.querySelectorAll('.post-item');
+            if (items[index]) {
+                items[index].classList.toggle('selected', checked);
+            }
+        }
+
+        function toggleSelectAll(checked) {
+            if (checked) {
+                selectedPostIndices = new Set(postsData.posts.map((_, i) => i));
+            } else {
+                selectedPostIndices.clear();
+            }
+            renderPosts(); // 重新渲染更新所有复选框
+        }
+
+        function updateBatchDeleteUI() {
+            const count = selectedPostIndices.size;
+            const btn = document.getElementById('batchDeleteBtn');
+            const countSpan = document.getElementById('batchDeleteCount');
+            if (!btn) return;
+            if (count > 0) {
+                btn.style.display = 'inline-block';
+                countSpan.textContent = count;
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        function batchDeletePosts() {
+            const count = selectedPostIndices.size;
+            if (count === 0) { toast('请先选择要删除的文章', 'warning'); return; }
+            if (!confirm(`确定删除选中的 ${count} 篇文章？\n此操作不可撤销！`)) return;
+
+            // 从末尾开始倒序删除，保持索引正确
+            const indices = [...selectedPostIndices].sort((a, b) => b - a);
+            indices.forEach(i => postsData.posts.splice(i, 1));
+
+            selectedPostIndices.clear();
+            toast(`已删除 ${count} 篇文章`, 'info');
+            updateBatchDeleteUI();
+            renderPosts();
+        }
+
+        // ========== 批量图片链接替换 ==========
+        function scanImageUrls() {
+            if (!postsData || !postsData.posts || !postsData.posts.length) {
+                document.getElementById('imgScanStatus').textContent = '请先加载文章数据';
+                return;
+            }
+
+            const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+            const urlMap = new Map(); // url -> { count, articles: Set }
+
+            postsData.posts.forEach((post, idx) => {
+                const content = post.content || '';
+                let match;
+                while ((match = imgRegex.exec(content)) !== null) {
+                    const url = match[1];
+                    if (!urlMap.has(url)) {
+                        urlMap.set(url, { count: 0, articles: new Set() });
+                    }
+                    const entry = urlMap.get(url);
+                    entry.count++;
+                    entry.articles.add(idx);
+                }
+            });
+
+            const resultsDiv = document.getElementById('imgScanResults');
+            const urlListDiv = document.getElementById('imgUrlList');
+            const summary = document.getElementById('imgFoundSummary');
+            const status = document.getElementById('imgScanStatus');
+
+            if (urlMap.size === 0) {
+                resultsDiv.style.display = 'none';
+                status.textContent = '未找到任何图片链接';
+                return;
+            }
+
+            resultsDiv.style.display = 'block';
+            status.textContent = `找到 ${urlMap.size} 个唯一图片链接`;
+
+            const sorted = [...urlMap.entries()].sort((a, b) => b[1].count - a[1].count);
+            const affectedArticles = new Set([...urlMap.values()].flatMap(v => [...v.articles]));
+            summary.textContent = `(共 ${urlMap.size} 个，涉及 ${affectedArticles.size} 篇文章)`;
+
+            urlListDiv.innerHTML = sorted.map(([url, info]) => {
+                return `<div class="url-item">
+                    <span class="badge bg-light text-dark">${info.count}次/${info.articles.size}篇</span>
+                    <span>${escHtml(url.substring(0, 150))}${url.length > 150 ? '...' : ''}</span>
+                </div>`;
+            }).join('');
+
+            updateReplacePreview();
+        }
+
+        function updateReplacePreview() {
+            const findStr = document.getElementById('imgFindStr').value.trim();
+            const replaceStr = document.getElementById('imgReplaceStr').value.trim();
+            const preview = document.getElementById('imgReplacePreview');
+            const status = document.getElementById('imgReplaceStatus');
+            status.innerHTML = '';
+
+            if (!findStr) {
+                preview.textContent = '填写查找内容后点击「扫描全部文章」查看预览';
+                return;
+            }
+            if (!postsData || !postsData.posts) {
+                preview.textContent = '请先加载文章数据';
+                return;
+            }
+
+            let totalMatches = 0;
+            let affectedArticles = 0;
+
+            postsData.posts.forEach(post => {
+                const content = post.content || '';
+                if (content.includes(findStr)) {
+                    affectedArticles++;
+                    let idx = 0;
+                    while ((idx = content.indexOf(findStr, idx)) !== -1) {
+                        totalMatches++;
+                        idx += findStr.length;
+                    }
+                }
+            });
+
+            if (totalMatches === 0) {
+                preview.innerHTML = `<span class="text-warning"><i class="fa fa-exclamation-triangle me-1"></i>未找到匹配 "${escHtml(findStr)}" 的内容</span>`;
+                return;
+            }
+
+            preview.innerHTML = `<span class="text-info"><i class="fa fa-info-circle me-1"></i>将影响 <strong>${affectedArticles}</strong> 篇文章中的 <strong>${totalMatches}</strong> 处匹配</span>`;
+            status.innerHTML = replaceStr
+                ? `<span class="text-muted">替换后示例：<code>${escHtml(findStr)}</code> → <code>${escHtml(replaceStr)}</code></span>`
+                : '';
+        }
+
+        function executeBatchImageReplace() {
+            const findStr = document.getElementById('imgFindStr').value.trim();
+            const replaceStr = document.getElementById('imgReplaceStr').value.trim();
+
+            if (!findStr) { toast('请输入查找内容', 'warning'); return; }
+            if (!replaceStr) { toast('请输入替换内容', 'warning'); return; }
+            if (!postsData || !postsData.posts) { toast('文章数据未加载', 'warning'); return; }
+
+            let totalMatches = 0;
+            let affectedArticles = 0;
+            postsData.posts.forEach(post => {
+                const content = post.content || '';
+                if (content.includes(findStr)) {
+                    affectedArticles++;
+                    let idx = 0;
+                    while ((idx = content.indexOf(findStr, idx)) !== -1) { totalMatches++; idx += findStr.length; }
+                }
+            });
+
+            if (totalMatches === 0) {
+                toast('未找到匹配内容', 'warning');
+                return;
+            }
+
+            if (!confirm(`确定将「${findStr}」替换为「${replaceStr}」？\n将影响 ${affectedArticles} 篇文章中的 ${totalMatches} 处匹配。\n\n替换后将不可撤销，请确认！`)) return;
+
+            let replaced = 0;
+            let replacedArticles = 0;
+            postsData.posts.forEach(post => {
+                if ((post.content || '').includes(findStr)) {
+                    post.content = (post.content || '').replaceAll(findStr, replaceStr);
+                    replacedArticles++;
+                    replaced += totalMatches; // not precise per-article but good enough
+                    if (post.contentMd) {
+                        post.contentMd = post.contentMd.replaceAll(findStr, replaceStr);
+                    }
+                }
+            });
+
+            document.getElementById('imgReplaceStatus').innerHTML = `<span class="text-success"><i class="fa fa-check-circle me-1"></i>已完成替换：${replacedArticles} 篇文章</span>`;
+            toast(`✅ 已替换 ${replacedArticles} 篇文章中的 ${totalMatches} 个图片链接`, 'success');
+            // 重新扫描以刷新列表
+            scanImageUrls();
         }
     </script>
 </body>
