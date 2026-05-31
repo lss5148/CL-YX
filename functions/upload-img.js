@@ -1,6 +1,6 @@
 /**
- * 纯测试版：只接收并回显文件信息，不连 Telegram
- * 用于确认 Cloudflare Pages Functions 能否正常接收文件上传
+ * Telegram 图床上传 — 支持批量上传
+ * POST /upload-img  with FormData: files[], token, chatId
  */
 export async function onRequest(context) {
     try {
@@ -14,107 +14,79 @@ export async function onRequest(context) {
                 },
             });
         }
-
         if (context.request.method === 'GET') {
-            return json({ ok: true, message: 'Upload API v3 (test mode)' });
+            return json({ ok: true, message: 'Upload API v4 (batch)' });
         }
-
         if (context.request.method !== 'POST') {
             return json({ ok: false, error: 'POST required' }, 405);
         }
 
-        const ct = context.request.headers.get('content-type') || '';
-        const cl = context.request.headers.get('content-length') || '0';
+        const formData = await context.request.formData();
+        const token = (formData.get('token') || '').trim();
+        const chatId = (formData.get('chatId') || '').trim();
 
-        // 尝试解析 FormData
-        let formData;
-        try {
-            formData = await context.request.formData();
-        } catch (e) {
-            return json({
-                ok: false,
-                error: 'FormData 解析失败: ' + e.message,
-                contentType: ct,
-                contentLength: cl,
-            }, 400);
+        if (!token || token.length < 10) return json({ ok: false, error: 'Token 无效' }, 400);
+        if (!chatId || !chatId.startsWith('-100')) return json({ ok: false, error: '频道 ID 应以 -100 开头' }, 400);
+
+        // 获取所有文件（支持 files[] 和 file）
+        let files = formData.getAll('files');
+        if (files.length === 0) {
+            const single = formData.get('file');
+            if (single && single.size > 0) files = [single];
         }
+        if (files.length === 0) return json({ ok: false, error: '没有选择文件' }, 400);
 
-        const file = formData.get('file');
-        const token = formData.get('token') || '';
-        const chatId = formData.get('chatId') || '';
-
-        const result = {
-            ok: true,
-            mode: 'test',
-            message: '文件接收成功！',
-            file: file ? {
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                sizeKB: (file.size / 1024).toFixed(1) + 'KB',
-            } : null,
-            hasToken: !!token,
-            tokenLen: token.length,
-            hasChatId: !!chatId,
-            chatIdValue: chatId,
-            contentType: ct,
-            contentLength: cl,
-        };
-
-        // 如果 token 和 chatId 都有效，才尝试发送到 Telegram
-        if (token && token.length > 10 && chatId && chatId.startsWith('-100') && file && file.size > 0) {
-            result.mode = 'forwarding';
+        const results = [];
+        for (const file of files) {
+            const entry = { name: file.name, size: file.size };
             try {
                 const tgForm = new FormData();
                 tgForm.append('chat_id', chatId);
                 tgForm.append('photo', file, file.name);
                 tgForm.append('disable_notification', 'true');
 
-                const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-                    method: 'POST',
-                    body: tgForm,
-                });
-                const tgData = await tgRes.json();
+                const r1 = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: tgForm });
+                const d1 = await r1.json();
 
-                if (tgData.ok) {
-                    const photos = tgData.result.photo || [];
-                    const largest = photos.reduce((a, b) => (b.file_size || 0) > (a.file_size || 0) ? b : a, photos[0] || {});
-                    const gfRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${largest.file_id}`);
-                    const gfData = await gfRes.json();
-                    if (gfData.ok && gfData.result.file_path) {
-                        result.url = `https://api.telegram.org/file/bot${token}/${gfData.result.file_path}`;
-                        result.width = largest.width;
-                        result.height = largest.height;
-                        result.tg_size = largest.file_size;
-                        result.mode = 'success';
-                    } else {
-                        result.mode = 'getFile_failed';
-                        result.tgError = gfData;
-                    }
+                if (!d1.ok) {
+                    entry.error = d1.description || '发送失败';
                 } else {
-                    result.mode = 'sendPhoto_failed';
-                    result.tgError = tgData;
+                    const photos = d1.result.photo || [];
+                    const big = photos.reduce((a, b) => (b.file_size || 0) > (a.file_size || 0) ? b : a, photos[0] || {});
+                    const r2 = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${big.file_id}`);
+                    const d2 = await r2.json();
+                    if (d2.ok && d2.result.file_path) {
+                        entry.url = `https://api.telegram.org/file/bot${token}/${d2.result.file_path}`;
+                        entry.width = big.width;
+                        entry.height = big.height;
+                        entry.ok = true;
+                    } else {
+                        entry.error = '获取直链失败: ' + (d2.description || '');
+                    }
                 }
-            } catch (tgErr) {
-                result.mode = 'tg_network_error';
-                result.error = tgErr.message;
+            } catch (e) {
+                entry.error = e.message;
             }
+            results.push(entry);
         }
 
-        return json(result);
+        const okCount = results.filter(r => r.ok).length;
+        return json({
+            ok: okCount > 0,
+            total: results.length,
+            okCount,
+            failCount: results.length - okCount,
+            results,
+        });
 
     } catch (error) {
-        return json({ ok: false, error: 'Outer catch: ' + (error?.message || 'unknown') }, 500);
+        return json({ ok: false, error: '服务器异常: ' + (error?.message || 'unknown') }, 500);
     }
 }
 
 function json(data, status) {
     return new Response(JSON.stringify(data), {
         status: status || 200,
-        headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'no-cache',
-        },
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' },
     });
 }
