@@ -2,86 +2,172 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>图床上传测试</title>
+    <title>Telegram 图床诊断</title>
     <style>
-        body { font-family: system-ui; max-width: 600px; margin: 50px auto; padding: 20px; background: #111; color: #eee; }
-        input, button { padding: 8px 12px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #222; color: #eee; }
-        button { background: #00f0ff; color: #000; cursor: pointer; font-weight: bold; }
-        button:hover { background: #0ff; }
-        .result { margin-top: 15px; padding: 12px; border-radius: 8px; background: #1a1a2e; word-break: break-all; font-family: monospace; font-size: 13px; }
-        .error { border-left: 3px solid #ff2d95; }
-        .success { border-left: 3px solid #0f0; }
-        h2 { color: #00f0ff; }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui; max-width: 650px; margin: 30px auto; padding: 20px; background: #0a0a0f; color: #e0e0e8; }
+        h2 { color: #00f0ff; font-size: 1.2rem; }
+        .step { background: #111118; border: 1px solid #1e1e2e; border-radius: 10px; padding: 15px; margin-bottom: 12px; }
+        .step h3 { margin: 0 0 8px 0; font-size: 0.95rem; color: #ffd700; }
+        .step p { margin: 4px 0; font-size: 0.8rem; color: #888; }
+        input { width: 100%; padding: 8px 10px; margin: 5px 0; border-radius: 6px; border: 1px solid #333; background: #1a1a2e; color: #eee; font-size: 0.85rem; }
+        button { padding: 8px 18px; margin: 5px 5px 5px 0; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+        .btn-go { background: #00f0ff; color: #000; }
+        .btn-go:hover { background: #0ff; }
+        .btn-gray { background: #333; color: #aaa; }
+        .btn-gray:hover { background: #444; }
+        .result { margin-top: 8px; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; word-break: break-all; }
+        .ok { border-left: 3px solid #39ff14; background: #0a1a0a; }
+        .fail { border-left: 3px solid #ff2d95; background: #1a0a0a; }
+        .wait { border-left: 3px solid #ffd700; background: #1a1a0a; }
+        label { font-size: 0.8rem; color: #aaa; display: block; margin-top: 5px; }
     </style>
 </head>
 <body>
-    <h2>Telegram 图床上传测试</h2>
-    <p>用这个页面排查上传问题。填入 Token 和频道 ID，选一张图片上传。</p>
+    <h2>Telegram 图床诊断工具</h2>
+    <p style="color:#888;font-size:0.8rem;">逐步排查上传失败原因，按顺序点击测试按钮</p>
 
-    <div>
-        <label>Bot Token:</label><br>
-        <input type="password" id="token" placeholder="123456:ABC-DEF..." style="width:100%">
+    <div class="step">
+        <h3>0. 准备工作</h3>
+        <label>Bot Token（从 @BotFather 复制）</label>
+        <input type="text" id="token" placeholder="数字:字母">
+        <label>频道 ID（以 -100 开头）</label>
+        <input type="text" id="chatId" placeholder="-100xxxxxxxxxx">
+        <p>⚠️ Token 和频道 ID 不会上传到任何地方，只在你的浏览器里运行</p>
     </div>
-    <div>
-        <label>频道 ID:</label><br>
-        <input type="text" id="chatId" placeholder="-100xxxxxxxxxx" style="width:100%">
+
+    <div class="step">
+        <h3>1. 测试 Token 是否有效</h3>
+        <p>调用 getMe 接口，验证 Token 格式是否正确</p>
+        <button class="btn-go" onclick="testGetMe()">测试 Token</button>
+        <div class="result" id="r1" style="display:none"></div>
     </div>
-    <div>
-        <label>图片文件:</label><br>
-        <input type="file" id="file" accept="image/*">
+
+    <div class="step">
+        <h3>2. 测试 Bot 能否看到频道</h3>
+        <p>调用 getChat 接口，验证 Bot 是否能访问该频道</p>
+        <button class="btn-go" onclick="testGetChat()">测试频道</button>
+        <div class="result" id="r2" style="display:none"></div>
     </div>
-    <button onclick="test()">测试上传</button>
-    <button onclick="testHealth()">测试连接</button>
-    <div class="result" id="result" style="display:none"></div>
+
+    <div class="step">
+        <h3>3. 测试发送文字消息</h3>
+        <p>发送一条简单的文字到频道（比图片更基础，方便排查权限）</p>
+        <button class="btn-go" onclick="testSendMessage()">发送文字</button>
+        <div class="result" id="r3" style="display:none"></div>
+    </div>
+
+    <div class="step">
+        <h3>4. 测试上传图片</h3>
+        <p>选择一张小图片上传</p>
+        <input type="file" id="testFile" accept="image/*">
+        <button class="btn-go" onclick="testSendPhoto()">上传图片</button>
+        <div class="result" id="r4" style="display:none"></div>
+    </div>
 
     <script>
-        async function testHealth() {
-            const r = document.getElementById('result');
-            r.style.display = 'block';
-            r.className = 'result';
-            r.textContent = '检查中...';
-            try {
-                const resp = await fetch('/upload-img');
-                const data = await resp.json();
-                r.textContent = JSON.stringify(data, null, 2);
-                r.className = 'result success';
-            } catch(e) {
-                r.textContent = '连接失败: ' + e.message;
-                r.className = 'result error';
-            }
+        async function getT() {
+            const t = document.getElementById('token').value.trim();
+            if (!t) { alert('请先填写 Bot Token'); throw new Error(); }
+            return t;
+        }
+        async function getC() {
+            const c = document.getElementById('chatId').value.trim();
+            if (!c) { alert('请先填写频道 ID'); throw new Error(); }
+            return c;
         }
 
-        async function test() {
-            const token = document.getElementById('token').value.trim();
-            const chatId = document.getElementById('chatId').value.trim();
-            const file = document.getElementById('file').files[0];
-            const r = document.getElementById('result');
+        function show(id, cls, text) {
+            const el = document.getElementById(id);
+            el.style.display = 'block';
+            el.className = 'result ' + cls;
+            el.textContent = text;
+        }
 
-            if (!token || !chatId || !file) {
-                r.style.display = 'block';
-                r.className = 'result error';
-                r.textContent = '请填写 Token、频道 ID 并选择图片';
-                return;
-            }
-
-            r.style.display = 'block';
-            r.className = 'result';
-            r.textContent = '上传中...';
-
+        async function testGetMe() {
+            show('r1', 'wait', '正在调用 getMe...');
             try {
-                const form = new FormData();
-                form.append('file', file);
-                form.append('token', token);
-                form.append('chatId', chatId);
+                const t = await getT();
+                const r = await fetch(`https://api.telegram.org/bot${t}/getMe`);
+                const d = await r.json();
+                if (d.ok) {
+                    show('r1', 'ok', '✅ Token 有效！\nBot 用户名: @' + d.result.username + '\nBot 名称: ' + d.result.first_name);
+                } else {
+                    show('r1', 'fail', '❌ Token 无效\n' + JSON.stringify(d, null, 2));
+                }
+            } catch(e) { show('r1', 'fail', '❌ 网络错误: ' + e.message); }
+        }
 
-                const resp = await fetch('/upload-img', { method: 'POST', body: form });
-                const data = await resp.json();
-                r.textContent = JSON.stringify(data, null, 2);
-                r.className = data.ok ? 'result success' : 'result error';
-            } catch(e) {
-                r.textContent = '请求失败: ' + e.message;
-                r.className = 'result error';
-            }
+        async function testGetChat() {
+            show('r2', 'wait', '正在调用 getChat...');
+            try {
+                const t = await getT();
+                const c = await getC();
+                const r = await fetch(`https://api.telegram.org/bot${t}/getChat?chat_id=${c}`);
+                const d = await r.json();
+                if (d.ok) {
+                    show('r2', 'ok', '✅ Bot 可以访问该频道！\n频道名: ' + (d.result.title || '未知') + '\n类型: ' + d.result.type);
+                } else {
+                    const desc = d.description || '';
+                    let hint = '';
+                    if (desc.includes('chat not found')) hint = '\n\n🔧 请检查:\n1. 频道 ID 是否正确（必须以 -100 开头）\n2. Bot 是否已被添加为该频道的管理员\n3. 步骤: 进入频道 → 点频道名 → Administrators → Add Admin → 搜索 Bot 用户名 → 添加';
+                    show('r2', 'fail', '❌ Bot 无法访问该频道\n' + JSON.stringify(d, null, 2) + hint);
+                }
+            } catch(e) { show('r2', 'fail', '❌ 网络错误: ' + e.message); }
+        }
+
+        async function testSendMessage() {
+            show('r3', 'wait', '正在发送测试消息...');
+            try {
+                const t = await getT();
+                const c = await getC();
+                const r = await fetch(`https://api.telegram.org/bot${t}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: c, text: '🧪 图床测试消息 - ' + new Date().toLocaleString(), disable_notification: true }),
+                });
+                const d = await r.json();
+                if (d.ok) {
+                    show('r3', 'ok', '✅ 文字消息发送成功！\n消息 ID: ' + d.result.message_id + '\n\n现在去 Telegram 频道看看有没有收到这条消息');
+                } else {
+                    const desc = d.description || '';
+                    let hint = '';
+                    if (desc.includes('not enough rights')) hint = '\n\n🔧 Bot 权限不足。请在频道管理中将 Bot 设为管理员并开启"发送消息"权限';
+                    if (desc.includes('chat not found')) hint = '\n\n🔧 频道不存在或 Bot 无权限访问';
+                    show('r3', 'fail', '❌ 发送失败\n' + JSON.stringify(d, null, 2) + hint);
+                }
+            } catch(e) { show('r3', 'fail', '❌ 网络错误: ' + e.message); }
+        }
+
+        async function testSendPhoto() {
+            const fileInput = document.getElementById('testFile');
+            const file = fileInput.files[0];
+            if (!file) { alert('请先选择一张测试图片'); return; }
+            show('r4', 'wait', '正在上传...');
+            try {
+                const t = await getT();
+                const c = await getC();
+                const fd = new FormData();
+                fd.append('chat_id', c);
+                fd.append('photo', file);
+                fd.append('disable_notification', 'true');
+                const r = await fetch(`https://api.telegram.org/bot${t}/sendPhoto`, { method: 'POST', body: fd });
+                const d = await r.json();
+                if (d.ok) {
+                    const p = d.result.photo || [];
+                    const big = p.reduce((a,b) => (b.file_size||0) > (a.file_size||0) ? b : a, p[0]||{});
+                    const r2 = await fetch(`https://api.telegram.org/bot${t}/getFile?file_id=${big.file_id}`);
+                    const d2 = await r2.json();
+                    if (d2.ok && d2.result.file_path) {
+                        const url = `https://api.telegram.org/file/bot${t}/${d2.result.file_path}`;
+                        show('r4', 'ok', '✅ 图片上传成功！\n\n直链 URL:\n' + url + '\n\n尺寸: ' + (big.width||'?') + 'x' + (big.height||'?') + '\n大小: ' + ((big.file_size||0)/1024).toFixed(1) + 'KB');
+                    } else {
+                        show('r4', 'fail', '⚠️ 上传成功但获取直链失败\n' + JSON.stringify(d2, null, 2));
+                    }
+                } else {
+                    show('r4', 'fail', '❌ 上传失败\n' + JSON.stringify(d, null, 2));
+                }
+            } catch(e) { show('r4', 'fail', '❌ 网络错误: ' + e.message); }
         }
     </script>
 </body>
