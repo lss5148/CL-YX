@@ -33,10 +33,20 @@ export async function onRequest(context) {
         return new Response(null, {
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type',
                 'Access-Control-Max-Age': '86400',
             },
+        });
+    }
+
+    // GET 请求：健康检查 / 使用说明
+    if (context.request.method === 'GET') {
+        return jsonResponse({
+            ok: true,
+            message: 'CL游戏姬 Telegram 图床上传 API',
+            usage: 'POST 到此地址，携带 FormData: file, token, chatId',
+            note: 'token 和 chatId 也可以通过环境变量 TG_BOT_TOKEN 和 TG_CHANNEL_ID 设置',
         });
     }
 
@@ -76,9 +86,14 @@ export async function onRequest(context) {
         const sendData = await sendRes.json();
 
         if (!sendData.ok) {
+            const desc = sendData.description || '未知错误';
+            let hint = '';
+            if (desc.includes('chat not found')) hint = ' → 频道 ID 错误，或 Bot 不是频道管理员。请确认：1) ID 以 -100 开头 2) Bot 已被添加为频道管理员';
+            else if (desc.includes('Unauthorized') || desc.includes('401')) hint = ' → Bot Token 无效，请检查是否填写正确';
+            else if (desc.includes('Bad Request')) hint = ' → 请求格式错误：' + desc;
             return jsonResponse({
                 ok: false,
-                error: `Telegram 上传失败: ${sendData.description || '未知错误'}`,
+                error: 'Telegram API 错误: ' + desc + hint,
                 detail: sendData,
             }, 502);
         }

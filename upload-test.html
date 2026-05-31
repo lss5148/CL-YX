@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>图床上传测试</title>
+    <style>
+        body { font-family: system-ui; max-width: 600px; margin: 50px auto; padding: 20px; background: #111; color: #eee; }
+        input, button { padding: 8px 12px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #222; color: #eee; }
+        button { background: #00f0ff; color: #000; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0ff; }
+        .result { margin-top: 15px; padding: 12px; border-radius: 8px; background: #1a1a2e; word-break: break-all; font-family: monospace; font-size: 13px; }
+        .error { border-left: 3px solid #ff2d95; }
+        .success { border-left: 3px solid #0f0; }
+        h2 { color: #00f0ff; }
+    </style>
+</head>
+<body>
+    <h2>Telegram 图床上传测试</h2>
+    <p>用这个页面排查上传问题。填入 Token 和频道 ID，选一张图片上传。</p>
+
+    <div>
+        <label>Bot Token:</label><br>
+        <input type="password" id="token" placeholder="123456:ABC-DEF..." style="width:100%">
+    </div>
+    <div>
+        <label>频道 ID:</label><br>
+        <input type="text" id="chatId" placeholder="-100xxxxxxxxxx" style="width:100%">
+    </div>
+    <div>
+        <label>图片文件:</label><br>
+        <input type="file" id="file" accept="image/*">
+    </div>
+    <button onclick="test()">测试上传</button>
+    <button onclick="testHealth()">测试连接</button>
+    <div class="result" id="result" style="display:none"></div>
+
+    <script>
+        async function testHealth() {
+            const r = document.getElementById('result');
+            r.style.display = 'block';
+            r.className = 'result';
+            r.textContent = '检查中...';
+            try {
+                const resp = await fetch('/upload-img');
+                const data = await resp.json();
+                r.textContent = JSON.stringify(data, null, 2);
+                r.className = 'result success';
+            } catch(e) {
+                r.textContent = '连接失败: ' + e.message;
+                r.className = 'result error';
+            }
+        }
+
+        async function test() {
+            const token = document.getElementById('token').value.trim();
+            const chatId = document.getElementById('chatId').value.trim();
+            const file = document.getElementById('file').files[0];
+            const r = document.getElementById('result');
+
+            if (!token || !chatId || !file) {
+                r.style.display = 'block';
+                r.className = 'result error';
+                r.textContent = '请填写 Token、频道 ID 并选择图片';
+                return;
+            }
+
+            r.style.display = 'block';
+            r.className = 'result';
+            r.textContent = '上传中...';
+
+            try {
+                const form = new FormData();
+                form.append('file', file);
+                form.append('token', token);
+                form.append('chatId', chatId);
+
+                const resp = await fetch('/upload-img', { method: 'POST', body: form });
+                const data = await resp.json();
+                r.textContent = JSON.stringify(data, null, 2);
+                r.className = data.ok ? 'result success' : 'result error';
+            } catch(e) {
+                r.textContent = '请求失败: ' + e.message;
+                r.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>
