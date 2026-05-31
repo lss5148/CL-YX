@@ -157,10 +157,13 @@
             <div class="tab-pane fade" id="mappingPanel" role="tabpanel">
                 <div class="card mb-3">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span><i class="fa fa-link me-2" style="color:var(--accent);"></i>百度网盘链接映射表</span>
+                        <span><i class="fa fa-link me-2" style="color:var(--accent);"></i>下载链接映射表 <span class="badge bg-accent ms-1 small" id="mappingCount">0</span></span>
                         <div>
                             <button class="btn btn-sm btn-outline-accent me-1" onclick="downloadMappingJson()">
-                                <i class="fa fa-download me-1"></i>下载 mapping.json
+                                <i class="fa fa-download me-1"></i>下载 JSON
+                            </button>
+                            <button class="btn btn-sm btn-outline-accent me-1" onclick="downloadMappingXlsx()">
+                                <i class="fa fa-file-excel-o me-1"></i>下载 XLSX
                             </button>
                             <button class="btn btn-sm btn-accent" onclick="document.getElementById('uploadMappingXlsx').click()">
                                 <i class="fa fa-upload me-1"></i>上传 XLSX 填入新链接
@@ -171,38 +174,40 @@
                     <div class="card-body">
                         <div class="alert alert-info small py-2 mb-3">
                             <i class="fa fa-info-circle me-1"></i>
-                            在 Excel 的"我的新百度链接"列填入你的分享链接、"我的提取码"列填入提取码，
-                            然后上传 XLSX 批量更新。或者直接在下方填写后点"保存到文章"。
+                            支持百度网盘、移动云盘(139)、迅雷云盘、夸克网盘、115网盘。
+                            在下方对应列填入新链接和提取码，点击"替换到文章"即可批量更新。
+                            也可下载 XLSX 离线编辑后上传。
                         </div>
                         <!-- 映射表 -->
-                        <div class="table-responsive" style="max-height:500px;overflow-y:auto;">
-                            <table class="table table-hover table-sm mb-0" id="mappingTable">
-                                <thead class="table-light" style="position:sticky;top:0;">
+                        <div class="table-responsive" style="max-height:500px;overflow:auto;">
+                            <table class="table table-hover table-sm mb-0" id="mappingTable" style="min-width:1600px;">
+                                <thead class="table-light" style="position:sticky;top:0;z-index:1;">
                                     <tr>
                                         <th style="width:30px;">#</th>
-                                        <th style="min-width:150px;">游戏标题</th>
-                                        <th style="width:100px;">百度编号</th>
-                                        <th style="width:50px;">类型</th>
-                                        <th style="min-width:200px;">我的新百度链接</th>
-                                        <th style="width:90px;">提取码</th>
-                                        <th style="width:80px;">备注</th>
-                                        <th style="width:80px;">状态</th>
-                                        <th style="width:70px;">操作</th>
+                                        <th style="min-width:140px;">游戏标题</th>
+                                        <th style="width:85px;">原始编号</th>
+                                        <th style="min-width:200px;">百度网盘 <span class="badge bg-info" style="font-size:0.6rem;">新链接+提取码</span></th>
+                                        <th style="min-width:200px;">移动云盘(139)</th>
+                                        <th style="min-width:200px;">迅雷云盘</th>
+                                        <th style="min-width:200px;">夸克网盘</th>
+                                        <th style="min-width:200px;">115网盘</th>
+                                        <th style="width:75px;">状态</th>
+                                        <th style="width:55px;">操作</th>
                                     </tr>
                                 </thead>
                                 <tbody id="mappingBody">
-                                    <tr><td colspan="9" class="text-center text-muted py-4">加载中...</td></tr>
+                                    <tr><td colspan="10" class="text-center text-muted py-4">加载中...</td></tr>
                                 </tbody>
                             </table>
                         </div>
-                        <div class="mt-3 d-flex gap-2">
+                        <div class="mt-3 d-flex gap-2 flex-wrap align-items-center">
                             <button class="btn btn-accent" onclick="batchReplaceLinks()">
-                                <i class="fa fa-exchange me-1"></i>将新链接批量替换到文章
+                                <i class="fa fa-exchange me-1"></i>批量替换到文章
                             </button>
                             <button class="btn btn-outline-accent" onclick="saveMappingToGithub()">
                                 <i class="fa fa-cloud-upload me-1"></i>保存映射表到 GitHub
                             </button>
-                            <span class="text-muted small align-self-center ms-2" id="mappingStatus"></span>
+                            <span class="text-muted small" id="mappingStatus"></span>
                         </div>
                     </div>
                 </div>
@@ -1046,6 +1051,9 @@
                 }
             }
 
+            // --- 清除下载链接区域 ---
+            content = cleanDownloadSections(content);
+
             // --- 浏览数 ---
             let views = '0';
             const viewsEl = doc.querySelector('.single-views') || doc.querySelector('.post-views') || doc.querySelector('.views');
@@ -1060,6 +1068,49 @@
             }
 
             return { title, content, description, category, author, date, image, download, views, comments, source: url };
+        }
+
+        // ========== 清除文章内容中的下载链接区域 ==========
+        function cleanDownloadSections(html) {
+            if (!html) return html;
+            let cleaned = html;
+
+            // 1. 移除分隔线（单独成行的 ———— 或 ---- 等）
+            cleaned = cleaned.replace(/<p[^>]*>\s*[—–\-]{3,}\s*<\/p>/gi, '');
+            cleaned = cleaned.replace(/<p[^>]*>\s*[—–\-]{3,}\s*<br\s*\/?>\s*<\/p>/gi, '');
+
+            // 2. 移除百度网盘信息行（"百度网盘：xxx" 段落）
+            cleaned = cleaned.replace(/<p[^>]*>\s*百度网盘[：:][\s\S]*?<\/p>/gi, '');
+
+            // 3. 移除移动云盘信息行（"移动云盘：xxx" 段落）
+            cleaned = cleaned.replace(/<p[^>]*>\s*移动云盘[：:][\s\S]*?<\/p>/gi, '');
+
+            // 4. 移除包含下载链接的 <a> 标签所在段落（pan.baidu / yun.139 / pan.xunlei / pan.quark / 115.com）
+            cleaned = cleaned.replace(/<p[^>]*>\s*(?:链接|下载)[：:]\s*<a[\s\S]*?<\/a>\s*(?:提取码[：:]\s*\w+\s*)?(?:<br\s*\/?>)?\s*<\/p>/gi, '');
+            // 变体："链接:" 后面有空格+<a> 标签
+            cleaned = cleaned.replace(/<p[^>]*>\s*链接\s*[：:]\s*<a[\s\S]*?<\/a>[\s\S]*?<\/p>/gi, '');
+
+            // 5. 移除迅雷链接段落
+            cleaned = cleaned.replace(/<p[^>]*>\s*迅雷[^：:]*[：:][\s\S]*?<\/p>/gi, '');
+
+            // 6. 移除夸克链接段落
+            cleaned = cleaned.replace(/<p[^>]*>\s*夸克[^：:]*[：:][\s\S]*?<\/p>/gi, '');
+
+            // 7. 移除开通网盘会员相关段落
+            cleaned = cleaned.replace(/<p[^>]*>\s*(?:开通|网盘会员|会员充值|下载通道|解压密码[：:]|解压码[：:])[\s\S]*?<\/p>/gi, '');
+
+            // 8. 移除百度口令段落
+            cleaned = cleaned.replace(/<p[^>]*>\s*百度口令[：:][\s\S]*?<\/p>/gi, '');
+
+            // 9. 移除包含 115.com 链接的段落
+            cleaned = cleaned.replace(/<p[^>]*>\s*(?:115[^：:]*[：:]|分享文件[：:])[\s\S]*?<\/p>/gi, '');
+
+            // 10. 清理可能残留的空 <p> 标签
+            cleaned = cleaned.replace(/<p[^>]*>\s*(?:<br\s*\/?>\s*)*\s*<\/p>/gi, '');
+            // 多个连续空行合并
+            cleaned = cleaned.replace(/(<p[^>]*>\s*<\/p>\s*){2,}/gi, '');
+
+            return cleaned;
         }
 
         // ========== 自动生成标签 ==========
@@ -1276,13 +1327,68 @@
         showSection();
 
         // ========== 下载链接映射管理 ==========
-        let mappingData = { version: 1, articles: [] };
+        const PLATFORMS = [
+            { key: 'baidu',    label: '百度网盘',   urlRegex: /https?:\/\/pan\.baidu\.com\/s\/[^\s<"')]+/g,      pwdRegex: /提取码[：:]\s*(\w+)/g,   color: '#4FC3F7' },
+            { key: 'yun139',   label: '移动云盘',   urlRegex: /https?:\/\/yun\.139\.com[^\s<"')]+/g,             pwdRegex: /(?:提取码|密码)[：:]\s*(\w+)/g, color: '#FF9800' },
+            { key: 'xunlei',   label: '迅雷云盘',   urlRegex: /https?:\/\/pan\.xunlei\.com\/s\/[^\s<"')]+/g,     pwdRegex: /(?:密码|提取码)[：:]\s*(\w+)/g,  color: '#2196F3' },
+            { key: 'quark',    label: '夸克网盘',   urlRegex: /https?:\/\/pan\.quark\.cn\/s\/[^\s<"')]+/g,        pwdRegex: /(?:提取码|密码)[：:]\s*(\w+)/g,  color: '#66BB6A' },
+            { key: 'cloud115', label: '115网盘',    urlRegex: /https?:\/\/115\.com\/[^\s<"')]+/g,                 pwdRegex: /(?:访问码|提取码|密码)[：:]\s*(\w+)/g, color: '#FF5722' },
+        ];
+
+        function createEmptyMyLinks() {
+            const ml = {};
+            PLATFORMS.forEach(p => { ml[p.key] = { url: '', pwd: '' }; });
+            return ml;
+        }
+
+        function createEmptyOriginalLinks() {
+            const ol = {};
+            PLATFORMS.forEach(p => { ol[p.key + 'Urls'] = []; });
+            return ol;
+        }
+
+        let mappingData = { version: 2, articles: [] };
+
+        // 从链接附近提取密码/提取码
+        function extractPwdNearUrl(content, url) {
+            const idx = content.indexOf(url);
+            if (idx === -1) return '';
+            const near = content.substring(idx + url.length, idx + url.length + 80);
+            const m = near.match(/(?:提取码|密码|访问码)[：:]\s*(\w{3,8})/);
+            return m ? m[1] : '';
+        }
+
+        // 迁移旧格式 myLinks
+        function migrateOldMyLinks(item) {
+            if (!item.myLinks) { item.myLinks = createEmptyMyLinks(); return; }
+            if (item.myLinks.baiduUrl !== undefined) {
+                const old = item.myLinks;
+                item.myLinks = {
+                    baidu:    { url: old.baiduUrl || '', pwd: old.baiduPwd || '' },
+                    yun139:   { url: old.yun139Url || '', pwd: old.yun139Pwd || '' },
+                    xunlei:   { url: old.xunleiUrl || '', pwd: old.xunleiPwd || '' },
+                    quark:    { url: '', pwd: '' },
+                    cloud115: { url: '', pwd: '' },
+                };
+            }
+        }
+
+        // 迁移旧格式 originalLinks
+        function migrateOldOriginalLinks(item) {
+            if (!item.originalLinks) { item.originalLinks = createEmptyOriginalLinks(); return; }
+            if (item.originalLinks.baiduUrl !== undefined) {
+                const old = item.originalLinks;
+                item.originalLinks = createEmptyOriginalLinks();
+                if (old.baiduUrl) item.originalLinks.baiduUrls.push(old.baiduUrl);
+                if (old.yun139Url) item.originalLinks.yun139Urls.push(old.yun139Url);
+                if (old.xunleiUrl) item.originalLinks.xunleiUrls.push(old.xunleiUrl);
+            }
+        }
 
         async function loadMappingData() {
             const tbody = document.getElementById('mappingBody');
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin me-1"></i>加载映射数据...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin me-1"></i>加载映射数据...</td></tr>';
 
-            // 尝试从 GitHub 加载 mapping.json
             const ghToken2 = localStorage.getItem('gh_token');
             if (ghToken2 && REPO) {
                 try {
@@ -1295,6 +1401,25 @@
                         const parsed = JSON.parse(text);
                         if (parsed && parsed.articles) {
                             mappingData = parsed;
+                            mappingData.version = mappingData.version || 1;
+                            // 迁移旧格式
+                            if (mappingData.version < 2) {
+                                mappingData.articles.forEach(item => {
+                                    migrateOldMyLinks(item);
+                                    migrateOldOriginalLinks(item);
+                                    item.status = item.status || 'pending';
+                                });
+                                mappingData.version = 2;
+                            }
+                            // 确保所有条目有完整结构
+                            mappingData.articles.forEach(item => {
+                                if (!item.myLinks || item.myLinks.baiduUrl !== undefined) migrateOldMyLinks(item);
+                                if (!item.originalLinks || item.originalLinks.baiduUrl !== undefined) migrateOldOriginalLinks(item);
+                                PLATFORMS.forEach(p => {
+                                    if (!item.myLinks[p.key]) item.myLinks[p.key] = { url: '', pwd: '' };
+                                    if (!item.originalLinks[p.key + 'Urls']) item.originalLinks[p.key + 'Urls'] = [];
+                                });
+                            });
                             renderMappingTable();
                             document.getElementById('mappingStatus').textContent = '✅ 已从 GitHub 加载 ' + mappingData.articles.length + ' 条';
                             return;
@@ -1305,127 +1430,140 @@
                 }
             }
 
-            // Fallback: 生成初始映射表（从 postsData 扫描）
+            // Fallback: 从 postsData 扫描生成
             if (typeof postsData !== 'undefined' && postsData && postsData.posts) {
                 mappingData.articles = postsData.posts.map(p => {
-                    let baiduCode = '';
-                    let baiduType = 'none';
-                    let baiduPhrase = '';
-                    let baiduLink = '';
-                    let xunleiLink = '';
-                    let yun139Link = '';
-
-                    // 在 content 中搜索
                     const c = p.content || '';
-                    // 百度网盘：后面的全部内容
+                    const originalLinks = createEmptyOriginalLinks();
+
+                    // 提取所有平台的链接
+                    PLATFORMS.forEach(plat => {
+                        const matches = [...c.matchAll(plat.urlRegex)];
+                        const urls = matches.map(m => m[0]);
+                        // 去重
+                        originalLinks[plat.key + 'Urls'] = [...new Set(urls)];
+                    });
+
+                    // 百度编号
+                    let baiduCode = '';
+                    let baiduPhrase = '';
                     const cm = c.match(/百度网盘[：:]\s*(\S{1,60}?)(?:\s|$|[\n\r]|链接)/);
-                    if (cm) {
-                        const raw = cm[1].trim();
-                        if (raw.length >= 1) {
-                            baiduCode = raw;
-                            baiduType = 'code';
-                        }
-                    }
-                    // 百度口令
+                    if (cm) baiduCode = cm[1].trim();
                     const pm = c.match(/百度口令[：:]\s*([^\n\r<]{2,30}?)(?:\s|$|[\n\r<])/);
                     if (pm) {
                         const phrase = pm[1].trim();
-                        if (phrase && phrase.length > 1 && !/分享|链接/.test(phrase)) {
-                            baiduPhrase = phrase;
-                            if (!baiduCode) baiduType = 'phrase';
-                        }
+                        if (phrase && phrase.length > 1 && !/分享|链接/.test(phrase)) baiduPhrase = phrase;
                     }
-                    // 百度链接
-                    const bum = c.match(/https?:\/\/pan\.baidu\.com\/s\/[^\s<\"')]+/);
-                    if (bum) baiduLink = bum[0];
-                    // 迅雷链接
-                    const xm = c.match(/https?:\/\/pan\.xunlei\.com\/s\/[^\s<\"')]+/);
-                    if (xm) xunleiLink = xm[0];
-                    // 云盘链接
-                    const ym = c.match(/https?:\/\/yun\.139\.com[^\s<\"')]+/);
-                    if (ym) yun139Link = ym[0];
+
+                    const note = baiduPhrase && !originalLinks.baiduUrls.length ? '⚠️ 百度口令' : '';
 
                     return {
                         title: p.title || '',
                         url: p.link || '',
                         category: p.category || '',
                         baiduCode,
-                        baiduType,
                         baiduPhrase,
-                        originalLinks: { baiduUrl: baiduLink, xunleiUrl: xunleiLink, yun139Url: yun139Link },
-                        myLinks: { baiduUrl: '', baiduPwd: '' },
-                        note: baiduType === 'phrase' ? '⚠️ 百度口令' : '',
+                        originalLinks,
+                        myLinks: createEmptyMyLinks(),
+                        note,
                         status: 'pending',
                     };
                 });
                 renderMappingTable();
                 document.getElementById('mappingStatus').textContent = '⚠️ 从文章生成 ' + mappingData.articles.length + ' 条（未保存）';
             } else {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">暂无数据</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">暂无数据</td></tr>';
             }
         }
 
         function renderMappingTable() {
             const tbody = document.getElementById('mappingBody');
             if (!mappingData.articles || mappingData.articles.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">暂无映射数据，请先提取文章</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">暂无映射数据，请先加载文章</td></tr>';
+                document.getElementById('mappingCount').textContent = '0';
                 return;
             }
+            document.getElementById('mappingCount').textContent = mappingData.articles.length;
 
             tbody.innerHTML = mappingData.articles.map((item, i) => {
-                let typeBadge = '';
-                if (item.baiduType === 'code') typeBadge = '<span class="badge bg-success">编号</span>';
-                else if (item.baiduType === 'phrase') typeBadge = '<span class="badge bg-warning text-dark">口令⚠️</span>';
-                else typeBadge = '<span class="badge bg-secondary">无</span>';
+                let totalFilled = 0;
+                let totalLinks = 0;
+                const platformCells = PLATFORMS.map(plat => {
+                    const origUrls = item.originalLinks[plat.key + 'Urls'] || [];
+                    const myLink = (item.myLinks && item.myLinks[plat.key]) ? item.myLinks[plat.key] : { url: '', pwd: '' };
+                    const hasOrig = origUrls.length > 0;
+                    totalLinks += origUrls.length;
+                    if (myLink.url) totalFilled++;
 
+                    // 多条原始链接：显示多行输入框
+                    let rowsHtml = '';
+                    const maxRows = Math.max(origUrls.length, 1);
+                    for (let r = 0; r < maxRows; r++) {
+                        const origUrl = origUrls[r] || '';
+                        const origPwd = origUrl ? extractPwdNearUrl(item.originalLinks._contentCache || '', origUrl) : '';
+                        rowsHtml += `<div style="margin-bottom:2px;${r > 0 ? 'border-top:1px dashed #444;padding-top:2px;' : ''}">
+                            ${origUrl ? '<small class="text-muted d-block" style="font-size:0.6rem;line-height:1.1;word-break:break-all;" title="原始链接">' + origUrl.substring(0, 50) + (origUrl.length > 50 ? '...' : '') + (origPwd ? ' 码:' + origPwd : '') + '</small>' : '<small class="text-muted" style="font-size:0.6rem;">无</small>'}
+                            <input type="text" class="form-control form-control-sm" value="${r === 0 ? myLink.url : ''}"
+                                   placeholder="新链接..." style="font-size:0.7rem;"
+                                   onchange="updateMappingField(${i}, 'myLinks.${plat.key}.url', this.value)">
+                            <input type="text" class="form-control form-control-sm mt-1" value="${r === 0 ? myLink.pwd : ''}"
+                                   placeholder="提取码" style="width:75px;font-size:0.7rem;"
+                                   onchange="updateMappingField(${i}, 'myLinks.${plat.key}.pwd', this.value)">
+                        </div>`;
+                    }
+                    return `<td style="min-width:200px;font-size:0.75rem;">${rowsHtml}</td>`;
+                }).join('');
+
+                // 状态
                 let statusBadge = '';
                 if (item.status === 'done') statusBadge = '<span class="badge bg-success">已替换</span>';
-                else if (item.myLinks && item.myLinks.baiduUrl) statusBadge = '<span class="badge bg-info text-dark">已填</span>';
+                else if (totalFilled > 0) statusBadge = '<span class="badge bg-info text-dark">' + totalFilled + '/' + totalLinks + ' 已填</span>';
                 else statusBadge = '<span class="badge bg-light text-muted">待上传</span>';
 
-                const myUrl = (item.myLinks && item.myLinks.baiduUrl) || '';
-                const myPwd = (item.myLinks && item.myLinks.baiduPwd) || '';
-
                 return `<tr>
-                    <td class="text-muted small">${i + 1}</td>
-                    <td title="${item.title.replace(/"/g, '&quot;')}">${item.title.substring(0, 35)}</td>
-                    <td><strong>${item.baiduCode || '-'}</strong></td>
-                    <td>${typeBadge}</td>
-                    <td>
-                        <input type="text" class="form-control form-control-sm" value="${myUrl}"
-                               placeholder="https://pan.baidu.com/s/..."
-                               onchange="updateMappingField(${i}, 'myLinks.baiduUrl', this.value)">
+                    <td class="text-muted small align-middle">${i + 1}</td>
+                    <td class="align-middle" title="${item.title.replace(/"/g, '&quot;')}">
+                        <small>${item.title.substring(0, 35)}${item.title.length > 35 ? '...' : ''}</small>
+                        ${item.note ? '<br><span class="badge bg-warning text-dark" style="font-size:0.6rem;">' + item.note + '</span>' : ''}
                     </td>
-                    <td>
-                        <input type="text" class="form-control form-control-sm" value="${myPwd}"
-                               placeholder="提取码" style="width:80px;"
-                               onchange="updateMappingField(${i}, 'myLinks.baiduPwd', this.value)">
-                    </td>
-                    <td class="small text-muted">${item.note || ''}</td>
-                    <td>${statusBadge}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-accent py-0 px-1" onclick="applySingleLink(${i})" title="替换此文章链接">
+                    <td class="align-middle"><strong>${item.baiduCode || '-'}</strong></td>
+                    ${platformCells}
+                    <td class="align-middle" style="font-size:0.75rem;">${statusBadge}</td>
+                    <td class="align-middle">
+                        <button class="btn btn-sm btn-outline-accent py-0 px-1" onclick="applySingleLink(${i})" title="替换此文章的所有链接">
                             <i class="fa fa-exchange"></i>
                         </button>
                     </td>
                 </tr>`;
             }).join('');
+
+            // 缓存 content 用于提取密码
+            if (typeof postsData !== 'undefined' && postsData && postsData.posts) {
+                mappingData.articles.forEach((item, i) => {
+                    const post = postsData.posts.find(p => p.link === item.url || p.title === item.title);
+                    if (post) item.originalLinks._contentCache = post.content || '';
+                });
+            }
         }
 
         function updateMappingField(index, field, value) {
             if (!mappingData.articles[index]) return;
             const parts = field.split('.');
-            if (parts.length === 2) {
+            if (parts.length === 3) {
+                if (!mappingData.articles[index][parts[0]]) mappingData.articles[index][parts[0]] = {};
+                if (!mappingData.articles[index][parts[0]][parts[1]]) mappingData.articles[index][parts[0]][parts[1]] = { url: '', pwd: '' };
+                mappingData.articles[index][parts[0]][parts[1]][parts[2]] = value;
+            } else if (parts.length === 2) {
+                if (!mappingData.articles[index][parts[0]]) mappingData.articles[index][parts[0]] = {};
                 mappingData.articles[index][parts[0]][parts[1]] = value;
-            } else if (parts.length === 1) {
+            } else {
                 mappingData.articles[index][field] = value;
             }
-            // 如果有新链接，状态自动变为已填
-            if (mappingData.articles[index].myLinks.baiduUrl) {
-                if (!mappingData.articles[index].myLinks.baiduUrl.startsWith('http')) {
-                    // 可能只是填了编号，也算
-                }
-                if (mappingData.articles[index].status === 'pending') {
+            // 如果有新链接，状态自动更新
+            const ml = mappingData.articles[index].myLinks;
+            if (ml) {
+                const hasAny = PLATFORMS.some(p => ml[p.key] && ml[p.key].url);
+                if (hasAny && mappingData.articles[index].status === 'pending') {
                     mappingData.articles[index].status = 'filled';
                 }
             }
@@ -1433,13 +1571,42 @@
 
         // ========== 下载 mapping.json ==========
         function downloadMappingJson() {
-            const blob = new Blob([JSON.stringify(mappingData, null, 2)], { type: 'application/json' });
+            const exportData = JSON.parse(JSON.stringify(mappingData));
+            exportData.articles.forEach(item => { delete item.originalLinks._contentCache; });
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = 'download-mapping.json';
             a.click();
             URL.revokeObjectURL(a.href);
             toast('已下载 download-mapping.json', 'success');
+        }
+
+        // ========== 下载 mapping.xlsx ==========
+        function downloadMappingXlsx() {
+            const headers = ['游戏标题', '分类'];
+            PLATFORMS.forEach(p => {
+                headers.push('原始链接(' + p.label + ')', '新链接(' + p.label + ')', '提取码(' + p.label + ')');
+            });
+            headers.push('备注');
+
+            const rows = mappingData.articles.map(item => {
+                const row = [item.title, item.category];
+                PLATFORMS.forEach(p => {
+                    const origUrls = (item.originalLinks[p.key + 'Urls'] || []).join('\n');
+                    const myUrl = (item.myLinks && item.myLinks[p.key]) ? item.myLinks[p.key].url : '';
+                    const myPwd = (item.myLinks && item.myLinks[p.key]) ? item.myLinks[p.key].pwd : '';
+                    row.push(origUrls, myUrl, myPwd);
+                });
+                row.push(item.note || '');
+                return row;
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '下载链接映射');
+            XLSX.writeFile(wb, 'download-mapping.xlsx');
+            toast('已下载 download-mapping.xlsx', 'success');
         }
 
         // ========== 上传 XLSX 批量填入新链接 ==========
@@ -1459,25 +1626,61 @@
                         return;
                     }
 
+                    // 平台列名映射（不区分大小写）
+                    const colMap = {};
+                    PLATFORMS.forEach(p => {
+                        colMap[p.key] = {
+                            urlNames: ['我的新' + p.label + '链接', '新链接(' + p.label + ')', p.label + '链接', p.label + 'URL', p.key + '链接'],
+                            pwdNames: ['我的' + p.label + '提取码', '提取码(' + p.label + ')', p.label + '提取码', p.label + '密码', p.key + '提取码', (p.key === 'cloud115' ? '115访问码' : '')],
+                        };
+                    });
+
                     let updated = 0;
                     rows.forEach(row => {
                         const title = (row['游戏标题'] || '').trim();
-                        const newUrl = (row['我的新百度链接'] || '').trim();
-                        const newPwd = (row['我的提取码'] || '').trim();
-                        if (!newUrl && !newPwd) return;
-
-                        // 按标题匹配
+                        if (!title) return;
                         const match = mappingData.articles.find(a => a.title === title);
-                        if (match) {
-                            if (newUrl) match.myLinks.baiduUrl = newUrl;
-                            if (newPwd) match.myLinks.baiduPwd = newPwd;
-                            match.status = newUrl ? 'filled' : match.status;
+                        if (!match) return;
+
+                        let filled = false;
+                        PLATFORMS.forEach(p => {
+                            const names = colMap[p.key];
+                            let url = '', pwd = '';
+                            for (const name of names.urlNames) {
+                                if (row[name] && row[name].trim()) { url = row[name].trim(); break; }
+                                // 不区分大小写
+                                for (const key of Object.keys(row)) {
+                                    if (key.toLowerCase() === name.toLowerCase() && row[key] && row[key].trim()) {
+                                        url = row[key].trim(); break;
+                                    }
+                                }
+                                if (url) break;
+                            }
+                            for (const name of names.pwdNames) {
+                                if (row[name] && row[name].trim()) { pwd = row[name].trim(); break; }
+                                for (const key of Object.keys(row)) {
+                                    if (key.toLowerCase() === name.toLowerCase() && row[key] && row[key].trim()) {
+                                        pwd = row[key].trim(); break;
+                                    }
+                                }
+                                if (pwd) break;
+                            }
+                            if (url || pwd) {
+                                if (!match.myLinks) match.myLinks = createEmptyMyLinks();
+                                if (url) match.myLinks[p.key].url = url;
+                                if (pwd) match.myLinks[p.key].pwd = pwd;
+                                filled = true;
+                            }
+                        });
+
+                        if (filled) {
+                            match.status = 'filled';
                             updated++;
                         }
                     });
 
                     renderMappingTable();
-                    toast('成功更新 ' + updated + ' 条映射（匹配标题）', 'success');
+                    toast('成功更新 ' + updated + ' 条映射', 'success');
                     document.getElementById('mappingStatus').textContent = '✅ 已更新 ' + updated + ' 条';
                 } catch (err) {
                     toast('解析 Excel 失败: ' + err.message, 'danger');
@@ -1490,8 +1693,13 @@
         // ========== 替换单篇文章链接 ==========
         async function applySingleLink(index) {
             const item = mappingData.articles[index];
-            if (!item || !item.myLinks || !item.myLinks.baiduUrl) {
-                toast('请先填写新百度链接', 'warning');
+            if (!item || !item.myLinks) {
+                toast('请先填写新链接', 'warning');
+                return;
+            }
+            const hasAnyLink = PLATFORMS.some(p => item.myLinks[p.key] && item.myLinks[p.key].url);
+            if (!hasAnyLink) {
+                toast('请先填写至少一个新链接', 'warning');
                 return;
             }
             if (!postsData) {
@@ -1499,42 +1707,77 @@
                 return;
             }
 
-            // 在 postsData 中找到对应文章
             const post = postsData.posts.find(p => p.link === item.url || p.title === item.title);
             if (!post) {
                 toast('未找到对应文章: ' + item.title, 'warning');
                 return;
             }
 
-            const oldUrl = item.originalLinks.baiduUrl;
-            const newUrl = item.myLinks.baiduUrl;
-            const newPwd = item.myLinks.baiduPwd || '';
-
             if (!post.content) post.content = '';
 
-            // 替换百度链接
-            if (oldUrl && post.content.includes(oldUrl)) {
-                post.content = post.content.replaceAll(oldUrl, newUrl);
-            } else {
-                // 尝试用正则匹配任意 baidu 链接
-                post.content = post.content.replace(/https?:\/\/pan\.baidu\.com\/s\/[^\s<\"')]+/g, newUrl);
-            }
+            const results = [];
+            // 按 URL 长度降序替换，避免短 URL 误匹配长 URL
+            const sorted = [...PLATFORMS].sort((a, b) => {
+                const aLen = (item.myLinks[a.key] && item.myLinks[a.key].url) ? item.myLinks[a.key].url.length : 0;
+                const bLen = (item.myLinks[b.key] && item.myLinks[b.key].url) ? item.myLinks[b.key].url.length : 0;
+                return bLen - aLen;
+            });
 
-            // 替换提取码
-            if (newPwd) {
-                post.content = post.content.replace(/提取码[：:]\s*\w+/g, '提取码: ' + newPwd);
+            sorted.forEach(plat => {
+                const myUrl = item.myLinks[plat.key].url;
+                const myPwd = item.myLinks[plat.key].pwd;
+                if (!myUrl) return;
+
+                const origUrls = item.originalLinks[plat.key + 'Urls'] || [];
+
+                // 精确替换原始链接
+                origUrls.forEach(oldUrl => {
+                    if (oldUrl && post.content.includes(oldUrl)) {
+                        post.content = post.content.replaceAll(oldUrl, myUrl);
+                    }
+                });
+
+                // 回退：正则替换
+                if (!origUrls.length || (origUrls.length > 0 && !origUrls.some(u => post.content.includes(u)))) {
+                    post.content = post.content.replace(plat.urlRegex, myUrl);
+                }
+
+                // 替换提取码
+                if (myPwd) {
+                    const pwdPatterns = [
+                        new RegExp('(提取码|密码|访问码)[：:]\\s*\\w+', 'g'),
+                    ];
+                    pwdPatterns.forEach(re => {
+                        // 只替换匹配的第一个密码
+                        post.content = post.content.replace(re, (match) => {
+                            const prefix = match.match(/(?:提取码|密码|访问码)[：:]\s*/)[0];
+                            return prefix + myPwd;
+                        });
+                    });
+                }
+
+                results.push(plat.label);
+            });
+
+            // 更新 download 字段
+            const cleanDownload = (str) => str ? str.replace(/<[^>]*>/g, '').replace(/"/g, '') : '';
+            for (const plat of PLATFORMS) {
+                const u = item.myLinks[plat.key].url;
+                if (u) { post.download = cleanDownload(u); break; }
             }
 
             item.status = 'done';
             renderMappingTable();
-            toast('✅ 已替换: ' + item.title.substring(0, 30), 'success');
+            toast('✅ 已替换: ' + item.title.substring(0, 30) + ' (' + results.join(', ') + ')', 'success');
         }
 
         // ========== 批量替换所有链接到文章 ==========
         async function batchReplaceLinks() {
-            const toReplace = mappingData.articles.filter(
-                a => a.myLinks && a.myLinks.baiduUrl && a.status !== 'done'
-            );
+            const toReplace = mappingData.articles.filter(a => {
+                if (a.status === 'done') return false;
+                if (!a.myLinks) return false;
+                return PLATFORMS.some(p => a.myLinks[p.key] && a.myLinks[p.key].url);
+            });
             if (toReplace.length === 0) {
                 toast('没有待替换的链接（请先填写新链接）', 'warning');
                 return;
@@ -1544,39 +1787,68 @@
                 return;
             }
 
-            let replaced = 0;
+            let totalReplaced = 0;
             let notFound = 0;
+            const platCounts = {};
 
             toReplace.forEach(item => {
                 const post = postsData.posts.find(p => p.link === item.url || p.title === item.title);
                 if (!post) { notFound++; return; }
-
-                const newUrl = item.myLinks.baiduUrl;
-                const newPwd = item.myLinks.baiduPwd || '';
                 if (!post.content) post.content = '';
 
-                const oldUrl = item.originalLinks.baiduUrl;
-                if (oldUrl && post.content.includes(oldUrl)) {
-                    post.content = post.content.replaceAll(oldUrl, newUrl);
-                } else {
-                    post.content = post.content.replace(/https?:\/\/pan\.baidu\.com\/s\/[^\s<\"')]+/g, newUrl);
-                }
+                const sorted = [...PLATFORMS].sort((a, b) => {
+                    const aLen = (item.myLinks[a.key] && item.myLinks[a.key].url) ? item.myLinks[a.key].url.length : 0;
+                    const bLen = (item.myLinks[b.key] && item.myLinks[b.key].url) ? item.myLinks[b.key].url.length : 0;
+                    return bLen - aLen;
+                });
 
-                if (newPwd) {
-                    post.content = post.content.replace(/提取码[：:]\s*\w+/g, '提取码: ' + newPwd);
+                sorted.forEach(plat => {
+                    const myUrl = item.myLinks[plat.key].url;
+                    const myPwd = item.myLinks[plat.key].pwd;
+                    if (!myUrl) return;
+
+                    const origUrls = item.originalLinks[plat.key + 'Urls'] || [];
+                    origUrls.forEach(oldUrl => {
+                        if (oldUrl && post.content.includes(oldUrl)) {
+                            post.content = post.content.replaceAll(oldUrl, myUrl);
+                        }
+                    });
+                    if (!origUrls.length || (origUrls.length > 0 && !origUrls.some(u => post.content.includes(u)))) {
+                        post.content = post.content.replace(plat.urlRegex, myUrl);
+                    }
+
+                    if (myPwd) {
+                        post.content = post.content.replace(/(?:提取码|密码|访问码)[：:]\s*\w+/g, (match) => {
+                            const prefix = match.match(/(?:提取码|密码|访问码)[：:]\s*/)[0];
+                            return prefix + myPwd;
+                        });
+                    }
+
+                    platCounts[plat.key] = (platCounts[plat.key] || 0) + 1;
+                });
+
+                const cleanDownload = (str) => str ? str.replace(/<[^>]*>/g, '').replace(/"/g, '') : '';
+                for (const plat of PLATFORMS) {
+                    const u = item.myLinks[plat.key].url;
+                    if (u) { post.download = cleanDownload(u); break; }
                 }
 
                 item.status = 'done';
-                replaced++;
+                totalReplaced++;
             });
 
             renderMappingTable();
-            if (notFound > 0) {
-                toast('✅ 替换 ' + replaced + ' 篇 | ⚠️ 未找到 ' + notFound + ' 篇', 'warning');
-            } else {
-                toast('✅ 批量替换完成！共 ' + replaced + ' 篇文章', 'success');
-            }
-            document.getElementById('mappingStatus').textContent = '✅ 已替换 ' + replaced + ' 篇，请点击"保存所有更改到 GitHub"';
+
+            const parts = [];
+            PLATFORMS.forEach(p => {
+                if (platCounts[p.key]) parts.push(platCounts[p.key] + ' 条' + p.label);
+            });
+            let msg = '✅ 批量替换 ' + totalReplaced + ' 篇 (' + parts.join(', ') + ')';
+            if (notFound > 0) msg += ' | ⚠️ 未找到 ' + notFound + ' 篇';
+
+            if (notFound > 0) toast(msg, 'warning');
+            else toast(msg, 'success');
+            document.getElementById('mappingStatus').textContent = '✅ 已替换 ' + totalReplaced + ' 篇，请点击"保存所有更改到 GitHub"';
         }
 
         // ========== 保存映射表到 GitHub ==========
@@ -1587,10 +1859,11 @@
                 return;
             }
 
-            const content = btoa(unescape(encodeURIComponent(JSON.stringify(mappingData, null, 2))));
+            const exportData = JSON.parse(JSON.stringify(mappingData));
+            exportData.articles.forEach(item => { delete item.originalLinks._contentCache; });
+            const content = btoa(unescape(encodeURIComponent(JSON.stringify(exportData, null, 2))));
 
             try {
-                // 获取当前文件的 SHA（如果存在）
                 let sha = '';
                 try {
                     const resp = await fetch(`https://api.github.com/repos/${REPO}/contents/data/download-mapping.json`, {
