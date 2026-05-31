@@ -89,6 +89,9 @@
                     <button class="btn btn-outline-accent me-2" onclick="showImportModal()">
                         <i class="fa fa-download me-1"></i>导入文章
                     </button>
+                    <button class="btn btn-outline-accent me-2" onclick="showUploadImgModal()">
+                        <i class="fa fa-image me-1"></i>上传图片
+                    </button>
                     <button class="btn btn-outline-accent" onclick="disconnect()">
                         <i class="fa fa-sign-out me-1"></i>断开
                     </button>
@@ -255,6 +258,71 @@
                     <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
                     <button class="btn btn-accent" id="importBtn" onclick="importArticles()">
                         <i class="fa fa-download me-1"></i>提取并填充
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== 上传图片弹窗（Telegram 图床） ======== -->
+    <div class="modal fade" id="uploadImgModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius:12px;">
+                <div class="modal-header" style="border-bottom:2px solid var(--accent);">
+                    <h5 class="modal-title fw-bold"><i class="fa fa-image me-2" style="color:var(--accent);"></i>上传图片到 Telegram 图床</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info small py-2 mb-3">
+                        <i class="fa fa-info-circle me-1"></i>
+                        图片上传到 Telegram 私密频道（无限容量，全球 CDN），返回可直链的 URL。
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Bot Token</label>
+                        <input type="password" class="form-control form-control-sm" id="tgBotToken"
+                               placeholder="123456:ABC-DEF1234gh..."
+                               value="">
+                        <div class="form-text" style="font-size:0.7rem;">在 @BotFather 创建机器人获取，保存在浏览器本地</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">频道 ID</label>
+                        <input type="text" class="form-control form-control-sm" id="tgChannelId"
+                               placeholder="-100xxxxxxxxxx"
+                               value="">
+                        <div class="form-text" style="font-size:0.7rem;">私密频道 ID（负数开头），Bot 需为该频道管理员</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">选择图片</label>
+                        <input type="file" class="form-control form-control-sm" id="tgImageFile" accept="image/*">
+                        <div class="form-text" style="font-size:0.7rem;">支持 JPG/PNG/GIF/WebP，最大 10MB</div>
+                    </div>
+                    <!-- 上传进度 -->
+                    <div class="progress mb-2 d-none" id="uploadProgress" style="height:6px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="uploadProgressBar"
+                             style="width:0%;background:var(--accent);"></div>
+                    </div>
+                    <!-- 结果展示 -->
+                    <div id="uploadResult" class="d-none">
+                        <div class="alert alert-success small py-2 mb-2">
+                            <i class="fa fa-check-circle me-1"></i> 上传成功！
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small mb-1 fw-semibold">直链 URL（点击复制）</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="uploadedUrl" readonly
+                                       style="font-family:monospace;font-size:0.75rem;">
+                                <button class="btn btn-accent" onclick="copyUploadedUrl()">
+                                    <i class="fa fa-copy"></i> 复制
+                                </button>
+                            </div>
+                        </div>
+                        <div class="small text-muted" id="uploadedInfo"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button class="btn btn-accent" id="uploadBtn" onclick="uploadImage()">
+                        <i class="fa fa-cloud-upload me-1"></i>上传
                     </button>
                 </div>
             </div>
@@ -1942,6 +2010,92 @@
             } catch (e) {
                 toast('保存失败: ' + e.message, 'danger');
             }
+        }
+
+        // ========== Telegram 图床上传 ==========
+        function showUploadImgModal() {
+            // 加载已保存的配置
+            const savedToken = localStorage.getItem('tg_bot_token') || '';
+            const savedChatId = localStorage.getItem('tg_channel_id') || '';
+            document.getElementById('tgBotToken').value = savedToken;
+            document.getElementById('tgChannelId').value = savedChatId;
+            document.getElementById('tgImageFile').value = '';
+            document.getElementById('uploadResult').classList.add('d-none');
+            document.getElementById('uploadProgress').classList.add('d-none');
+            document.getElementById('uploadBtn').disabled = false;
+            new bootstrap.Modal(document.getElementById('uploadImgModal')).show();
+        }
+
+        async function uploadImage() {
+            const token = document.getElementById('tgBotToken').value.trim();
+            const chatId = document.getElementById('tgChannelId').value.trim();
+            const fileInput = document.getElementById('tgImageFile');
+            const file = fileInput.files[0];
+
+            if (!token) { toast('请填写 Bot Token', 'warning'); return; }
+            if (!chatId) { toast('请填写频道 ID', 'warning'); return; }
+            if (!file) { toast('请选择图片文件', 'warning'); return; }
+
+            // 保存配置
+            localStorage.setItem('tg_bot_token', token);
+            localStorage.setItem('tg_channel_id', chatId);
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const resultDiv = document.getElementById('uploadResult');
+
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>上传中...';
+            progressDiv.classList.remove('d-none');
+            progressBar.style.width = '30%';
+            resultDiv.classList.add('d-none');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('token', token);
+                formData.append('chatId', chatId);
+
+                progressBar.style.width = '70%';
+
+                const resp = await fetch('/upload-img', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                progressBar.style.width = '100%';
+
+                const data = await resp.json();
+
+                if (data.ok) {
+                    document.getElementById('uploadedUrl').value = data.url;
+                    document.getElementById('uploadedInfo').innerHTML =
+                        `尺寸: ${data.width}x${data.height} | 大小: ${(data.size/1024).toFixed(1)}KB | ` +
+                        `<a href="${data.messageLink}" target="_blank" style="color:var(--accent);">查看原消息</a>`;
+                    resultDiv.classList.remove('d-none');
+                    toast('上传成功！点击复制按钮获取直链', 'success');
+                } else {
+                    toast('上传失败: ' + (data.error || '未知错误'), 'danger');
+                }
+            } catch (e) {
+                toast('上传失败: ' + e.message, 'danger');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '<i class="fa fa-cloud-upload me-1"></i>上传';
+                setTimeout(() => progressDiv.classList.add('d-none'), 1000);
+            }
+        }
+
+        function copyUploadedUrl() {
+            const input = document.getElementById('uploadedUrl');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(input.value).then(() => {
+                toast('已复制到剪贴板！粘贴到文章内容中即可使用', 'success');
+            }).catch(() => {
+                toast('复制失败，请手动选择复制', 'warning');
+            });
         }
     </script>
 </body>
