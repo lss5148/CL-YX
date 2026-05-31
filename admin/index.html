@@ -1644,7 +1644,16 @@
         async function loadMappingData() {
             const tbody = document.getElementById('mappingBody');
             tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4"><i class="fa fa-spinner fa-spin me-1"></i>加载映射数据...</td></tr>';
+            document.getElementById('mappingStatus').textContent = '扫描中...';
 
+            // 确保 postsData 已加载且有文章
+            if (!postsData || !Array.isArray(postsData.posts) || postsData.posts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">⚠️ 文章数据未加载。<br>请先点击「文章管理」标签，等文章列表出现后，再点「重新扫描」按钮。</td></tr>';
+                document.getElementById('mappingStatus').textContent = '等待文章数据...';
+                return;
+            }
+
+            // 尝试从 GitHub 加载已保存的映射数据
             const ghToken2 = localStorage.getItem('gh_token');
             if (ghToken2 && REPO) {
                 try {
@@ -1655,10 +1664,9 @@
                     if (res.ok) {
                         const text = await res.text();
                         const parsed = JSON.parse(text);
-                        if (parsed && parsed.articles) {
+                        if (parsed && parsed.articles && parsed.articles.length > 0) {
                             mappingData = parsed;
                             mappingData.version = mappingData.version || 1;
-                            // 迁移旧格式
                             if (mappingData.version < 2) {
                                 mappingData.articles.forEach(item => {
                                     migrateOldMyLinks(item);
@@ -1667,7 +1675,6 @@
                                 });
                                 mappingData.version = 2;
                             }
-                            // 确保所有条目有完整结构
                             mappingData.articles.forEach(item => {
                                 if (!item.myLinks || item.myLinks.baiduUrl !== undefined) migrateOldMyLinks(item);
                                 if (!item.originalLinks || item.originalLinks.baiduUrl !== undefined) migrateOldOriginalLinks(item);
@@ -1687,49 +1694,42 @@
             }
 
             // Fallback: 从 postsData 扫描生成
-            if (typeof postsData !== 'undefined' && postsData && postsData.posts) {
-                mappingData.articles = postsData.posts.map(p => {
-                    const c = p.content || '';
-                    const originalLinks = createEmptyOriginalLinks();
+            mappingData.articles = postsData.posts.map(p => {
+                const c = p.content || '';
+                const originalLinks = createEmptyOriginalLinks();
 
-                    // 提取所有平台的链接
-                    PLATFORMS.forEach(plat => {
-                        const matches = [...c.matchAll(plat.urlRegex)];
-                        const urls = matches.map(m => m[0]);
-                        // 去重
-                        originalLinks[plat.key + 'Urls'] = [...new Set(urls)];
-                    });
-
-                    // 百度编号
-                    let baiduCode = '';
-                    let baiduPhrase = '';
-                    const cm = c.match(/百度网盘[：:]\s*(\S{1,60}?)(?:\s|$|[\n\r]|链接)/);
-                    if (cm) baiduCode = cm[1].trim();
-                    const pm = c.match(/百度口令[：:]\s*([^\n\r<]{2,30}?)(?:\s|$|[\n\r<])/);
-                    if (pm) {
-                        const phrase = pm[1].trim();
-                        if (phrase && phrase.length > 1 && !/分享|链接/.test(phrase)) baiduPhrase = phrase;
-                    }
-
-                    const note = baiduPhrase && !originalLinks.baiduUrls.length ? '⚠️ 百度口令' : '';
-
-                    return {
-                        title: p.title || '',
-                        url: p.link || '',
-                        category: p.category || '',
-                        baiduCode,
-                        baiduPhrase,
-                        originalLinks,
-                        myLinks: createEmptyMyLinks(),
-                        note,
-                        status: 'pending',
-                    };
+                PLATFORMS.forEach(plat => {
+                    const matches = [...c.matchAll(plat.urlRegex)];
+                    const urls = matches.map(m => m[0]);
+                    originalLinks[plat.key + 'Urls'] = [...new Set(urls)];
                 });
-                renderMappingTable();
-                document.getElementById('mappingStatus').textContent = '⚠️ 从文章生成 ' + mappingData.articles.length + ' 条（未保存）';
-            } else {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">暂无数据 — 请先切换到「文章管理」标签等文章加载完成，再点「重新扫描」按钮</td></tr>';
-            }
+
+                let baiduCode = '';
+                let baiduPhrase = '';
+                const cm = c.match(/百度网盘[：:]\s*(\S{1,60}?)(?:\s|$|[\n\r]|链接)/);
+                if (cm) baiduCode = cm[1].trim();
+                const pm = c.match(/百度口令[：:]\s*([^\n\r<]{2,30}?)(?:\s|$|[\n\r<])/);
+                if (pm) {
+                    const phrase = pm[1].trim();
+                    if (phrase && phrase.length > 1 && !/分享|链接/.test(phrase)) baiduPhrase = phrase;
+                }
+
+                const note = baiduPhrase && !originalLinks.baiduUrls.length ? '⚠️ 百度口令' : '';
+
+                return {
+                    title: p.title || '',
+                    url: p.link || '',
+                    category: p.category || '',
+                    baiduCode,
+                    baiduPhrase,
+                    originalLinks,
+                    myLinks: createEmptyMyLinks(),
+                    note,
+                    status: 'pending',
+                };
+            });
+            renderMappingTable();
+            document.getElementById('mappingStatus').textContent = '⚠️ 从文章生成 ' + mappingData.articles.length + ' 条（未保存）';
         }
 
         function renderMappingTable() {
