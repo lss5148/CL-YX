@@ -73,25 +73,6 @@
         .loading-detail i { font-size: 3rem; color: var(--accent); }
         .post-comments { padding: 1.5rem; }
         .post-comments h4 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; }
-        .download-box {
-            display: flex; flex-wrap: wrap; gap: 0.8rem;
-            padding: 1rem; border-radius: 8px;
-            background: rgba(216,124,255,0.05);
-            border: 1px solid rgba(216,124,255,0.15);
-            margin-bottom: 1rem;
-        }
-        .download-box a {
-            display: inline-flex; align-items: center; gap: 0.4rem;
-            padding: 0.5rem 1.2rem; border-radius: 6px;
-            background: linear-gradient(135deg, var(--accent), #9B59B6);
-            color: #fff; font-size: 0.85rem; font-weight: 600;
-            transition: all 0.3s;
-        }
-        .download-box a:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(216,124,255,0.4);
-            color: #fff;
-        }
     </style>
 </head>
 <body>
@@ -127,14 +108,6 @@
                                 <li><a href="/" class="dropdown-item">PC</a></li>
                             </ul>
                         </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">全年龄</a>
-                            <ul class="dropdown-menu">
-                                <li><a href="/" class="dropdown-item">全年龄AZ</a></li>
-                                <li><a href="/" class="dropdown-item">全年龄PC</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item"><a href="/" class="nav-link">免费电子书</a></li>
                         <li class="nav-item"><a href="/" class="nav-link">解压说明</a></li>
                         <li class="nav-item"><a href="/" class="nav-link">工具</a></li>
                         <li class="nav-item"><a href="/" class="nav-link">免责声明</a></li>
@@ -186,14 +159,6 @@
                         <li><a href="/" class="dropdown-item">PC</a></li>
                     </ul>
                 </li>
-                <li class="nav-item dropdown">
-                    <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">全年龄</a>
-                    <ul class="dropdown-menu">
-                        <li><a href="/" class="dropdown-item">全年龄AZ</a></li>
-                        <li><a href="/" class="dropdown-item">全年龄PC</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item"><a href="/" class="nav-link">免费电子书</a></li>
                 <li class="nav-item"><a href="/" class="nav-link">解压说明</a></li>
                 <li class="nav-item"><a href="/" class="nav-link">工具</a></li>
                 <li class="nav-item"><a href="/" class="nav-link">免责声明</a></li>
@@ -270,12 +235,6 @@
                             <div class="single-content" id="articleContentBody">
                                 <p class="text-muted" id="articleDescription" style="font-size:0.9rem;color:var(--bs-gray-600);"></p>
                                 <hr>
-                                <!-- 下载链接区 -->
-                                <div class="download-box" id="downloadBox">
-                                    <a id="downloadLink" href="#" target="_blank">
-                                        <i class="fa fa-cloud-download"></i>前往下载页面
-                                    </a>
-                                </div>
                                 <!-- 剩余正文 -->
                                 <div id="articleContentRest"></div>
                             </div>
@@ -428,7 +387,7 @@
                     document.getElementById('articleViews').textContent = post.views;
                     document.getElementById('articleComments').textContent = post.comments || '0';
                     document.getElementById('commentCount').textContent = post.comments || '0';
-                    document.getElementById('downloadLink').href = post.download || post.link || '#';
+                    // 正文内容由 API 数据填充
 
                     // 文章正文
                     const contentBody = document.getElementById('articleContentRest');
