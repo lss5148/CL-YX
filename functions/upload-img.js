@@ -1,6 +1,6 @@
 /**
- * 简化版测试：先确认文件接收正常，再连 Telegram
- * 待确认后替换 upload-img.js
+ * 纯测试版：只接收并回显文件信息，不连 Telegram
+ * 用于确认 Cloudflare Pages Functions 能否正常接收文件上传
  */
 export async function onRequest(context) {
     try {
@@ -16,96 +16,95 @@ export async function onRequest(context) {
         }
 
         if (context.request.method === 'GET') {
-            return json({ ok: true, message: 'Upload API v2' });
+            return json({ ok: true, message: 'Upload API v3 (test mode)' });
         }
 
         if (context.request.method !== 'POST') {
-            return json({ ok: false, error: '请使用 POST' }, 405);
+            return json({ ok: false, error: 'POST required' }, 405);
         }
 
-        // 接收文件
         const ct = context.request.headers.get('content-type') || '';
-        const formData = await context.request.formData();
+        const cl = context.request.headers.get('content-length') || '0';
+
+        // 尝试解析 FormData
+        let formData;
+        try {
+            formData = await context.request.formData();
+        } catch (e) {
+            return json({
+                ok: false,
+                error: 'FormData 解析失败: ' + e.message,
+                contentType: ct,
+                contentLength: cl,
+            }, 400);
+        }
 
         const file = formData.get('file');
         const token = formData.get('token') || '';
         const chatId = formData.get('chatId') || '';
 
-        if (!file) {
-            return json({ ok: false, error: '缺少 file 参数' }, 400);
-        }
-
-        // 先返回文件信息（不连 Telegram）
-        const fileInfo = {
-            name: file.name,
-            type: file.type,
-            size: file.size,
+        const result = {
+            ok: true,
+            mode: 'test',
+            message: '文件接收成功！',
+            file: file ? {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                sizeKB: (file.size / 1024).toFixed(1) + 'KB',
+            } : null,
             hasToken: !!token,
+            tokenLen: token.length,
             hasChatId: !!chatId,
+            chatIdValue: chatId,
+            contentType: ct,
+            contentLength: cl,
         };
 
-        // 如果 token 无效，直接返回提示
-        if (!token || token.length < 10) {
-            return json({ ok: false, error: 'Token 无效，请在管理后台填写正确的 Bot Token', fileInfo }, 400);
-        }
-        if (!chatId || !chatId.startsWith('-100')) {
-            return json({ ok: false, error: '频道 ID 格式错误，应以 -100 开头。当前值: ' + chatId, fileInfo }, 400);
-        }
+        // 如果 token 和 chatId 都有效，才尝试发送到 Telegram
+        if (token && token.length > 10 && chatId && chatId.startsWith('-100') && file && file.size > 0) {
+            result.mode = 'forwarding';
+            try {
+                const tgForm = new FormData();
+                tgForm.append('chat_id', chatId);
+                tgForm.append('photo', file, file.name);
+                tgForm.append('disable_notification', 'true');
 
-        // 发送到 Telegram
-        const tgForm = new FormData();
-        tgForm.append('chat_id', chatId);
-        tgForm.append('photo', file, file.name);
-        tgForm.append('disable_notification', 'true');
+                const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                    method: 'POST',
+                    body: tgForm,
+                });
+                const tgData = await tgRes.json();
 
-        const sendRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-            method: 'POST',
-            body: tgForm,
-        });
-        const sendData = await sendRes.json();
-
-        if (!sendData.ok) {
-            const desc = sendData.description || '未知错误';
-            let hint = '';
-            if (desc.includes('chat not found')) hint = ' → 频道 ID 错误，Bot 需为频道管理员。请确认 ID 以 -100 开头';
-            else if (desc.includes('Unauthorized')) hint = ' → Bot Token 无效';
-            return json({
-                ok: false,
-                error: 'Telegram 返回错误: ' + desc + hint,
-                tgResponse: sendData,
-                fileInfo,
-            }, 502);
-        }
-
-        // 获取直链
-        const photos = sendData.result.photo || [];
-        if (photos.length === 0) {
-            return json({ ok: false, error: 'Telegram 未返回图片信息' }, 502);
-        }
-        const largest = photos.reduce((a, b) => (b.file_size || 0) > (a.file_size || 0) ? b : a, photos[0]);
-
-        const gfRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${largest.file_id}`);
-        const gfData = await gfRes.json();
-
-        if (!gfData.ok || !gfData.result.file_path) {
-            return json({ ok: false, error: '获取文件路径失败: ' + (gfData.description || ''), tgResponse: gfData }, 502);
+                if (tgData.ok) {
+                    const photos = tgData.result.photo || [];
+                    const largest = photos.reduce((a, b) => (b.file_size || 0) > (a.file_size || 0) ? b : a, photos[0] || {});
+                    const gfRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${largest.file_id}`);
+                    const gfData = await gfRes.json();
+                    if (gfData.ok && gfData.result.file_path) {
+                        result.url = `https://api.telegram.org/file/bot${token}/${gfData.result.file_path}`;
+                        result.width = largest.width;
+                        result.height = largest.height;
+                        result.tg_size = largest.file_size;
+                        result.mode = 'success';
+                    } else {
+                        result.mode = 'getFile_failed';
+                        result.tgError = gfData;
+                    }
+                } else {
+                    result.mode = 'sendPhoto_failed';
+                    result.tgError = tgData;
+                }
+            } catch (tgErr) {
+                result.mode = 'tg_network_error';
+                result.error = tgErr.message;
+            }
         }
 
-        const url = `https://api.telegram.org/file/bot${token}/${gfData.result.file_path}`;
-
-        return json({
-            ok: true,
-            url: url,
-            width: largest.width,
-            height: largest.height,
-            size: largest.file_size,
-            messageId: sendData.result.message_id,
-            fileInfo,
-        });
+        return json(result);
 
     } catch (error) {
-        const msg = error && error.message ? String(error.message) : '未知错误';
-        return json({ ok: false, error: '服务器异常: ' + msg }, 500);
+        return json({ ok: false, error: 'Outer catch: ' + (error?.message || 'unknown') }, 500);
     }
 }
 
