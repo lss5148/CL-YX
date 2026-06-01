@@ -2270,17 +2270,20 @@ function renderMeta() {
                 } catch (e) {}
 
                 let result = await doPut(sha);
+                let errMsg = '';  // 缓存错误信息，避免重复读取 body
 
                 // SHA 冲突：重新获取后重试一次
                 if (!result.ok) {
                     const errBody = await result.json().catch(() => ({}));
-                    if (errBody.message && errBody.message.includes('does not match')) {
+                    errMsg = errBody.message || '';
+                    if (errMsg.includes('does not match')) {
                         const retryResp = await fetch(`https://api.github.com/repos/${REPO}/contents/${mappingPath}`, {
                             headers: { Authorization: 'token ' + ghToken2, Accept: 'application/vnd.github.v3+json' },
                         });
                         if (retryResp.ok) {
                             const d = await retryResp.json();
                             result = await doPut(d.sha || '');
+                            errMsg = ''; // 已重试，清除旧错误
                         }
                     }
                 }
@@ -2289,8 +2292,12 @@ function renderMeta() {
                     toast('映射表已保存到 GitHub', 'success');
                     document.getElementById('mappingStatus').textContent = '✅ 已保存到 GitHub';
                 } else {
-                    const err = await result.json().catch(() => ({}));
-                    toast('保存失败: ' + (err.message || result.status), 'danger');
+                    // 如果之前没读到错误信息（非 does not match 路径），再读一次
+                    if (!errMsg) {
+                        const errBody = await result.json().catch(() => ({}));
+                        errMsg = errBody.message || '';
+                    }
+                    toast('保存失败: ' + (errMsg || result.status), 'danger');
                 }
             } catch (e) {
                 toast('保存失败: ' + e.message, 'danger');
