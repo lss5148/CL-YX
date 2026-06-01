@@ -1593,7 +1593,7 @@
 
         function createEmptyMyLinks() {
             const ml = {};
-            PLATFORMS.forEach(p => { ml[p.key] = { url: '', pwd: '' }; });
+            PLATFORMS.forEach(p => { ml[p.key] = { url: '', pwd: '', code: '' }; });
             return ml;
         }
 
@@ -1766,12 +1766,17 @@
                         const origPwd = origUrl ? extractPwdNearUrl(item.originalLinks._contentCache || '', origUrl) : '';
                         rowsHtml += `<div style="margin-bottom:2px;${r > 0 ? 'border-top:1px dashed #444;padding-top:2px;' : ''}">
                             ${origUrl ? '<small class="text-muted d-block" style="font-size:0.6rem;line-height:1.1;word-break:break-all;" title="原始链接">' + origUrl.substring(0, 50) + (origUrl.length > 50 ? '...' : '') + (origPwd ? ' 码:' + origPwd : '') + '</small>' : '<small class="text-muted" style="font-size:0.6rem;">无</small>'}
-                            <input type="text" class="form-control form-control-sm" value="${r === 0 ? myLink.url : ''}"
-                                   placeholder="新链接..." style="font-size:0.7rem;"
-                                   onchange="updateMappingField(${i}, 'myLinks.${plat.key}.url', this.value)">
-                            <input type="text" class="form-control form-control-sm mt-1" value="${r === 0 ? myLink.pwd : ''}"
-                                   placeholder="提取码" style="width:75px;font-size:0.7rem;"
-                                   onchange="updateMappingField(${i}, 'myLinks.${plat.key}.pwd', this.value)">
+                            <div style="display:flex;gap:3px;margin-top:2px;">
+                                <input type="text" class="form-control form-control-sm" value="${r === 0 ? (myLink.code || '') : ''}"
+                                       placeholder="编号" style="width:55px;font-size:0.7rem;"
+                                       onchange="updateMappingField(${i}, 'myLinks.${plat.key}.code', this.value)">
+                                <input type="text" class="form-control form-control-sm" value="${r === 0 ? myLink.url : ''}"
+                                       placeholder="新链接..." style="flex:1;min-width:0;font-size:0.7rem;"
+                                       onchange="updateMappingField(${i}, 'myLinks.${plat.key}.url', this.value)">
+                                <input type="text" class="form-control form-control-sm" value="${r === 0 ? myLink.pwd : ''}"
+                                       placeholder="提取码" style="width:75px;font-size:0.7rem;"
+                                       onchange="updateMappingField(${i}, 'myLinks.${plat.key}.pwd', this.value)">
+                            </div>
                         </div>`;
                     }
                     return `<td style="min-width:200px;font-size:0.75rem;">${rowsHtml}</td>`;
@@ -1814,7 +1819,7 @@
             const parts = field.split('.');
             if (parts.length === 3) {
                 if (!mappingData.articles[index][parts[0]]) mappingData.articles[index][parts[0]] = {};
-                if (!mappingData.articles[index][parts[0]][parts[1]]) mappingData.articles[index][parts[0]][parts[1]] = { url: '', pwd: '' };
+                if (!mappingData.articles[index][parts[0]][parts[1]]) mappingData.articles[index][parts[0]][parts[1]] = { url: '', pwd: '', code: '' };
                 mappingData.articles[index][parts[0]][parts[1]][parts[2]] = value;
             } else if (parts.length === 2) {
                 if (!mappingData.articles[index][parts[0]]) mappingData.articles[index][parts[0]] = {};
@@ -1849,7 +1854,7 @@
         function downloadMappingXlsx() {
             const headers = ['游戏标题', '分类'];
             PLATFORMS.forEach(p => {
-                headers.push('原始链接(' + p.label + ')', '新链接(' + p.label + ')', '提取码(' + p.label + ')');
+                headers.push('原始链接(' + p.label + ')', '编号(' + p.label + ')', '新链接(' + p.label + ')', '提取码(' + p.label + ')');
             });
             headers.push('备注');
 
@@ -1857,9 +1862,11 @@
                 const row = [item.title, item.category];
                 PLATFORMS.forEach(p => {
                     const origUrls = (item.originalLinks[p.key + 'Urls'] || []).join('\n');
-                    const myUrl = (item.myLinks && item.myLinks[p.key]) ? item.myLinks[p.key].url : '';
-                    const myPwd = (item.myLinks && item.myLinks[p.key]) ? item.myLinks[p.key].pwd : '';
-                    row.push(origUrls, myUrl, myPwd);
+                    const myLink = (item.myLinks && item.myLinks[p.key]) ? item.myLinks[p.key] : {};
+                    const myCode = myLink.code || '';
+                    const myUrl = myLink.url || '';
+                    const myPwd = myLink.pwd || '';
+                    row.push(origUrls, myCode, myUrl, myPwd);
                 });
                 row.push(item.note || '');
                 return row;
@@ -1895,6 +1902,7 @@
                         colMap[p.key] = {
                             urlNames: ['我的新' + p.label + '链接', '新链接(' + p.label + ')', p.label + '链接', p.label + 'URL', p.key + '链接'],
                             pwdNames: ['我的' + p.label + '提取码', '提取码(' + p.label + ')', p.label + '提取码', p.label + '密码', p.key + '提取码', (p.key === 'cloud115' ? '115访问码' : '')],
+                            codeNames: ['编号(' + p.label + ')', p.label + '编号', p.key + '编号'],
                         };
                     });
 
@@ -1905,13 +1913,23 @@
                         const match = mappingData.articles.find(a => a.title === title);
                         if (!match) return;
 
+                        // 提取公共编号（百度编号列适用于所有平台）
+                        let commonCode = '';
+                        for (const key of Object.keys(row)) {
+                            const kl = key.toLowerCase().replace(/[\s\-_（）()]/g, '');
+                            if (kl === '百度编号' || kl === '编号' || kl.includes('代号')) {
+                                if (row[key] && row[key].toString().trim()) {
+                                    commonCode = row[key].toString().trim(); break;
+                                }
+                            }
+                        }
+
                         let filled = false;
                         PLATFORMS.forEach(p => {
                             const names = colMap[p.key];
-                            let url = '', pwd = '';
+                            let url = '', pwd = '', code = '';
                             for (const name of names.urlNames) {
                                 if (row[name] && row[name].trim()) { url = row[name].trim(); break; }
-                                // 不区分大小写
                                 for (const key of Object.keys(row)) {
                                     if (key.toLowerCase() === name.toLowerCase() && row[key] && row[key].trim()) {
                                         url = row[key].trim(); break;
@@ -1928,10 +1946,23 @@
                                 }
                                 if (pwd) break;
                             }
-                            if (url || pwd) {
+                            // 优先使用平台专属编号，回退到公共编号
+                            for (const name of names.codeNames) {
+                                if (row[name] && row[name].trim()) { code = row[name].trim(); break; }
+                                for (const key of Object.keys(row)) {
+                                    if (key.toLowerCase() === name.toLowerCase() && row[key] && row[key].trim()) {
+                                        code = row[key].trim(); break;
+                                    }
+                                }
+                                if (code) break;
+                            }
+                            if (!code) code = commonCode;
+
+                            if (url || pwd || code) {
                                 if (!match.myLinks) match.myLinks = createEmptyMyLinks();
                                 if (url) match.myLinks[p.key].url = url;
                                 if (pwd) match.myLinks[p.key].pwd = pwd;
+                                if (code) match.myLinks[p.key].code = code;
                                 filled = true;
                             }
                         });
@@ -1979,17 +2010,24 @@
             // 1) 清除 content 中所有原始下载链接
             post.content = cleanDownloadSections(post.content || '');
 
-            // 2) 构建新下载链接 HTML
+            // 2) 构建新下载链接 HTML（三行格式：平台名+编号 / 链接 / 提取码）
             let downloadHtml = '';
+            const platUsed = [];
             PLATFORMS.forEach(plat => {
                 const myUrl = item.myLinks[plat.key]?.url?.trim();
                 const myPwd = item.myLinks[plat.key]?.pwd?.trim();
+                const myCode = item.myLinks[plat.key]?.code?.trim();
                 if (!myUrl) return;
-                if (myPwd) {
-                    downloadHtml += `<p>${plat.label}：${myPwd}<br>链接：${myUrl}</p>`;
-                } else {
-                    downloadHtml += `<p>链接：${myUrl}</p>`;
+                let lines = '';
+                if (myCode) {
+                    lines += `${plat.label}：${myCode}<br>`;
                 }
+                lines += `链接：${myUrl}`;
+                if (myPwd) {
+                    lines += `<br>提取码：${myPwd}`;
+                }
+                downloadHtml += `<p>${lines}</p>`;
+                platUsed.push(plat.label);
             });
 
             if (downloadHtml) {
@@ -2007,7 +2045,7 @@
 
             item.status = 'done';
             renderMappingTable();
-            toast('✅ 已替换: ' + item.title.substring(0, 30) + ' (' + results.join(', ') + ')', 'success');
+            toast('✅ 已替换: ' + item.title.substring(0, 30) + ' (' + platUsed.join(', ') + ')', 'success');
         }
 
         // ========== 批量替换所有链接到文章 ==========
@@ -2037,17 +2075,22 @@
                 // 1) 清除所有原始下载链接
                 post.content = cleanDownloadSections(post.content || '');
 
-                // 2) 构建新下载链接 HTML
+                // 2) 构建新下载链接 HTML（三行格式：平台名+编号 / 链接 / 提取码）
                 let downloadHtml = '';
                 PLATFORMS.forEach(plat => {
                     const myUrl = item.myLinks[plat.key]?.url?.trim();
                     const myPwd = item.myLinks[plat.key]?.pwd?.trim();
+                    const myCode = item.myLinks[plat.key]?.code?.trim();
                     if (!myUrl) return;
-                    if (myPwd) {
-                        downloadHtml += `<p>${plat.label}：${myPwd}<br>链接：${myUrl}</p>`;
-                    } else {
-                        downloadHtml += `<p>链接：${myUrl}</p>`;
+                    let lines = '';
+                    if (myCode) {
+                        lines += `${plat.label}：${myCode}<br>`;
                     }
+                    lines += `链接：${myUrl}`;
+                    if (myPwd) {
+                        lines += `<br>提取码：${myPwd}`;
+                    }
+                    downloadHtml += `<p>${lines}</p>`;
                     platCounts[plat.key] = (platCounts[plat.key] || 0) + 1;
                 });
 
