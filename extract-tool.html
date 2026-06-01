@@ -113,6 +113,19 @@
                         <div class="form-text">每页之间的等待时间，防封 IP</div>
                     </div>
                 </div>
+                <div class="row mt-2 pt-2 border-top">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold"><i class="fa fa-calendar me-1"></i>按日期提取 <span class="text-muted small fw-normal">(通过 WP REST API 自动搜索)</span></label>
+                        <div class="d-flex gap-2 align-items-center flex-wrap">
+                            <input type="date" class="form-control form-control-sm" id="searchDate" style="max-width:180px;">
+                            <button class="btn btn-sm btn-accent" id="searchByDateBtn" onclick="extractByDate()">
+                                <i class="fa fa-search me-1"></i>搜索此日期
+                            </button>
+                            <small class="text-muted" id="searchByDateResult"></small>
+                            <span class="text-muted small ms-2">每日文章自动填入列表，然后可在第二步扫描下载链接</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="form-check form-check-inline">
@@ -496,6 +509,111 @@
             const base = baseUrl.replace(/\/page\/\d+\/?$/, '');
             if (page <= 1) return base.replace(/\/?$/, '/');
             return base.replace(/\/?$/, '') + '/page/' + page + '/';
+        }
+
+        // ========== 按日期提取（通过 acgyx.us WordPress REST API） ==========
+        async function extractByDate() {
+            const dateInput = document.getElementById('searchDate');
+            const resultEl = document.getElementById('searchByDateResult');
+            const btn = document.getElementById('searchByDateBtn');
+
+            const targetDate = dateInput.value;
+            if (!targetDate) { toast('请先选择日期', 'warning'); return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>搜索中...';
+            resultEl.textContent = '查询中...';
+
+            // WP REST API 按日期范围查询
+            const apiUrl = 'https://acgyx.us/wp-json/wp/v2/posts?after='
+                + targetDate + 'T00:00:00&before=' + targetDate + 'T23:59:59&per_page=100';
+
+            // 使用代理获取 API 响应（复用内置代理链）
+            let apiData = null;
+            for (let attempt = 0; attempt < 2 && !apiData; attempt++) {
+                const proxyList = getProxyList();
+                for (const proxy of proxyList) {
+                    try {
+                        const fullUrl = proxy.build(apiUrl);
+                        const res = await fetch(fullUrl, { signal: AbortSignal.timeout(25000) });
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        const text = await res.text();
+                        if (!text || text.length < 10) throw new Error('响应为空');
+                        apiData = JSON.parse(text);
+                        break;
+                    } catch (e) { continue; }
+                }
+                if (!apiData) await sleep(2000);
+            }
+
+            if (!apiData || !Array.isArray(apiData) || apiData.length === 0) {
+                resultEl.textContent = '未找到 ' + targetDate + ' 的文章';
+                toast('未找到 ' + targetDate + ' 的文章', 'info');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-search me-1"></i>搜索此日期';
+                return;
+            }
+
+            // 转换为 extractedData 格式并去重
+            const seen = new Set(extractedData.map(d => d.url));
+            let newCount = 0;
+            for (const post of apiData) {
+                const link = (post.link || '').trim();
+                if (!link || !link.match(/https?:\/\/acgyx\.us\/\d+\.html/) || seen.has(link)) continue;
+                seen.add(link);
+                // 从标题提取分类前缀
+                const title = (post.title && post.title.rendered || '').trim().replace(/\s*[-–—|]\s*ACG游戏姬.*$/, '');
+                let category = '';
+                const catMatch = title.match(/^[\[【]([^\]】]+)[\]】]/);
+                if (catMatch) category = catMatch[1].trim();
+                // 日期格式化
+                let date = '';
+                if (post.date) {
+                    try {
+                        const d = new Date(post.date);
+                        date = d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
+                    } catch (e) { date = post.date.substring(0, 10); }
+                }
+                extractedData.push({
+                    url: link,
+                    title: title,
+                    category: category,
+                    date: date,
+                    views: '',
+                });
+                newCount++;
+            }
+
+            // 渲染结果
+            if (newCount > 0) {
+                renderResults();
+                document.getElementById('statTotal').textContent = extractedData.length;
+                document.getElementById('statPages').textContent = '—';
+                document.getElementById('statNew').textContent = newCount;
+                document.getElementById('statDup').textContent = extractedData.length - newCount;
+                document.getElementById('statsRow').style.display = 'flex';
+                document.getElementById('resultCard').style.display = 'block';
+                document.getElementById('scanCard').style.display = 'block';
+                document.getElementById('scanTotalCount').textContent = extractedData.length;
+                resultEl.textContent = '✅ 找到 ' + newCount + ' 篇';
+                toast('找到 ' + newCount + ' 篇 ' + targetDate + ' 的文章', 'success');
+            } else {
+                // 检查是否有重复
+                const allInExisting = apiData.every(p => {
+                    const link = (p.link || '').trim();
+                    return extractedData.some(d => d.url === link);
+                });
+                if (allInExisting && extractedData.length > 0) {
+                    resultEl.textContent = '当天文章已在列表中';
+                    toast('当天 ' + targetDate + ' 的文章已在列表中，无需重复添加', 'info');
+                } else {
+                    resultEl.textContent = '未找到 ' + targetDate + ' 的文章或全部重复';
+                    toast('未找到 ' + targetDate + ' 的新文章', 'info');
+                }
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-search me-1"></i>搜索此日期';
         }
 
         // ========== 开始提取 ==========

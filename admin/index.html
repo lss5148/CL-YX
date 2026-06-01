@@ -346,17 +346,6 @@
                         <textarea class="form-control" id="importUrl" rows="3" placeholder="https://acgyx.us/XXXXX.html&#10;https://acgyx.us/YYYYY.html"></textarea>
                         <div class="form-text">粘贴 acgyx.us 的文章链接，每行一个。批量导入会自动保存到文章列表。</div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">按日期提取 <span class="text-muted small fw-normal">(自动搜索)</span></label>
-                        <div class="d-flex gap-2 align-items-center">
-                            <input type="date" class="form-control form-control-sm" id="importDate" style="max-width:180px;">
-                            <button class="btn btn-sm btn-accent" id="searchByDateBtn" onclick="searchByDate()">
-                                <i class="fa fa-search me-1"></i>搜索此日期文章
-                            </button>
-                            <small class="text-muted" id="searchByDateResult"></small>
-                        </div>
-                        <div class="form-text">自动扫描 acgyx.us 的 PC/AZ 分类列表，找出指定日期的文章并填入上方文本框。</div>
-                    </div>
                     <div class="row mb-2">
                         <div class="col-6">
                             <label class="form-label fw-semibold small mb-1">并发数</label>
@@ -1051,10 +1040,6 @@ function renderMeta() {
             document.getElementById('importProgress').classList.add('d-none');
             document.getElementById('importBtn').disabled = false;
             document.getElementById('importBtn').innerHTML = '<i class="fa fa-download me-1"></i>提取并填充';
-            document.getElementById('importDate').value = '';
-            document.getElementById('searchByDateResult').textContent = '';
-            document.getElementById('searchByDateBtn').disabled = false;
-            document.getElementById('searchByDateBtn').innerHTML = '<i class="fa fa-search me-1"></i>搜索此日期文章';
             new bootstrap.Modal(document.getElementById('importModal')).show();
         }
 
@@ -1212,83 +1197,6 @@ function renderMeta() {
                 progressText.textContent = msg + '，请检查代理或 URL 是否正确';
                 toast(msg, 'warning');
             }
-        }
-
-        // ========== 按日期搜索文章 URL（通过 acgyx.us WordPress REST API） ==========
-        async function searchByDate() {
-            const dateInput = document.getElementById('importDate');
-            const resultEl = document.getElementById('searchByDateResult');
-            const btn = document.getElementById('searchByDateBtn');
-            const textarea = document.getElementById('importUrl');
-
-            const targetDate = dateInput.value;
-            if (!targetDate) { toast('请先选择日期', 'warning'); return; }
-
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>搜索中...';
-            resultEl.textContent = '查询中...';
-
-            // 通过 WP REST API 按日期范围获取文章
-            const apiUrl = 'https://acgyx.us/wp-json/wp/v2/posts?after='
-                + targetDate + 'T00:00:00&before=' + targetDate + 'T23:59:59&per_page=100';
-
-            // 使用代理获取 API 响应（同 fetchAndParseArticle 的代理链）
-            const proxies = [
-                { name: '自托管',   url: (u) => window.location.origin + '/proxy?url=' + encodeURIComponent(u) },
-                { name: 'codetabs',   url: (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u) },
-                { name: 'corsproxy',  url: (u) => 'https://corsproxy.io/?' + encodeURIComponent(u) },
-                { name: 'allorigins', url: (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
-            ];
-
-            let apiData = null;
-            for (let attempt = 0; attempt < 2 && !apiData; attempt++) {
-                for (const proxy of proxies) {
-                    try {
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 25000);
-                        const res = await fetch(proxy.url(apiUrl), { signal: controller.signal });
-                        clearTimeout(timeoutId);
-                        if (!res.ok) throw new Error('HTTP ' + res.status);
-                        const text = await res.text();
-                        if (!text || text.length < 10) throw new Error('响应为空');
-                        apiData = JSON.parse(text);
-                        break;
-                    } catch (e) { continue; }
-                }
-                if (!apiData) await new Promise(r => setTimeout(r, 2000));
-            }
-
-            if (!apiData || !Array.isArray(apiData) || apiData.length === 0) {
-                resultEl.textContent = '未找到 ' + targetDate + ' 的文章';
-                toast('未找到 ' + targetDate + ' 的文章', 'info');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa fa-search me-1"></i>搜索此日期文章';
-                return;
-            }
-
-            // 提取文章 URL 并去重
-            const urls = [];
-            const seen = new Set();
-            for (const post of apiData) {
-                const link = (post.link || '').trim();
-                if (link && link.match(/https?:\/\/acgyx\.us\/\d+\.html/) && !seen.has(link)) {
-                    seen.add(link);
-                    urls.push(link);
-                }
-            }
-
-            // 填入文本框
-            if (urls.length > 0) {
-                textarea.value = urls.join('\n');
-                resultEl.textContent = '✅ 找到 ' + urls.length + ' 篇（来自 WP API）';
-                toast('找到 ' + urls.length + ' 篇 ' + targetDate + ' 的文章，已填入文本框', 'success');
-            } else {
-                resultEl.textContent = '未找到 ' + targetDate + ' 的文章';
-                toast('未找到 ' + targetDate + ' 的文章', 'info');
-            }
-
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa fa-search me-1"></i>搜索此日期文章';
         }
 
         // ========== 导出失败 URL 列表为 XLSX ==========
