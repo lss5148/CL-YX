@@ -1982,6 +1982,10 @@ function renderMeta() {
                         const match = mappingData.articles.find(a => a.title === title);
                         if (!match) return;
 
+                        // 跳过已提交的行
+                        const rowStatus = (row['状态'] || '').toString().trim();
+                        if (rowStatus === '已提交') return;
+
                         // 提取公共编号（百度编号列适用于所有平台）
                         let commonCode = '';
                         for (const key of allColKeys) {
