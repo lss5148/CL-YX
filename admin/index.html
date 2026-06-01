@@ -1899,12 +1899,29 @@
                     // 平台列名映射（不区分大小写）
                     const colMap = {};
                     PLATFORMS.forEach(p => {
+                        // 生成短标签（去掉"云盘""网盘"后缀）
+                        const shortLabel = p.label.replace(/云盘|网盘/g, '').trim();
                         colMap[p.key] = {
-                            urlNames: ['我的新' + p.label + '链接', '新链接(' + p.label + ')', p.label + '链接', p.label + 'URL', p.key + '链接'],
-                            pwdNames: ['我的' + p.label + '提取码', '提取码(' + p.label + ')', p.label + '提取码', p.label + '密码', p.key + '提取码', (p.key === 'cloud115' ? '115访问码' : '')],
-                            codeNames: ['编号(' + p.label + ')', p.label + '编号', p.key + '编号'],
+                            urlNames: [
+                                '我的新' + p.label + '链接', '新链接(' + p.label + ')',
+                                p.label + '链接', p.label + 'URL', p.key + '链接',
+                                shortLabel + '链接', shortLabel + 'URL',
+                            ],
+                            pwdNames: [
+                                '我的' + p.label + '提取码', '提取码(' + p.label + ')',
+                                p.label + '提取码', p.label + '密码', p.key + '提取码',
+                                shortLabel + '提取码', shortLabel + '密码',
+                                (p.key === 'cloud115' ? '115访问码' : ''),
+                            ],
+                            codeNames: [
+                                '编号(' + p.label + ')', p.label + '编号', p.key + '编号',
+                                '编号(' + shortLabel + ')', shortLabel + '编号',
+                            ],
                         };
                     });
+
+                    // 收集所有列名（一次性，用于统一匹配）
+                    const allColKeys = Object.keys(rows[0] || {});
 
                     let updated = 0;
                     rows.forEach(row => {
@@ -1915,7 +1932,7 @@
 
                         // 提取公共编号（百度编号列适用于所有平台）
                         let commonCode = '';
-                        for (const key of Object.keys(row)) {
+                        for (const key of allColKeys) {
                             const kl = key.toLowerCase().replace(/[\s\-_（）()]/g, '');
                             if (kl === '百度编号' || kl === '编号' || kl.includes('代号')) {
                                 if (row[key] && row[key].toString().trim()) {
@@ -1924,32 +1941,70 @@
                             }
                         }
 
+                        // 通用的多行文本解析：从单元格提取 URL 和提取码
+                        function parseMultiLineText(text) {
+                            let u = '', pw = '';
+                            const urlM = text.match(/链接[：:]\s*(https?:\/\/[^\s\n\r]+)/);
+                            if (urlM) u = urlM[1];
+                            const pwdM = text.match(/(?:提取码|密码|访问码)[：:]\s*(\w+)/);
+                            if (pwdM) pw = pwdM[1];
+                            return { url: u, pwd: pw };
+                        }
+
+                        // 找到每个平台对应的列（一次性扫描所有列）
+                        const colForPlatform = {};
+                        PLATFORMS.forEach(p => {
+                            const names = colMap[p.key];
+                            const allVariants = [...names.urlNames, ...names.pwdNames, ...names.codeNames];
+                            let bestCol = '';
+                            for (const col of allColKeys) {
+                                const cl = col.toLowerCase();
+                                for (const v of allVariants) {
+                                    if (cl === v.toLowerCase()) { bestCol = col; break; }
+                                }
+                                if (bestCol) break;
+                            }
+                            colForPlatform[p.key] = bestCol;
+                        });
+
                         let filled = false;
                         PLATFORMS.forEach(p => {
                             const names = colMap[p.key];
                             let url = '', pwd = '', code = '';
+
+                            // 匹配 URL 列
                             for (const name of names.urlNames) {
                                 if (row[name] && row[name].trim()) { url = row[name].trim(); break; }
-                                for (const key of Object.keys(row)) {
+                                for (const key of allColKeys) {
                                     if (key.toLowerCase() === name.toLowerCase() && row[key] && row[key].trim()) {
                                         url = row[key].trim(); break;
                                     }
                                 }
                                 if (url) break;
                             }
+
+                            // 匹配提取码列
                             for (const name of names.pwdNames) {
                                 if (row[name] && row[name].trim()) { pwd = row[name].trim(); break; }
-                                for (const key of Object.keys(row)) {
+                                for (const key of allColKeys) {
                                     if (key.toLowerCase() === name.toLowerCase() && row[key] && row[key].trim()) {
                                         pwd = row[key].trim(); break;
                                     }
                                 }
                                 if (pwd) break;
                             }
-                            // 优先使用平台专属编号，回退到公共编号
+
+                            // 如果 URL 是多行文本（含链接：和提取码：），自动解析
+                            if (url && (url.includes('链接：') || url.includes('链接:') || url.includes('\n'))) {
+                                const parsed = parseMultiLineText(url);
+                                if (parsed.url) url = parsed.url;
+                                if (parsed.pwd && !pwd) pwd = parsed.pwd;
+                            }
+
+                            // 匹配编号
                             for (const name of names.codeNames) {
                                 if (row[name] && row[name].trim()) { code = row[name].trim(); break; }
-                                for (const key of Object.keys(row)) {
+                                for (const key of allColKeys) {
                                     if (key.toLowerCase() === name.toLowerCase() && row[key] && row[key].trim()) {
                                         code = row[key].trim(); break;
                                     }
