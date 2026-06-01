@@ -2194,37 +2194,54 @@
             const exportData = JSON.parse(JSON.stringify(mappingData));
             exportData.articles.forEach(item => { delete item.originalLinks._contentCache; });
             const content = btoa(unescape(encodeURIComponent(JSON.stringify(exportData, null, 2))));
+            const mappingPath = `data/download-mapping.json`;
+
+            async function doPut(shaVal) {
+                return fetch(`https://api.github.com/repos/${REPO}/contents/${mappingPath}`, {
+                    method: 'PUT',
+                    headers: { Authorization: 'token ' + ghToken2, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: '更新下载链接映射表',
+                        content,
+                        ...(shaVal ? { sha: shaVal } : {}),
+                    }),
+                });
+            }
 
             try {
+                // 首次尝试：获取 SHA 后 PUT
                 let sha = '';
                 try {
-                    const resp = await fetch(`https://api.github.com/repos/${REPO}/contents/data/download-mapping.json`, {
-                        headers: { 'Authorization': 'token ' + ghToken2 },
+                    const resp = await fetch(`https://api.github.com/repos/${REPO}/contents/${mappingPath}`, {
+                        headers: { Authorization: 'token ' + ghToken2, Accept: 'application/vnd.github.v3+json' },
                     });
                     if (resp.ok) {
-                        const data = await resp.json();
-                        sha = data.sha || '';
+                        const d = await resp.json();
+                        sha = d.sha || '';
                     }
                 } catch (e) {}
 
-                const result = await fetch(`https://api.github.com/repos/${REPO}/contents/data/download-mapping.json`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': 'token ' + ghToken2,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: '更新下载链接映射表',
-                        content: content,
-                        sha: sha || undefined,
-                    }),
-                });
+                let result = await doPut(sha);
+
+                // SHA 冲突：重新获取后重试一次
+                if (!result.ok) {
+                    const errBody = await result.json().catch(() => ({}));
+                    if (errBody.message && errBody.message.includes('does not match')) {
+                        const retryResp = await fetch(`https://api.github.com/repos/${REPO}/contents/${mappingPath}`, {
+                            headers: { Authorization: 'token ' + ghToken2, Accept: 'application/vnd.github.v3+json' },
+                        });
+                        if (retryResp.ok) {
+                            const d = await retryResp.json();
+                            result = await doPut(d.sha || '');
+                        }
+                    }
+                }
 
                 if (result.ok) {
                     toast('映射表已保存到 GitHub', 'success');
                     document.getElementById('mappingStatus').textContent = '✅ 已保存到 GitHub';
                 } else {
-                    const err = await result.json();
+                    const err = await result.json().catch(() => ({}));
                     toast('保存失败: ' + (err.message || result.status), 'danger');
                 }
             } catch (e) {
