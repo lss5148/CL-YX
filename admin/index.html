@@ -593,6 +593,7 @@
             return {
                 'Authorization': 'token ' + token,
                 'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
             };
         }
 
@@ -892,6 +893,9 @@
             try {
                 // 保存前刷新 SHA，避免与其他提交冲突
                 const latest = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
+                if (!latest || !latest.sha) {
+                    throw new Error('无法获取文件 SHA，请确认 GitHub Token 权限正确');
+                }
                 fileSha = latest.sha;
                 await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH, {
                     method: 'PUT',
