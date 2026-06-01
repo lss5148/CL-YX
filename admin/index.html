@@ -558,9 +558,34 @@
         let postsData = null;  // 完整的 posts.json 数据
         let fileSha = null;    // GitHub 文件 SHA（更新时需要）
         let selectedPostIndices = new Set(); // 批量删除选中的文章索引
+        let currentPage = 1;
+        let currentFilter = ''; // '' = 全部, 'PC', 'AZ'
+        const PAGE_SIZE = 20;
         const REPO = 'lss5148/CL-YX';
         const FILE_PATH = 'data/posts.json';
         const BRANCH = 'main';
+
+        // ========== 分页 & 筛选 ==========
+        function getFilteredIndices() {
+            return postsData.posts
+                .map((p, i) => i)
+                .filter(i => !currentFilter || postsData.posts[i].category === currentFilter);
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            currentPage = 1;
+            renderPosts();
+        }
+
+        function goToPage(page) {
+            const filtered = getFilteredIndices();
+            const totalPages = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+            currentPage = page;
+            renderPosts();
+        }
 
         // ========== UI 控制 ==========
         function showSection() {
@@ -639,6 +664,8 @@
                 for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
                 const content = new TextDecoder('utf-8').decode(bytes);
                 postsData = JSON.parse(content);
+                currentPage = 1;
+                currentFilter = '';
                 renderPosts();
                 renderMeta();
                 toast('已加载 ' + postsData.posts.length + ' 篇文章', 'success');
@@ -649,7 +676,7 @@
             }
         }
 
-        function renderPosts() {
+                function renderPosts() {
             const container = document.getElementById('postsList');
             if (!postsData.posts.length) {
                 container.innerHTML = '<div class="text-center text-muted py-4">还没有文章，点击右上角"新增文章"添加</div>';
@@ -657,55 +684,78 @@
                 return;
             }
 
-            // 全选行
             const total = postsData.posts.length;
             const selCount = selectedPostIndices.size;
             const allSelected = selCount === total;
             const someSelected = selCount > 0 && selCount < total;
 
-            let html = '';
-            html += `
-                <div class="d-flex align-items-center mb-2 pb-2 border-bottom" style="font-size:0.85rem;">
-                    <input type="checkbox" class="form-check-input me-2" id="selectAllCheckbox"
-                           onchange="toggleSelectAll(this.checked)"
-                           ${allSelected ? 'checked' : ''}>
-                    <label class="text-muted mb-0 user-select-none" for="selectAllCheckbox" style="cursor:pointer;">
-                        <small>全选</small>
-                    </label>
-                    <span class="text-muted ms-3"><small>共 ${total} 篇</small></span>
-                </div>`;
+            const filteredIndices = getFilteredIndices();
+            const totalFiltered = filteredIndices.length;
+            const totalPages = Math.ceil(totalFiltered / PAGE_SIZE) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
 
-            html += postsData.posts.map((p, i) => {
+            const startIdx = (currentPage - 1) * PAGE_SIZE;
+            const end = Math.min(startIdx + PAGE_SIZE, totalFiltered);
+            const pageIndices = filteredIndices.slice(startIdx, end);
+
+            let html = '';
+
+            // ---- 筛选按钮 ----
+            html += '<div class="d-flex align-items-center mb-2 gap-2 flex-wrap">';
+            const filterOpts = [
+                { val: '', label: '全部' },
+                { val: 'PC', label: 'PC' },
+                { val: 'AZ', label: 'AZ' },
+            ];
+            filterOpts.forEach(f => {
+                const active = currentFilter === f.val;
+                html += '<button class="btn btn-sm ' + (active ? 'btn-accent' : 'btn-outline-secondary') + '" onclick="setFilter(\'' + f.val + '\')">' + f.label + '</button>';
+            });
+            html += '<span class="text-muted ms-2"><small>共 ' + totalFiltered + ' 篇</small></span>';
+            html += '</div>';
+
+            // ---- 全选行 ----
+            html += '\n                <div class="d-flex align-items-center mb-2 pb-2 border-bottom" style="font-size:0.85rem;">\n                    <input type="checkbox" class="form-check-input me-2" id="selectAllCheckbox"\n                           onchange="toggleSelectAll(this.checked)"\n                           ' + (allSelected ? 'checked' : '') + '>\n                    <label class="text-muted mb-0 user-select-none" for="selectAllCheckbox" style="cursor:pointer;">\n                        <small>全选</small>\n                    </label>\n                    <span class="text-muted ms-3"><small>共 ' + total + ' 篇</small></span>\n                    ' + (currentPage > 1 ? '<span class="text-muted ms-2"><small>第 ' + currentPage + '/' + totalPages + ' 页</small></span>' : '') + '\n                </div>';
+
+            // ---- 文章列表（当前页） ----
+            pageIndices.forEach(function(i) {
+                const p = postsData.posts[i];
                 const isSelected = selectedPostIndices.has(i);
-                return `
-                <div class="post-item d-flex justify-content-between align-items-center ${isSelected ? 'selected' : ''}">
-                    <div class="d-flex align-items-center gap-3 flex-grow-1" style="min-width:0;">
-                        <input type="checkbox" class="form-check-input" ${isSelected ? 'checked' : ''}
-                               onchange="toggleSelectPost(${i}, this.checked)">
-                        <div class="gradient-preview" style="background:${p.gradient || 'linear-gradient(135deg,#D87CFF,#9B59B6)'};flex-shrink:0;">
-                        </div>
-                        <div class="text-truncate">
-                            <div class="title text-truncate">${escHtml(p.title)}
-                                ${p.source ? '<span class="badge bg-info text-dark ms-1" style="font-weight:400;font-size:0.65rem;" title="来源: ' + escHtml(p.source) + '"><i class="fa fa-cloud"></i></span>' : ''}
-                            </div>
-                            <div class="meta">
-                                <span class="badge bg-light text-dark me-2">${p.category || '-'}</span>
-                                <i class="fa fa-eye"></i> ${p.views || 0}
-                                <i class="fa fa-comment ms-2"></i> ${p.comments || 0}
-                                <span class="ms-2">${p.date || ''}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex-shrink-0">
-                        <button class="btn btn-sm btn-outline-accent me-1" onclick="editPost(${i})">
-                            <i class="fa fa-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deletePost(${i})">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    </div>
-                </div>`;
-            }).join('');
+                const grad = p.gradient || 'linear-gradient(135deg,#D87CFF,#9B59B6)';
+                const title = escHtml(p.title);
+                const cat = p.category || '-';
+                const views = p.views || 0;
+                const comments = p.comments || 0;
+                const date = p.date || '';
+                let srcBadge = '';
+                if (p.source) {
+                    srcBadge = '<span class="badge bg-info text-dark ms-1" style="font-weight:400;font-size:0.65rem;" title="来源: ' + escHtml(p.source) + '"><i class="fa fa-cloud"></i></span>';
+                }
+                html += '\n                <div class="post-item d-flex justify-content-between align-items-center ' + (isSelected ? 'selected' : '') + '" data-index="' + i + '">\n                    <div class="d-flex align-items-center gap-3 flex-grow-1" style="min-width:0;">\n                        <input type="checkbox" class="form-check-input" ' + (isSelected ? 'checked' : '') + '\n                               onchange="toggleSelectPost(' + i + ', this.checked)">\n                        <div class="gradient-preview" style="background:' + grad + ';flex-shrink:0;">\n                        </div>\n                        <div class="text-truncate">\n                            <div class="title text-truncate">' + title + '\n                                ' + srcBadge + '\n                            </div>\n                            <div class="meta">\n                                <span class="badge bg-light text-dark me-2">' + cat + '</span>\n                                <i class="fa fa-eye"></i> ' + views + '\n                                <i class="fa fa-comment ms-2"></i> ' + comments + '\n                                <span class="ms-2">' + date + '</span>\n                            </div>\n                        </div>\n                    </div>\n                    <div class="flex-shrink-0">\n                        <button class="btn btn-sm btn-outline-accent me-1" onclick="editPost(' + i + ')">\n                            <i class="fa fa-pencil"></i>\n                        </button>\n                        <button class="btn btn-sm btn-outline-danger" onclick="deletePost(' + i + ')">\n                            <i class="fa fa-trash"></i>\n                        </button>\n                    </div>\n                </div>';
+            });
+
+            // ---- 分页控件 ----
+            if (totalPages > 1) {
+                html += '<div class="d-flex justify-content-center align-items-center mt-3 gap-1 flex-wrap">';
+                html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled' : '') + '><i class="fa fa-chevron-left"></i></button>';
+                const maxVisible = 7;
+                let ps = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                let pe = Math.min(totalPages, ps + maxVisible - 1);
+                if (pe - ps + 1 < maxVisible) ps = Math.max(1, pe - maxVisible + 1);
+                if (ps > 1) {
+                    html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(1)">1</button>';
+                    if (ps > 2) html += '<span class="text-muted px-1">\u2026</span>';
+                }
+                for (let p = ps; p <= pe; p++) {
+                    html += '<button class="btn btn-sm ' + (p === currentPage ? 'btn-accent' : 'btn-outline-secondary') + '" onclick="goToPage(' + p + ')">' + p + '</button>';
+                }
+                if (pe < totalPages) {
+                    if (pe < totalPages - 1) html += '<span class="text-muted px-1">\u2026</span>';
+                    html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(' + totalPages + ')">' + totalPages + '</button>';
+                }
+                html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(' + (currentPage + 1) + ')" ' + (currentPage >= totalPages ? 'disabled' : '') + '><i class="fa fa-chevron-right"></i></button>';
+                html += '</div>';
+            }
 
             container.innerHTML = html;
 
@@ -713,12 +763,10 @@
             const selectAll = document.getElementById('selectAllCheckbox');
             if (selectAll) selectAll.indeterminate = someSelected;
 
-            // 更新随机推荐和批量删除按钮
             updateRandomPosts();
             updateBatchDeleteUI();
         }
-
-        function renderMeta() {
+function renderMeta() {
             document.getElementById('tagsInput').value = (postsData.tags || []).join(' ');
             document.getElementById('footerInput').value = postsData.site?.footer || '';
         }
@@ -2637,10 +2685,10 @@
                 selectAll.indeterminate = selectedPostIndices.size > 0 && selectedPostIndices.size < total;
             }
             updateBatchDeleteUI();
-            // 高亮行
-            const items = document.querySelectorAll('.post-item');
-            if (items[index]) {
-                items[index].classList.toggle('selected', checked);
+            // 高亮行（通过 data-index 查找）
+            const item = document.querySelector('.post-item[data-index="' + index + '"]');
+            if (item) {
+                item.classList.toggle('selected', checked);
             }
         }
 
