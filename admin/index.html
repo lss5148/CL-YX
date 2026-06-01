@@ -1603,6 +1603,36 @@
             return ol;
         }
 
+        function createMappingEntry(p) {
+            const c = p.content || '';
+            const originalLinks = createEmptyOriginalLinks();
+            PLATFORMS.forEach(plat => {
+                const matches = [...c.matchAll(plat.urlRegex)];
+                const urls = matches.map(m => m[0]);
+                originalLinks[plat.key + 'Urls'] = [...new Set(urls)];
+            });
+            let baiduCode = '', baiduPhrase = '';
+            const cm = c.match(/百度网盘[：:]\s*(\S{1,60}?)(?:\s|$|[\n\r]|链接)/);
+            if (cm) baiduCode = cm[1].trim();
+            const pm = c.match(/百度口令[：:]\s*([^\n\r<]{2,30}?)(?:\s|$|[\n\r<])/);
+            if (pm) {
+                const phrase = pm[1].trim();
+                if (phrase && phrase.length > 1 && !/分享|链接/.test(phrase)) baiduPhrase = phrase;
+            }
+            const note = baiduPhrase && !originalLinks.baiduUrls.length ? '⚠️ 百度口令' : '';
+            return {
+                title: p.title || '',
+                url: p.link || '',
+                category: p.category || '',
+                baiduCode,
+                baiduPhrase,
+                originalLinks,
+                myLinks: createEmptyMyLinks(),
+                note,
+                status: 'pending',
+            };
+        }
+
         let mappingData = { version: 2, articles: [] };
 
         // 从链接附近提取密码/提取码
@@ -1683,8 +1713,18 @@
                                     if (!item.originalLinks[p.key + 'Urls']) item.originalLinks[p.key + 'Urls'] = [];
                                 });
                             });
+                            // 合并 postsData 中尚未映射的文章
+                            const mappedUrls = new Set(mappingData.articles.map(a => a.url));
+                            const mappedTitles = new Set(mappingData.articles.map(a => a.title));
+                            let added = 0;
+                            postsData.posts.forEach(p => {
+                                if (p.link && !mappedUrls.has(p.link) && !mappedTitles.has(p.title)) {
+                                    mappingData.articles.push(createMappingEntry(p));
+                                    added++;
+                                }
+                            });
                             renderMappingTable();
-                            document.getElementById('mappingStatus').textContent = '✅ 已从 GitHub 加载 ' + mappingData.articles.length + ' 条';
+                            document.getElementById('mappingStatus').textContent = '✅ 已加载 ' + mappingData.articles.length + ' 条' + (added ? '（合并新增 ' + added + ' 条）' : '');
                             return;
                         }
                     }
@@ -1694,40 +1734,7 @@
             }
 
             // Fallback: 从 postsData 扫描生成
-            mappingData.articles = postsData.posts.map(p => {
-                const c = p.content || '';
-                const originalLinks = createEmptyOriginalLinks();
-
-                PLATFORMS.forEach(plat => {
-                    const matches = [...c.matchAll(plat.urlRegex)];
-                    const urls = matches.map(m => m[0]);
-                    originalLinks[plat.key + 'Urls'] = [...new Set(urls)];
-                });
-
-                let baiduCode = '';
-                let baiduPhrase = '';
-                const cm = c.match(/百度网盘[：:]\s*(\S{1,60}?)(?:\s|$|[\n\r]|链接)/);
-                if (cm) baiduCode = cm[1].trim();
-                const pm = c.match(/百度口令[：:]\s*([^\n\r<]{2,30}?)(?:\s|$|[\n\r<])/);
-                if (pm) {
-                    const phrase = pm[1].trim();
-                    if (phrase && phrase.length > 1 && !/分享|链接/.test(phrase)) baiduPhrase = phrase;
-                }
-
-                const note = baiduPhrase && !originalLinks.baiduUrls.length ? '⚠️ 百度口令' : '';
-
-                return {
-                    title: p.title || '',
-                    url: p.link || '',
-                    category: p.category || '',
-                    baiduCode,
-                    baiduPhrase,
-                    originalLinks,
-                    myLinks: createEmptyMyLinks(),
-                    note,
-                    status: 'pending',
-                };
-            });
+            mappingData.articles = postsData.posts.map(p => createMappingEntry(p));
             renderMappingTable();
             document.getElementById('mappingStatus').textContent = '⚠️ 从文章生成 ' + mappingData.articles.length + ' 条（未保存）';
         }
