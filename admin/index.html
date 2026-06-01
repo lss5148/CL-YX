@@ -2129,7 +2129,7 @@ function renderMeta() {
                 if (myCode) {
                     lines += `${plat.label}：${myCode}<br>`;
                 }
-                lines += `链接：${myUrl}`;
+                lines += `链接：<a href="${myUrl}" target="_blank" rel="noopener">${myUrl}</a>`;
                 if (myPwd) {
                     lines += `<br>提取码：${myPwd}`;
                 }
@@ -2193,7 +2193,7 @@ function renderMeta() {
                     if (myCode) {
                         lines += `${plat.label}：${myCode}<br>`;
                     }
-                    lines += `链接：${myUrl}`;
+                    lines += `链接：<a href="${myUrl}" target="_blank" rel="noopener">${myUrl}</a>`;
                     if (myPwd) {
                         lines += `<br>提取码：${myPwd}`;
                     }
