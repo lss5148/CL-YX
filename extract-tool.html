@@ -313,6 +313,18 @@
             return new Promise(r => setTimeout(r, ms));
         }
 
+        // ========== 日期匹配辅助 ==========
+        // 将 "2026年6月1日" 格式转换为 "2026-06-01" 并与筛选日期对比
+        function datesMatch(extractedDate, filterDate) {
+            if (!extractedDate || !filterDate) return false;
+            const m = extractedDate.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+            if (!m) return false;
+            const normalized = m[1] + '-'
+                + String(parseInt(m[2])).padStart(2, '0') + '-'
+                + String(parseInt(m[3])).padStart(2, '0');
+            return normalized === filterDate;
+        }
+
         // ========== 检测可用代理 ==========
         async function testProxies() {
             const btn = document.querySelector('button[onclick="testProxies()"]');
@@ -662,6 +674,8 @@
             let totalPages = 0;
             let dupCount = 0;
             let failedPages = [];
+            let dateFilteredCount = 0;
+            const filterDate = document.getElementById('searchDate').value;
 
             try {
                 // 第一步：如果 endPage 为 0，先探测最大页码
@@ -716,12 +730,22 @@
                     document.getElementById('progressBar').style.width = percent + '%';
                     document.getElementById('progressPercent').textContent = percent + '%';
                     document.getElementById('progressDetail').textContent =
-                        '已抓取 ' + totalPages + ' 页 | 已提取 ' + totalFetched + ' 条 | 去重 ' + dupCount + ' 条';
+                        '已抓取 ' + totalPages + ' 页 | 已提取 ' + totalFetched + ' 条 | 去重 ' + dupCount + ' 条'
+                        + (filterDate ? ' | 日期过滤: ' + filterDate + ' (筛掉 ' + dateFilteredCount + ' 条)' : '');
 
                     const pageUrl = buildPageUrl(config.baseUrl, p);
                     try {
                         const html = await fetchPageViaProxy(pageUrl, config.proxyUrl);
-                        const items = parseArticlesFromHtml(html, config);
+                        const items_raw = parseArticlesFromHtml(html, config);
+
+                        // 按日期过滤（如果日期选择器有值）
+                        let items;
+                        if (filterDate) {
+                            items = items_raw.filter(item => datesMatch(item.date, filterDate));
+                            dateFilteredCount += items_raw.length - items.length;
+                        } else {
+                            items = items_raw;
+                        }
 
                         let pageNew = 0;
                         items.forEach(item => {
@@ -753,7 +777,7 @@
                 document.getElementById('statTotal').textContent = extractedData.length;
                 document.getElementById('statPages').textContent = totalPages;
                 document.getElementById('statNew').textContent = totalFetched;
-                document.getElementById('statDup').textContent = dupCount;
+                document.getElementById('statDup').textContent = dupCount + (filterDate ? ' (+日期筛掉' + dateFilteredCount + ')' : '');
                 document.getElementById('statsRow').style.display = 'flex';
                 document.getElementById('resultCard').style.display = 'block';
                 document.getElementById('scanCard').style.display = 'block';
@@ -762,9 +786,14 @@
                 if (failedPages.length > 0) {
                     toast('提取完成，但有 ' + failedPages.length + ' 页失败: ' + failedPages.join(', '), 'warning');
                 } else if (extractedData.length === 0) {
-                    toast('⚠️ 提取完成但 0 条数据。可能原因：①CSS 选择器不匹配当前网站 ②代理返回了空内容 ③网站结构已改版。请尝试调整选择器或点击"检测可用代理"', 'warning');
+                    if (filterDate) {
+                        toast('⚠️ ' + filterDate + ' 当天在指定页面范围没有找到文章。可能原因：①当天无更新 ②页面范围不够大 ③日期选择器或页面结构不匹配', 'warning');
+                    } else {
+                        toast('⚠️ 提取完成但 0 条数据。可能原因：①CSS 选择器不匹配当前网站 ②代理返回了空内容 ③网站结构已改版。请尝试调整选择器或点击"检测可用代理"', 'warning');
+                    }
                 } else {
-                    toast('提取完成！共 ' + extractedData.length + ' 篇文章', 'success');
+                    toast('提取完成！共 ' + extractedData.length + ' 篇文章'
+                        + (filterDate ? '（日期过滤: ' + filterDate + '，筛掉 ' + dateFilteredCount + ' 条）' : ''), 'success');
                 }
 
             } catch (e) {
@@ -947,13 +976,34 @@
 
             // 4) 迅雷链接
             const xunleiMatch = text.match(/https?:\/\/pan\.xunlei\.com\/s\/[^\s<\"')]+/);
-            if (xunleiMatch) result.xunleiLink = xunleiMatch[0];
+            if (xunleiMatch) {
+                result.xunleiLink = xunleiMatch[0];
+                // 从迅雷链接中提取 pwd（口令归口令）
+                const pwdMatch = result.xunleiLink.match(/[?&]pwd=(\w+)/);
+                if (pwdMatch) {
+                    result.note = (result.note ? result.note + ' | ' : '') + '迅雷提取码: ' + pwdMatch[1];
+                }
+            }
 
-            // 5) 139 云盘链接
+            // 5) 分享文件：XXX（通用编号，如迅雷分享编号）
+            // 如果还没提取到编号，尝试从"分享文件：XXXXX"中提取
+            if (!result.baiduCode) {
+                const shareMatch = text.match(/分享文件[：:]\s*(\S{1,30}?)(?:\s|$|[\n\r])/);
+                if (shareMatch) {
+                    const code = shareMatch[1].trim();
+                    if (code && code.length >= 3 && !/https?:\/\//.test(code)) {
+                        result.baiduCode = code;
+                        result.baiduType = 'code';
+                        result.note = (result.note ? result.note + ' | ' : '') + '分享文件编号';
+                    }
+                }
+            }
+
+            // 6) 139 云盘链接
             const yun139Match = text.match(/https?:\/\/yun\.139\.com[^\s<\"')]+/);
             if (yun139Match) result.yun139Link = yun139Match[0];
 
-            // 6) 移动云盘 / 天翼云盘 / 其他
+            // 7) 移动云盘 / 天翼云盘 / 其他（兜底）
             const other139 = text.match(/https?:\/\/yun\.139\.com[^\s<\"')]+/);
             if (other139) result.yun139Link = other139[0];
 
@@ -1119,7 +1169,7 @@
                 '游戏标题': item.title,
                 '文章链接': item.url,
                 '分类': item.category || '',
-                '百度编号': item.baiduCode || '',
+                '编号': item.baiduCode || '',
                 '类型': item.baiduType === 'code' ? '编号' : item.baiduType === 'phrase' ? '口令⚠️' : item.baiduType === 'error' ? '失败' : '无',
                 '百度口令': item.baiduPhrase || '',
                 '百度链接': item.baiduLink || '',

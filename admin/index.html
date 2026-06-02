@@ -939,21 +939,48 @@ function renderMeta() {
             btn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>保存中...';
 
             try {
-                // 保存前刷新 SHA，避免与其他提交冲突
-                const latest = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
-                if (!latest || !latest.sha) {
-                    throw new Error('无法获取文件 SHA，请确认 GitHub Token 权限正确');
+                // 获取当前 SHA
+                let latestSha = '';
+                try {
+                    const latest = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
+                    if (latest && latest.sha) latestSha = latest.sha;
+                } catch (e) {
+                    // 文件可能还不存在，新文件没有 SHA
                 }
-                fileSha = latest.sha;
-                await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH, {
-                    method: 'PUT',
-                    body: JSON.stringify({
-                        message: '更新文章数据',
-                        content: encoded,
-                        sha: fileSha,
-                        branch: BRANCH,
-                    }),
-                });
+                if (!latestSha) throw new Error('无法获取文件 SHA，请确认 GitHub Token 权限正确');
+                fileSha = latestSha;
+
+                // 执行 PUT（带 SHA 冲突自动重试）
+                let result, errMsg = '';
+                for (let retry = 0; retry < 2; retry++) {
+                    result = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + FILE_PATH, {
+                        method: 'PUT',
+                        headers: getHeaders(),
+                        body: JSON.stringify({
+                            message: '更新文章数据',
+                            content: encoded,
+                            sha: fileSha,
+                            branch: BRANCH,
+                        }),
+                    });
+                    if (result.ok) break;
+                    const errBody = await result.json().catch(() => ({}));
+                    errMsg = errBody.message || '';
+                    // SHA 冲突：重新获取后再试一次
+                    if (errMsg.includes('does not match') && retry === 0) {
+                        const refetch = await fetch('https://api.github.com/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH, {
+                            headers: getHeaders(),
+                        });
+                        if (refetch.ok) {
+                            const d = await refetch.json();
+                            fileSha = d.sha || '';
+                            continue; // retry
+                        }
+                    }
+                    break;
+                }
+                if (!result.ok) throw new Error(errMsg || 'HTTP ' + result.status);
+
                 // 更新 SHA
                 const updated = await fetchFromGitHub('/repos/' + REPO + '/contents/' + FILE_PATH + '?ref=' + BRANCH);
                 fileSha = updated.sha;
