@@ -17,6 +17,7 @@ File                            Lines    Purpose
 ───                                    ─────────────────────────────────
 index.html                       219    Homepage (public, renders posts from posts.json)
 article.html                     484    Article detail page (static shell, renders from URL param)
+docs.html                       424    Document library (renders .md files as web pages)
 extract-tool.html               1241    Standalone tool: batch-extract + date-based extraction + XLSX
 admin/index.html                2883    Admin panel (SPA, writes to GitHub API directly)
 css/style.css                    914    Global styles (dark/light/auto theme via CSS vars)
@@ -26,6 +27,10 @@ data/posts.json                  931    Main CMS data store (31 posts)
 data/posts-index.json                  Lightweight index (id/title/category/date only) for homepage
 data/download-mapping.json      2749    Download link mapping (platform codes ↔ URLs ↔ passwords)
 data/ref_article.html                  Reference article HTML from acgyx.us (used by analysis scripts)
+
+docs/                           198    Processed .md documents (Obsidian vault → website)
+docs/index.json                       Document index with title, image stats, share links
+docs/*.md                             Individual rendered documents (Markdown with Telegram image URLs)
 
 vendor/css/bootstrap.min.css           Self-hosted Bootstrap 5 (232KB, replaces CDN)
 vendor/css/font-awesome.min.css        Self-hosted Font Awesome 4 (31KB, replaces CDN)
@@ -42,6 +47,8 @@ scripts/batch_import.js          12269  Node.js CLI: scrape acgyx.us → posts.j
 scripts/analyze_article.js        2447  DOM structure analyzer for ref_article.html
 scripts/analyze2.js               1902  Secondary analysis tool
 scripts/fix_images.js             2412  Clean up imported image URLs
+scripts/process_docs.js                 Batch process Obsidian .md files: upload images → replace refs → generate docs/
+scripts/upload_cache.json              Upload cache (断点续传, maps image filenames → Telegram URLs)
 ```
 
 ### Data Flow
@@ -298,6 +305,59 @@ When applied to article content, links are rendered as:
 | `scripts/analyze_article.js` | Analyze `data/ref_article.html` DOM structure to find CSS selectors |
 | `scripts/analyze2.js` | Secondary analysis tool |
 | `scripts/fix_images.js` | Clean up imported image URLs (remove duplicates, fix broken links) |
+
+---
+
+## Document Library (`docs.html`)
+
+A self-contained document reader that renders Obsidian-format `.md` files as styled web pages.
+
+### Page Features
+
+| Feature | Description |
+|---------|-------------|
+| **Document list** | Left sidebar with search/filter, document count per item |
+| **Markdown rendering** | Uses `marked.js` CDN, renders headings, images, lists, blockquotes, code inline |
+| **Image display** | Telegram-hosted images displayed inline with rounded corners + shadow |
+| **Mobile responsive** | Sidebar toggle button on small screens with backdrop overlay |
+| **Hash navigation** | Direct link support (`#document-id`), browser back/forward works |
+| **Theme integration** | Uses site's dark/light/auto theme (CSS variables) |
+| **Breadcrumb** | Shows current document title in breadcrumb |
+
+### Document Index (`docs/index.json`)
+
+```json
+{
+  "total": 198,
+  "updatedAt": "2026-06-04T...",
+  "docs": [
+    { "id": "1.困困狗", "file": "1.困困狗.md", "title": "...",
+      "replacedImages": 9, "totalImages": 9,
+      "share_link": "https://...", "share_updated": "2026-05-19T..." }
+  ]
+}
+```
+
+### Processing Pipeline (`scripts/process_docs.js`)
+
+Batch converts an Obsidian vault's `.md` files with `![[image.ext]]` references:
+
+1. **Build image index** — scans `图床/` directory (1456 unique filenames, 3687 path entries)
+2. **Scan .md files** — extracts all `![[...]]` references, resolves to actual files
+3. **Upload to Telegram** — POSTs to live site's `/upload-img` endpoint (5 concurrent, retry on failure)
+4. **Replace refs** — converts `![[file.gif]]` → `![](https://api.telegram.org/file/bot{token}/...)`
+5. **Generate index** — creates `docs/index.json` with metadata for all documents
+6. **断点续传** — `upload_cache.json` tracks uploaded images, skipped on re-run
+
+### Usage
+
+```bash
+# Process .md files (uses cache to skip already-uploaded)
+node scripts/process_docs.js <telegram_bot_token> <telegram_chat_id>
+
+# Access
+# https://yx.chulian.ccwu.cc/docs.html
+```
 
 ---
 
