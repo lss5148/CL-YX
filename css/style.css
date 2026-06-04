@@ -6,7 +6,7 @@
 /* ========== FONTS ========== */
 @font-face {
     font-family: "boxmoe";
-    src: url("https://acgyx.us/wp-content/themes/lolimeow-master/assets/fonts/alimama.woff2") format("woff2");
+    src: url("/vendor/fonts/alimama.woff2") format("woff2");
     font-display: swap;
 }
 
