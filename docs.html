@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档库 - CL游戏姬</title>
+    <link href="/vendor/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/vendor/css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        :root {
+            --doc-accent: #d63384;
+            --doc-bg-card: var(--bs-body-bg);
+        }
+        body { background: var(--bs-body-bg); }
+        .doc-container { max-width: 1400px; }
+
+        /* Sidebar */
+        .doc-sidebar {
+            position: sticky;
+            top: 1rem;
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+        }
+        .doc-sidebar::-webkit-scrollbar { width: 4px; }
+        .doc-sidebar::-webkit-scrollbar-thumb { background: var(--doc-accent); border-radius: 4px; }
+        .doc-list-item {
+            cursor: pointer;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: var(--bs-body-color);
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+            display: block;
+            text-decoration: none;
+        }
+        .doc-list-item:hover {
+            background: rgba(214, 51, 132, 0.08);
+            border-left-color: var(--doc-accent);
+            color: var(--doc-accent);
+        }
+        .doc-list-item.active {
+            background: rgba(214, 51, 132, 0.15);
+            border-left-color: var(--doc-accent);
+            color: var(--doc-accent);
+            font-weight: 600;
+        }
+        .doc-list-item .doc-count {
+            float: right;
+            font-size: 0.75rem;
+            color: var(--bs-secondary-color);
+            background: var(--bs-tertiary-bg);
+            padding: 0 0.4rem;
+            border-radius: 8px;
+        }
+        .doc-search {
+            position: relative;
+            margin-bottom: 0.75rem;
+        }
+        .doc-search input {
+            padding-left: 2rem;
+            font-size: 0.85rem;
+        }
+        .doc-search i {
+            position: absolute;
+            left: 0.6rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--bs-secondary-color);
+        }
+
+        /* Content area */
+        .doc-content-area {
+            min-height: 70vh;
+        }
+        .doc-content {
+            max-width: 900px;
+            padding: 2rem;
+            background: var(--doc-bg-card);
+            border-radius: 12px;
+            border: 1px solid var(--bs-border-color);
+        }
+        .doc-content h1 {
+            font-size: 1.8rem;
+            border-bottom: 2px solid var(--doc-accent);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--doc-accent);
+        }
+        .doc-content h2 {
+            font-size: 1.4rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--bs-heading-color);
+        }
+        .doc-content h3 {
+            font-size: 1.15rem;
+            margin-top: 1.2rem;
+            color: var(--bs-heading-color);
+        }
+        .doc-content p { line-height: 1.7; margin-bottom: 0.8rem; }
+        .doc-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin: 0.75rem 0;
+            display: block;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+        .doc-content strong { color: var(--doc-accent); }
+        .doc-content hr {
+            margin: 1.5rem 0;
+            border-color: var(--bs-border-color);
+        }
+        .doc-content blockquote {
+            border-left: 3px solid var(--doc-accent);
+            padding: 0.5rem 1rem;
+            margin: 1rem 0;
+            background: rgba(214, 51, 132, 0.05);
+            border-radius: 0 6px 6px 0;
+        }
+        .doc-content ul, .doc-content ol {
+            padding-left: 1.5rem;
+            margin-bottom: 0.8rem;
+        }
+        .doc-content li { margin-bottom: 0.3rem; }
+        .doc-content a { color: var(--doc-accent); }
+        .doc-content code {
+            background: var(--bs-tertiary-bg);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .doc-empty {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--bs-secondary-color);
+        }
+        .doc-empty i { font-size: 3rem; margin-bottom: 1rem; display: block; }
+        .doc-loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--bs-secondary-color);
+        }
+
+        .doc-header {
+            padding: 2rem 0 1rem 0;
+            margin-bottom: 1rem;
+        }
+        .doc-header h2 { margin: 0; font-weight: 700; }
+        .doc-header .doc-breadcrumb {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--bs-secondary-color);
+            margin-bottom: 0.5rem;
+        }
+        .sidebar-header {
+            font-weight: 700;
+            padding: 0 0.75rem 0.5rem;
+            font-size: 1.1rem;
+            border-bottom: 1px solid var(--bs-border-color);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-header span { font-size: 0.8rem; color: var(--bs-secondary-color); }
+
+        /* Mobile toggle */
+        .mobile-doc-toggle {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 1050;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--doc-accent);
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 16px rgba(214, 51, 132, 0.4);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        @media (max-width: 767px) {
+            .doc-sidebar { display: none; }
+            .mobile-doc-toggle { display: flex; }
+            .doc-content { padding: 1rem; }
+        }
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1040;
+        }
+        .sidebar-backdrop.show { display: block; }
+
+        /* Share link badge */
+        .doc-share-link {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            background: rgba(214, 51, 132, 0.1);
+            color: var(--doc-accent);
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+        .doc-share-link i { margin-right: 0.3rem; }
+    </style>
+</head>
+<body>
+
+    <!-- ========== NAVBAR ========== -->
+    <header class="boxmoe_header">
+        <nav class="navbar navbar-expand-lg w-100">
+            <div class="container d-flex justify-content-between align-items-center">
+                <button class="navbar-toggler offcanvas-nav-btn" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNav" aria-controls="mobileNav">
+                    <span class="navbar-toggler-bar"></span>
+                    <span class="navbar-toggler-bar"></span>
+                    <span class="navbar-toggler-bar"></span>
+                </button>
+                <a class="navbar-brand mx-auto" href="/">
+                    <span class="text-inverse">CL游戏姬</span>
+                </a>
+                <div class="d-flex d-lg-none align-items-center">
+                    <form class="mobile-search-form" role="search">
+                        <input type="search" class="mobile-search-input" placeholder="搜索..." aria-label="Search">
+                        <button type="submit" class="mobile-search-btn"><i class="fa fa-search"></i></button>
+                    </form>
+                    <button class="mobile-user-btn ms-2" type="button"><i class="fa fa-user"></i></button>
+                </div>
+                <div class="collapse navbar-collapse" id="mainNav">
+                    <ul class="navbar-nav mx-auto align-items-lg-center">
+                        <li class="nav-item"><a href="/" class="nav-link">首页</a></li>
+                        <li class="nav-item dropdown">
+                            <a href="/" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">游戏</a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/" class="dropdown-item">AZ</a></li>
+                                <li><a href="/" class="dropdown-item">PC</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item"><a href="/" class="nav-link">解压说明</a></li>
+                        <li class="nav-item"><a href="/" class="nav-link">工具</a></li>
+                        <li class="nav-item"><a href="/" class="nav-link">免责声明</a></li>
+                        <li class="nav-item"><a href="/" class="nav-link active">文档库</a></li>
+                    </ul>
+                    <div class="nav-right-section d-flex align-items-center">
+                        <div class="dropdown">
+                            <button class="float-btn bd-theme" type="button" data-bs-toggle="dropdown" aria-label="Toggle theme">
+                                <i class="fa fa-adjust"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end bs-theme">
+                                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light"><i class="fa fa-sun-o"></i><span class="ms-2">Light</span></button></li>
+                                <li><button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark"><i class="fa fa-moon-o"></i><span class="ms-2">Dark</span></button></li>
+                                <li><button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="auto"><i class="fa fa-adjust"></i><span class="ms-2">Auto</span></button></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Mobile Nav -->
+    <div class="offcanvas offcanvas-start offcanvas-nav" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
+        <div class="offcanvas-header">
+            <a href="/" class="text-inverse"><span>CL游戏姬</span></a>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="lighting d-lg-none">
+            <ul>
+                <li data-bs-theme-value="light">Light</li>
+                <li data-bs-theme-value="dark">Dark</li>
+                <li data-bs-theme-value="auto">Auto</li>
+            </ul>
+        </div>
+        <div class="offcanvas-body pt-0">
+            <ul class="navbar-nav mx-auto align-items-lg-center">
+                <li class="nav-item"><a href="/" class="nav-link">首页</a></li>
+                <li class="nav-item"><a href="/" class="nav-link active">文档库</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Sidebar backdrop (mobile) -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- Mobile toggle -->
+    <button class="mobile-doc-toggle" id="mobileDocToggle" title="文档列表">
+        <i class="fa fa-list"></i>
+    </button>
+
+    <!-- ========== MAIN ========== -->
+    <section class="boxmoe-container container doc-container">
+        <div class="breadcrumb-head">
+            <span><i class="fa fa-book"></i> 文档库</span>
+        </div>
+
+        <div class="row g-4">
+            <!-- Sidebar -->
+            <div class="col-md-4 col-lg-3">
+                <div class="doc-sidebar" id="docSidebar">
+                    <div class="sidebar-header">
+                        文档列表
+                        <span id="docTotalCount">0</span>
+                    </div>
+                    <div class="doc-search">
+                        <i class="fa fa-search"></i>
+                        <input type="text" class="form-control form-control-sm" id="docSearch" placeholder="筛选文档..." oninput="filterDocs(this.value)">
+                    </div>
+                    <div id="docList"></div>
+                    <div class="text-center text-muted small p-3" id="docListLoading">
+                        <i class="fa fa-spinner fa-spin"></i> 加载中...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="col-md-8 col-lg-9">
+                <div class="doc-content-area">
+                    <div class="doc-empty" id="docWelcome">
+                        <i class="fa fa-book"></i>
+                        <h4>选择一篇文档查看</h4>
+                        <p class="text-muted">左侧列表共有 <strong id="welcomeCount">0</strong> 篇文档</p>
+                    </div>
+                    <div class="doc-loading" id="docLoading" style="display:none;">
+                        <i class="fa fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">加载中...</p>
+                    </div>
+                    <div class="doc-content" id="docContent" style="display:none;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="mt-7">
+        <hr class="horizontal dark">
+        <div class="container pb-4">
+            <div class="row">
+                <div class="col-md-8 col-lg-4 mx-auto">
+                    <div class="small mb-3 mb-lg-0 text-center">
+                        <ul class="nav flex-row align-items-center mt-sm-0 justify-content-center nav-footer">
+                            <span id="footer-text">文档库 · CL游戏姬</span>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div class="body-background"></div>
+
+    <script src="/vendor/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+    <script src="js/script.js"></script>
+    <script>
+        // ========== 文档库主逻辑 ==========
+        let docsIndex = [];
+        let filteredDocs = [];
+        let currentDoc = null;
+
+        function renderDocList(docs) {
+            const container = document.getElementById('docList');
+            const loading = document.getElementById('docListLoading');
+            loading.style.display = 'none';
+
+            if (docs.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted small p-3">无匹配文档</div>';
+                return;
+            }
+
+            container.innerHTML = docs.map(d => `
+                <a href="#${d.id}" class="doc-list-item${currentDoc === d.id ? ' active' : ''}"
+                   onclick="loadDoc('${d.id}'); return false;">
+                    ${d.title}
+                    <span class="doc-count">${d.totalImages || 0}图</span>
+                </a>
+            `).join('');
+        }
+
+        function filterDocs(query) {
+            if (!query.trim()) {
+                filteredDocs = [...docsIndex];
+            } else {
+                const q = query.toLowerCase();
+                filteredDocs = docsIndex.filter(d => d.title.toLowerCase().includes(q));
+            }
+            renderDocList(filteredDocs);
+        }
+
+        async function loadDoc(id) {
+            const doc = docsIndex.find(d => d.id === id);
+            if (!doc) return;
+
+            currentDoc = doc.id;
+            document.getElementById('docWelcome').style.display = 'none';
+            document.getElementById('docLoading').style.display = 'block';
+            document.getElementById('docContent').style.display = 'none';
+
+            // Highlight active
+            document.querySelectorAll('.doc-list-item').forEach(el => el.classList.remove('active'));
+            const activeEl = document.querySelector(`.doc-list-item[href="#${id}"]`);
+            if (activeEl) activeEl.classList.add('active');
+
+            // Close sidebar on mobile
+            const sidebar = document.getElementById('docSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            sidebar.style.display = '';
+            backdrop.classList.remove('show');
+
+            try {
+                const res = await fetch(`/docs/${doc.file}`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const mdText = await res.text();
+
+                let html = '';
+                try {
+                    html = marked.parse(mdText);
+                } catch (e) {
+                    // Fallback: simple render
+                    html = '<pre>' + mdText.replace(/</g, '&lt;') + '</pre>';
+                }
+
+                const container = document.getElementById('docContent');
+                container.innerHTML = html;
+                container.style.display = 'block';
+
+                // Update breadcrumb
+                document.querySelector('.breadcrumb-head span').innerHTML =
+                    '<i class="fa fa-book"></i> 文档库 <i class="fa fa-angle-right mx-2"></i> ' + doc.title;
+
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (e) {
+                document.getElementById('docContent').innerHTML =
+                    `<div class="alert alert-danger">加载失败: ${e.message}</div>`;
+                document.getElementById('docContent').style.display = 'block';
+            } finally {
+                document.getElementById('docLoading').style.display = 'none';
+            }
+        }
+
+        // Mobile sidebar toggle
+        document.getElementById('mobileDocToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('docSidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (sidebar.style.display === 'block') {
+                sidebar.style.display = '';
+                backdrop.classList.remove('show');
+            } else {
+                sidebar.style.display = 'block';
+                backdrop.classList.add('show');
+            }
+        });
+        document.getElementById('sidebarBackdrop').addEventListener('click', function() {
+            document.getElementById('docSidebar').style.display = '';
+            this.classList.remove('show');
+        });
+
+        // Hash-based navigation
+        window.addEventListener('hashchange', function() {
+            const id = window.location.hash.replace('#', '');
+            if (id && docsIndex.some(d => d.id === id)) {
+                loadDoc(id);
+            }
+        });
+
+        // Init
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const res = await fetch('/docs/index.json');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                docsIndex = data.docs || [];
+                filteredDocs = [...docsIndex];
+                document.getElementById('docTotalCount').textContent = docsIndex.length;
+                document.getElementById('welcomeCount').textContent = docsIndex.length;
+                renderDocList(docsIndex);
+
+                // Check URL hash
+                const hashId = window.location.hash.replace('#', '');
+                if (hashId && docsIndex.some(d => d.id === hashId)) {
+                    loadDoc(hashId);
+                }
+            } catch (e) {
+                document.getElementById('docListLoading').innerHTML =
+                    '<span class="text-danger">加载失败: ' + e.message + '</span>';
+            }
+        });
+    </script>
+</body>
+</html>
