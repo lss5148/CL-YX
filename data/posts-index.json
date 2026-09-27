@@ -6,6 +6,30 @@
   },
   "posts": [
     {
+      "id": 44429,
+      "title": "新作[欧美3D/动态] 妾 Concubine v0.4.8_10 官中步兵版 [6.40G]",
+      "link": "/article.html?id=44429",
+      "description": "游戏介绍 一款感官的，黑暗奇幻砍杀ARPG。 完全自定义一个可爱的妾和最多三个女杏同伴，具有深入的美容细节。 成为苏丹的私人刺客，赚取杏感服装、强大武器和神秘技",
+      "image": "https://image.acg.lol/file/2026/06/13/photo_1_2026-06-11_19-11-52.jpg",
+      "tags": [],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
+      "icon": "fa-gamepad",
+      "date": "2026-09-22"
+    },
+    {
+      "id": 44428,
+      "title": "更新[日式SLG/动态] 后宫扭蛋  v0.7.0 汉化版 [PC+安卓 5.60G]",
+      "link": "/article.html?id=44428",
+      "description": "发布日期：2026-07-22 开发者：SleepyRena 是否删减内容：否 版本：0.5.0 操作系统：Windows、Mac、Linux 语言：英语 类型",
+      "image": "https://image.acg.lol/file/2026/06/24/5891383_Cover_1560x420_Dsnow9.md.jpg",
+      "tags": [],
+      "category": "AZ",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-globe",
+      "date": "2026-09-22"
+    },
+    {
       "id": 44420,
       "title": "更新[日式SLG/异种X] 怪兽猎物 Monsterlay v3.1.0 官中版 [860M]",
       "link": "/article.html?id=44420",
@@ -30,9 +54,9 @@
       "date": "2025-05-07"
     },
     {
-      "id": 44429,
+      "id": 44419,
       "title": "新作[日式RPG/扶她巨乳] 梦中，与光——关于爱上并娶扶她最好的朋友的故事— in the Dream, With the Light – ふたなりになった親友と愛しあって結婚する話 – Demo 生肉版 [530M]",
-      "link": "/article.html?id=44429",
+      "link": "/article.html?id=44419",
       "description": "游戏简介： 魔法师阿曼达和她体贴的童年好友莎拉因扶她……的肉体关系！ 这对本应是最好的朋友的两人感受到了爱与快乐，但却无法完全相信爱情，怀疑这是否与毒品有关。",
       "image": "https://image.vikacg.cc/image/2026/09/24/5b78e9f34d51b5d70c3f54700c2cc72d.webp",
       "tags": [],
@@ -56,38 +80,45 @@
   ],
   "tags": [
     "RPG",
-    "SLG",
-    "PC"
+    "PC",
+    "AZ",
+    "SLG"
   ],
   "comments": [],
   "randomPosts": [
     {
-      "title": "更新[日式SLG/异种X] 怪兽猎物 Monsterlay v3.1.0 官中版 [860M]",
-      "link": "/article.html?id=44428",
-      "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
-      "date": "2026-09-22"
-    },
-    {
-      "title": "更新[欧美SLG/动态] 冒险情侣 The Adventurous Couple S1 汉化版 [PC+安卓 13.80G]",
-      "link": "/posts/post_44425.html",
-      "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
-      "date": "2025-05-07"
-    },
-    {
-      "title": "新作[日式RPG/扶她巨乳] 梦中，与光——关于爱上并娶扶她最好的朋友的故事— in the Dream, With the Light – ふたなりになった親友と愛しあって結婚する話 – Demo 生肉版 [530M]",
+      "title": "新作[欧美3D/动态] 妾 Concubine v0.4.8_10 官中步兵版 [6.40G]",
       "link": "/article.html?id=44429",
-      "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
+      "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "date": "2026-09-22"
     },
     {
       "title": "更新[亚洲风SLG/动态] 宾馆 Guest House v0.3.9 汉化版 [PC+安卓 4.0G]",
-      "link": "/posts/post_44427.html",
+      "link": "/article.html?id=44427",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "date": "2026-08-21"
+    },
+    {
+      "title": "更新[欧美SLG/动态] 冒险情侣 The Adventurous Couple S1 汉化版 [PC+安卓 13.80G]",
+      "link": "/article.html?id=44425",
+      "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
+      "date": "2025-05-07"
+    },
+    {
+      "title": "更新[日式SLG/动态] 后宫扭蛋  v0.7.0 汉化版 [PC+安卓 5.60G]",
+      "link": "/article.html?id=44428",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "date": "2026-09-22"
+    },
+    {
+      "title": "更新[日式SLG/异种X] 怪兽猎物 Monsterlay v3.1.0 官中版 [860M]",
+      "link": "/article.html?id=44420",
+      "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
+      "date": "2026-09-22"
     }
   ],
   "pagination": {
-    "total": 4,
+    "total": 6,
     "perPage": 10
   }
 }
