@@ -125,5 +125,13 @@
   "pagination": {
     "total": 7,
     "perPage": 10
-  }
+  },
+  "tags": [
+    "ACT",
+    "AZ",
+    "PC",
+    "RPG",
+    "SLG"
+  ],
+  "comments": []
 }
