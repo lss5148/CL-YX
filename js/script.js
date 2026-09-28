@@ -7,7 +7,8 @@ let siteData = null;
 
 async function loadData() {
     try {
-        const res = await fetch('data/posts-index.json');
+        const cacheBuster = '?v=' + Date.now();
+        const res = await fetch('data/posts-index.json' + cacheBuster);
         siteData = await res.json();
         renderAll();
     } catch (err) {
