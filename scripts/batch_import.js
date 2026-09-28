@@ -276,6 +276,24 @@ async function main() {
     console.log('CL-YX 风格抓取 (52acgyxj.com)');
     console.log('='.repeat(50));
 
+    // 读取命令行参数: node batch_import.js [--page N] [--count N] [--update-all]
+    const args = process.argv.slice(2);
+    let targetPage = null;  // null = 自动检测首页新文章
+    let count = 2;          // 默认最多抓2篇
+    let updateAll = false;  // 是否强制更新已有文章
+
+    for (let i = 0; i < args.length; i++) {
+        if (args[i] === '--page' && args[i+1]) {
+            targetPage = parseInt(args[i+1]);
+            i++;
+        } else if (args[i] === '--count' && args[i+1]) {
+            count = parseInt(args[i+1]);
+            i++;
+        } else if (args[i] === '--update-all') {
+            updateAll = true;
+        }
+    }
+
     // 读取现有数据
     const raw = fs.readFileSync(POSTS_PATH, 'utf8');
     const data = JSON.parse(raw);
@@ -283,29 +301,45 @@ async function main() {
 
     // 检查已存在的文章（基于标题去重）
     const existingTitles = new Set(existingPosts.map(p => p.title));
+    const existingById = new Map(existingPosts.map(p => [p.id, p]));
     let maxId = existingPosts.length > 0 ? Math.max(...existingPosts.map(p => p.id)) : 0;
 
     console.log(`\n已有文章: ${existingPosts.length} 篇, 最大ID: ${maxId}`);
+    console.log(`模式: ${targetPage ? '指定页 #' + targetPage : '首页新文章'} | 最多: ${count} 篇 | 更新已有: ${updateAll}`);
 
-    // 获取首页最新文章ID
-    console.log('\n检测首页最新文章...');
-    const homepageIds = await getLatestIdsFromHomepage();
-    console.log('首页最新ID:', homepageIds.slice(0, 10).join(', '));
+    // 获取要抓取的ID列表
+    let idsToFetch = [];
+    if (targetPage !== null) {
+        // 从指定页抓取
+        const pageUrl = `${BASE_URL}/page/${targetPage}`;
+        console.log(`\n抓取第 ${targetPage} 页: ${pageUrl}`);
+        const pageHtml = await fetchUrl(pageUrl);
+        const $ = cheerio.load(pageHtml);
+        $('a[href*=".html"]').each((i, el) => {
+            const match = $(el).attr('href')?.match(/\/(\d{5})\.html/);
+            if (match) idsToFetch.push(parseInt(match[1]));
+        });
+        idsToFetch = [...new Set(idsToFetch)].sort((a, b) => b - a);
+        console.log(`页内ID: ${idsToFetch.join(', ')}`);
+    } else {
+        // 获取首页最新文章ID
+        console.log('\n检测首页最新文章...');
+        const homepageIds = await getLatestIdsFromHomepage();
+        console.log('首页最新ID:', homepageIds.slice(0, 10).join(', '));
+        idsToFetch = homepageIds.filter(i => i > maxId).slice(0, count);
+    }
 
-    // 选择要抓取的ID（只抓比max_id新的，最多2篇）
-    const newIds = homepageIds.filter(i => i > maxId).slice(0, 2);
-    console.log('需要抓取:', newIds.join(', '));
-
-    if (newIds.length === 0) {
-        console.log('\n没有新文章需要抓取！');
+    if (idsToFetch.length === 0) {
+        console.log('\n没有需要抓取的文章！');
         return;
     }
 
     let imported = 0;
+    let updated = 0;
     let skipped = 0;
     let failed = 0;
 
-    for (const id of newIds) {
+    for (const id of idsToFetch.slice(0, count)) {
         const url = `${BASE_URL}/${id}.html`;
         console.log(`\n-------------`);
         console.log(`处理: ${url}`);
@@ -314,23 +348,46 @@ async function main() {
             const html = await fetchUrl(url);
             const article = parseArticle(html, url);
 
-            // 去重检查
-            if (existingTitles.has(article.title)) {
-                console.log('跳过(已存在): ' + article.title.substring(0, 50));
+            // 去重/更新检查
+            const existing = existingById.get(id);
+            if (existing && !updateAll && existingTitles.has(article.title) && existing.title === article.title) {
+                console.log('跳过(完全相同): ' + article.title.substring(0, 50));
                 skipped++;
                 continue;
             }
 
-            maxId++;
-            const post = makePost(article, maxId);
-            existingPosts.unshift(post);
-            existingTitles.add(article.title);
-            imported++;
+            if (existing) {
+                // 更新已有文章（保留原ID）
+                existing.title = article.title;
+                existing.description = article.description;
+                existing.content = article.content;
+                existing.image = article.image;
+                existing.download = article.download;
+                existing.category = article.category;
+                existing.gradient = 'linear-gradient(135deg,' + (GRADIENT_MAP[article.category] || GRADIENT_MAP['PC']).c1 + ',' + (GRADIENT_MAP[article.category] || GRADIENT_MAP['PC']).c2 + ')';
+                existing.icon = ICON_MAP[article.category] || 'fa-gamepad';
+                existing.author = article.author;
+                existing.authorAvatar = article.author.charAt(0) || '恋';
+                existing.views = article.views;
+                existing.comments = article.comments;
+                existing.date = article.date;
+                existingTitles.delete(existing.title); // 旧标题
+                existingTitles.add(article.title);      // 新标题
+                updated++;
+                console.log('更新: ' + article.title.substring(0, 50));
+            } else {
+                // 新增文章
+                maxId++;
+                const post = makePost(article, maxId);
+                existingPosts.unshift(post);
+                existingTitles.add(article.title);
+                imported++;
+                console.log('成功: ' + post.title.substring(0, 60));
+            }
 
-            console.log('成功: ' + post.title.substring(0, 60));
-            console.log('   分类: ' + post.category + ' | 日期: ' + post.date);
-            console.log('   封面: ' + (post.image ? '有' : '无'));
-            console.log('   下载: ' + post.download.substring(0, 50));
+            console.log('   分类: ' + article.category + ' | 日期: ' + article.date);
+            console.log('   封面: ' + (article.image ? '有' : '无'));
+            console.log('   下载: ' + (article.download !== '#' ? article.download.substring(0, 40) : '无'));
 
         } catch (e) {
             console.log('失败: ' + e.message);
@@ -340,6 +397,9 @@ async function main() {
         // 礼貌延迟
         await new Promise(r => setTimeout(r, 1500));
     }
+
+    // 按ID降序排列
+    existingPosts.sort((a, b) => b.id - a.id);
 
     // 更新随机推荐
     const shuffled = [...existingPosts].sort(() => Math.random() - 0.5);
@@ -355,7 +415,8 @@ async function main() {
     fs.writeFileSync(POSTS_PATH, JSON.stringify(data, null, 2), 'utf8');
 
     console.log('\n========== 抓取完成 ==========');
-    console.log('成功: ' + imported);
+    console.log('新增: ' + imported);
+    console.log('更新: ' + updated);
     console.log('跳过: ' + skipped);
     console.log('失败: ' + failed);
     console.log('总文章数: ' + existingPosts.length);
