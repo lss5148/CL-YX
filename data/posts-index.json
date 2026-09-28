@@ -6,6 +6,18 @@
   },
   "posts": [
     {
+      "id": 44430,
+      "title": "新作[动作ACT/异种X/动态] 共生体・零式 官中版 [1.20G]",
+      "link": "/article.html?id=44430",
+      "description": "✅社团名：#月華工房 ▫️原名：共生体・零式 ▫️版本：——— ▫️贩卖日：2026年09月25日 0时 ▫️标签：#ACT #官中 #PC #动态 #女主人公",
+      "image": "https://image.acg.lol/file/2026/09/25/photo_1_2026-09-25_01-29-44.jpg",
+      "tags": [],
+      "category": "ACT",
+      "gradient": "linear-gradient(135deg,#F39C12,#E74C3C)",
+      "icon": "fa-flask",
+      "date": "2026-09-28"
+    },
+    {
       "id": 44429,
       "title": "新作[欧美3D/动态] 妾 Concubine v0.4.8_10 官中步兵版 [6.40G]",
       "link": "/article.html?id=44429",
@@ -78,13 +90,6 @@
       "date": "2026-08-21"
     }
   ],
-  "tags": [
-    "AZ",
-    "PC",
-    "RPG",
-    "SLG"
-  ],
-  "comments": [],
   "randomPosts": [
     {
       "title": "更新[亚洲风SLG/动态] 宾馆 Guest House v0.3.9 汉化版 [PC+安卓 4.0G]",
@@ -118,7 +123,7 @@
     }
   ],
   "pagination": {
-    "total": 6,
+    "total": 7,
     "perPage": 10
   }
 }
