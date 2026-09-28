@@ -1,5 +1,5 @@
 /**
- * 批量从 acgyx.us 导入文章到本站
+ * 批量从 52acgyxj.com 导入文章到本站
  * 用法: node scripts/batch_import.js
  */
 const fs = require('fs');
@@ -7,30 +7,54 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const cheerio = require('cheerio');
+const { HttpProxyAgent } = require('http-proxy-agent');
 
 const POSTS_PATH = path.join(__dirname, '..', 'data', 'posts.json');
 
-// 目标文章列表（从首页提取，排除已导入的 38212 和 38691）
-const TARGET_URLS = [
-    'https://acgyx.us/38211.html',
-    'https://acgyx.us/38202.html',
-    'https://acgyx.us/38203.html',
-    'https://acgyx.us/38204.html',
-    'https://acgyx.us/38205.html',
-    'https://acgyx.us/38206.html',
-    'https://acgyx.us/38207.html',
-    'https://acgyx.us/38208.html',
-    'https://acgyx.us/38209.html',
-    'https://acgyx.us/38210.html',
-    'https://acgyx.us/38699.html',
-    'https://acgyx.us/38698.html',
-    'https://acgyx.us/38697.html',
-    'https://acgyx.us/38696.html',
-    'https://acgyx.us/38695.html',
-    'https://acgyx.us/38694.html',
-    'https://acgyx.us/38693.html',
-    'https://acgyx.us/38692.html',
-];
+// 配置
+const BASE_URL = 'https://www.52acgyxj.com';
+const PROXY_URL = 'http://127.0.0.1:8899';
+
+// 创建代理 agent
+const proxyAgent = new HttpProxyAgent(PROXY_URL);
+
+// HTTP 请求包装（支持代理和重定向）
+function fetchUrl(url) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html,application/xhtml+xml',
+            },
+            timeout: 30000,
+            agent: proxyAgent,
+            maxRedirects: 5,
+        };
+
+        const client = url.startsWith('https') ? https : http;
+        const req = client.request(url, options, (res) => {
+            // 处理重定向
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                fetchUrl(res.headers.location).then(resolve).catch(reject);
+                return;
+            }
+            if (res.statusCode !== 200) {
+                reject(new Error(`HTTP ${res.statusCode} for ${url}`));
+                return;
+            }
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve(data));
+        });
+
+        req.on('error', reject);
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Timeout'));
+        });
+        req.end();
+    });
+}
 
 // 分类映射
 const CATEGORY_MAP = {
@@ -56,31 +80,6 @@ const ICON_MAP = {
     'PC': 'fa-gamepad',
 };
 
-// HTTP 请求包装
-function fetchUrl(url) {
-    return new Promise((resolve, reject) => {
-        const client = url.startsWith('https') ? https : http;
-        client.get(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'text/html,application/xhtml+xml',
-            },
-            timeout: 30000,
-        }, (res) => {
-            if (res.statusCode !== 200) {
-                reject(new Error(`HTTP ${res.statusCode} for ${url}`));
-                return;
-            }
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => resolve(data));
-        }).on('error', reject).on('timeout', function() {
-            this.destroy();
-            reject(new Error('Timeout'));
-        });
-    });
-}
-
 // HTML 实体解码
 function decodeEntities(text) {
     return text
@@ -94,6 +93,18 @@ function decodeEntities(text) {
         .replace(/&#8211;/g, '–')
         .replace(/&#8217;/g, "'")
         .replace(/&#8230;/g, '…');
+}
+
+// 获取首页最新文章ID
+async function getLatestIdsFromHomepage() {
+    const html = await fetchUrl(BASE_URL);
+    const $ = cheerio.load(html);
+    const ids = [];
+    $('a[href*=".html"]').each((i, el) => {
+        const match = $(el).attr('href')?.match(/\/(\d{5})\.html/);
+        if (match) ids.push(parseInt(match[1]));
+    });
+    return [...new Set(ids)].sort((a, b) => b - a);
 }
 
 // 解析文章
@@ -120,7 +131,7 @@ function parseArticle(html, url) {
         content = $.html(contentEl);
         // Remove the outer wrapper div tag
         content = content.replace(/^<div[^>]*>/, '').replace(/<\/div>$/, '');
-        // 转换懒加载图片：先移除占位 src，再提升 data-src
+        // 转换懒加载图片
         content = content.replace(/\bsrc="[^"]*"\s+data-src="/gi, 'src="');
         content = content.replace(/\bdata-src=/gi, 'src=');
         content = content.replace(/\bdata-lazy-src=/gi, 'src=');
@@ -142,7 +153,7 @@ function parseArticle(html, url) {
     }
 
     // --- 分类 ---
-    let category = '其他';
+    let category = 'PC';
     const catLinks = $('.single-category a, .category a, [rel="category tag"], .post-categories a');
     catLinks.each((i, el) => {
         const rawCat = $(el).text().trim().toUpperCase();
@@ -151,7 +162,7 @@ function parseArticle(html, url) {
         }
     });
     // Try from title brackets
-    if (category === '其他') {
+    if (category === 'PC') {
         const titleMatch = title.match(/\[([^\]]+)\]/);
         if (titleMatch) {
             const rawCat = titleMatch[1].toUpperCase();
@@ -171,7 +182,6 @@ function parseArticle(html, url) {
     const dateEl = $('.data span, time, .post-date, .date').first();
     if (dateEl.length) {
         date = dateEl.text().trim();
-        // Try datetime attribute
         const dt = dateEl.attr('datetime') || dateEl.attr('title') || '';
         if (dt && !date) date = dt;
     }
@@ -180,17 +190,17 @@ function parseArticle(html, url) {
         if (metaDate) {
             try {
                 const d = new Date(metaDate);
-                if (!isNaN(d.getTime())) date = d.getFullYear() + '年' + (d.getMonth()+1) + '月' + d.getDate() + '日';
+                if (!isNaN(d.getTime())) date = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
             } catch(e) {}
         }
     }
     // Extract date from content if needed
-    if (!date || !date.includes('年')) {
-        const dateMatch = content.match(/(\d{4})[年\/-](\d{1,2})[月\/-](\d{1,2})日?/);
+    if (!date) {
+        const dateMatch = content.match(/(\d{4})[年\/-](\d{1,2})[月\/-](\d{1,2})/);
         if (dateMatch) {
-            date = dateMatch[1] + '年' + parseInt(dateMatch[2]) + '月' + dateMatch[3] + '日';
+            date = dateMatch[1] + '-' + dateMatch[2].padStart(2, '0') + '-' + dateMatch[3].padStart(2, '0');
         } else {
-            date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '年').replace('/', '月') + '日';
+            date = new Date().toISOString().split('T')[0];
         }
     }
 
@@ -199,7 +209,7 @@ function parseArticle(html, url) {
     const firstImg = $('.single-content img, article img, .entry-content img').first();
     if (firstImg.length) {
         image = firstImg.attr('src') || firstImg.attr('data-src') || '';
-        if (image && (image.includes('avatar') || image.includes('logo') || image.includes('icon') || image.includes('emoji') || image.includes('loading') || image.includes('lolimeow'))) {
+        if (image && (image.includes('avatar') || image.includes('logo') || image.includes('icon') || image.includes('emoji') || image.includes('loading'))) {
             image = '';
         }
     }
@@ -223,12 +233,11 @@ function parseArticle(html, url) {
         }
     }
 
-    // --- 浏览数 ---
+    // --- 浏览数/评论数 ---
     let views = '0';
     const viewsEl = $('.single-views, .post-views, .views').first();
     if (viewsEl.length) views = viewsEl.text().trim().replace(/[^0-9.]/g, '') || '0';
 
-    // --- 评论数 ---
     let comments = 0;
     const commentsEl = $('.single-comments, .post-comments, .comments-count').first();
     if (commentsEl.length) {
@@ -254,7 +263,7 @@ function makePost(article, id) {
         gradient: 'linear-gradient(135deg,' + grad.c1 + ',' + grad.c2 + ')',
         icon: ICON_MAP[article.category] || 'fa-gamepad',
         author: article.author,
-        authorAvatar: article.author.charAt(0) || '姬',
+        authorAvatar: article.author.charAt(0) || '恋',
         views: article.views,
         comments: article.comments,
         date: article.date,
@@ -263,6 +272,10 @@ function makePost(article, id) {
 
 // 主函数
 async function main() {
+    console.log('='.repeat(50));
+    console.log('CL-YX 风格抓取 (52acgyxj.com)');
+    console.log('='.repeat(50));
+
     // 读取现有数据
     const raw = fs.readFileSync(POSTS_PATH, 'utf8');
     const data = JSON.parse(raw);
@@ -272,13 +285,30 @@ async function main() {
     const existingTitles = new Set(existingPosts.map(p => p.title));
     let maxId = existingPosts.length > 0 ? Math.max(...existingPosts.map(p => p.id)) : 0;
 
+    console.log(`\n已有文章: ${existingPosts.length} 篇, 最大ID: ${maxId}`);
+
+    // 获取首页最新文章ID
+    console.log('\n检测首页最新文章...');
+    const homepageIds = await getLatestIdsFromHomepage();
+    console.log('首页最新ID:', homepageIds.slice(0, 10).join(', '));
+
+    // 选择要抓取的ID（只抓比max_id新的，最多2篇）
+    const newIds = homepageIds.filter(i => i > maxId).slice(0, 2);
+    console.log('需要抓取:', newIds.join(', '));
+
+    if (newIds.length === 0) {
+        console.log('\n没有新文章需要抓取！');
+        return;
+    }
+
     let imported = 0;
     let skipped = 0;
     let failed = 0;
 
-    for (const url of TARGET_URLS) {
-        console.log('\n-------------');
-        console.log('处理: ' + url);
+    for (const id of newIds) {
+        const url = `${BASE_URL}/${id}.html`;
+        console.log(`\n-------------`);
+        console.log(`处理: ${url}`);
 
         try {
             const html = await fetchUrl(url);
@@ -286,28 +316,28 @@ async function main() {
 
             // 去重检查
             if (existingTitles.has(article.title)) {
-                console.log('⏭ 已存在，跳过: ' + article.title.substring(0, 50));
+                console.log('跳过(已存在): ' + article.title.substring(0, 50));
                 skipped++;
                 continue;
             }
 
             maxId++;
             const post = makePost(article, maxId);
-            existingPosts.unshift(post); // 插到最前面
+            existingPosts.unshift(post);
             existingTitles.add(article.title);
             imported++;
 
-            console.log('✅ 导入成功: ' + post.title.substring(0, 60));
-            console.log('   分类: ' + post.category + ' | 作者: ' + post.author + ' | 日期: ' + post.date);
-            console.log('   下载: ' + post.download.substring(0, 60));
-            if (post.image) console.log('   封面: ' + post.image.substring(0, 60));
+            console.log('成功: ' + post.title.substring(0, 60));
+            console.log('   分类: ' + post.category + ' | 日期: ' + post.date);
+            console.log('   封面: ' + (post.image ? '有' : '无'));
+            console.log('   下载: ' + post.download.substring(0, 50));
 
         } catch (e) {
-            console.log('❌ 失败: ' + e.message);
+            console.log('失败: ' + e.message);
             failed++;
         }
 
-        // 礼貌延迟，避免被 ban
+        // 礼貌延迟
         await new Promise(r => setTimeout(r, 1500));
     }
 
@@ -324,11 +354,11 @@ async function main() {
     data.posts = existingPosts;
     fs.writeFileSync(POSTS_PATH, JSON.stringify(data, null, 2), 'utf8');
 
-    console.log('\n========== 批量导入完成 ==========');
-    console.log('✅ 成功: ' + imported);
-    console.log('⏭ 跳过: ' + skipped);
-    console.log('❌ 失败: ' + failed);
-    console.log('📄 总文章数: ' + existingPosts.length);
+    console.log('\n========== 抓取完成 ==========');
+    console.log('成功: ' + imported);
+    console.log('跳过: ' + skipped);
+    console.log('失败: ' + failed);
+    console.log('总文章数: ' + existingPosts.length);
 }
 
 main().catch(console.error);
