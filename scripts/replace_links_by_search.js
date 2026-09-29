@@ -1,8 +1,10 @@
 ﻿/**
- * 按标题搜索抓取 acgyxjvip2.com + 用 Excel 百度链接替换（最终版）
- * - 按 Excel 行号分配 id（id = 行号）
- * - 搜索后遍历【全部候选】逐个做严格核心词校验，取第一个真正命中的
- *   （修复 WP 搜索排序不把目标排第一导致漏抓的问题）
+ * 按标题搜索抓取 acgyxjvip2.com + 只用 Excel 百度网盘链接替换（最终版 v3）
+ * - 只处理 Excel 里有百度链接的行（35 篇），无链接的剔除
+ * - id = Excel 行号
+ * - 搜索后遍历全部候选做严格核心词校验
+ * - 封面：优先 data-src（懒加载）
+ * - 下载区：只保留百度网盘链接，删掉 UC/移动云盘/迅雷/夸克/115 等其他网盘段落
  */
 const fs = require('fs');
 const path = require('path');
@@ -45,23 +47,17 @@ async function fetchWithRetry(url) {
 function readExcelRows() {
   const wb = XLSX.readFile(EXCEL_PATH);
   const ws = wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(ws, { header: 1 }).slice(1).filter(r => r[0] && String(r[0]).trim() && r[2] && String(r[2]).trim())
-    .map((r, i) => ({ lineNo: i + 1, expectedTitle: String(r[0]).trim(), shareFile: r[1] ? String(r[1]).trim() : '', baiduLink: r[2] ? String(r[2]).trim() : '' }));
+  return XLSX.utils.sheet_to_json(ws, { header: 1 }).slice(1)
+    .filter(r => r[0] && String(r[0]).trim() && r[2] && String(r[2]).trim()) // 只留有百度链接的
+    .map((r, i) => ({ lineNo: i + 1, expectedTitle: String(r[0]).trim(), shareFile: r[1] ? String(r[1]).trim() : '', baiduLink: String(r[2]).trim() }));
 }
-// 提取搜索词：核心游戏名（去掉分类、版本号、大小）
 function extractSearchKey(title) {
-  const cleaned = title
-    .replace(/\[|\]/g, ' ')
-    .replace(/v?\d+(\.\d+)*/gi, ' ')
-    .replace(/[\u3000-\u303f\uff00-\uffef]/g, ' ')
-    .replace(/\s+/g, ' ').trim();
+  const cleaned = title.replace(/\[|\]/g, ' ').replace(/v?\d+(\.\d+)*/gi, ' ').replace(/[\u3000-\u303f\uff00-\uffef]/g, ' ').replace(/\s+/g, ' ').trim();
   const words = cleaned.split(' ').filter(w => w.length >= 2);
   const latin = words.filter(w => /[a-zA-Z0-9]/.test(w));
   const cjk = words.filter(w => /[\u4e00-\u9fa5]/.test(w));
-  return (latin.length ? latin.sort((a, b) => b.length - a.length)[0]
-          : cjk.sort((a, b) => b.length - a.length)[0]) || cleaned.substring(0, 10);
+  return (latin.length ? latin.sort((a, b) => b.length - a.length)[0] : cjk.sort((a, b) => b.length - a.length)[0]) || cleaned.substring(0, 10);
 }
-// 严格核心词匹配
 function strictCoreMatch(expected, actual) {
   const norm = s => s.replace(/\[|\]/g, ' ').replace(/[\s\-—–_|:：?？【】()（）！!，,。、~～·・\u3000-\u303f\uff00-\uffef]+/g, ' ').replace(/\s+/g, ' ').trim();
   const e = norm(expected).toLowerCase();
@@ -76,7 +72,6 @@ function strictCoreMatch(expected, actual) {
   const best = eKeys.sort((x, y) => y.length - x.length)[0];
   return a.includes(best);
 }
-// 搜索，返回【全部候选】[{url,id}]
 async function searchCandidates(key) {
   const url = BASE + '/wp-json/wp/v2/posts?search=' + encodeURIComponent(key) + '&per_page=20&_fields=id,link';
   const html = await fetchWithRetry(url);
@@ -97,6 +92,7 @@ function parseArticle(html, url) {
   const t1 = $('.single-title').first();
   if (t1.length) title = decodeEntities(t1.text().trim()).replace(/[\s\-|–—]+ACG游戏姬.*$/i, '').trim();
   if (!title) title = decodeEntities($('title').text().trim().replace(/[\s\-|–—]+ACG游戏姬.*$/i, '').trim());
+
   let content = '';
   const c1 = $('.single-content').first();
   if (c1.length) {
@@ -104,9 +100,11 @@ function parseArticle(html, url) {
     content = content.replace(/\bsrc="[^"]*"\s+data-src="/gi, 'src="').replace(/\bdata-src=/gi, 'src="').replace(/\bdata-lazy-src=/gi, 'src="');
     content = content.replace(/\s+loading="lazy"/gi, '').replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').trim();
   }
+
   let description = '';
   const md = $('meta[name="description"]').attr('content');
   if (md) description = decodeEntities(md.trim()).substring(0, 200);
+
   let category = 'PC';
   const tm = title.match(/\[([^\]]+)\]/);
   if (tm) {
@@ -118,50 +116,57 @@ function parseArticle(html, url) {
     else if (raw.includes('ACT')) category = 'ACT';
     else if (raw.includes('NTR')) category = 'NTR';
   }
+
   let date = '';
   const d1 = $('.data span, time, .post-date, .date').first();
   if (d1.length) date = d1.text().trim();
   if (!date) date = new Date().toISOString().split('T')[0];
+
+  // 封面：优先 data-src（懒加载），其次 src
   let image = '';
   const img = $('.single-content img').first();
-  if (img.length) { image = img.attr('src') || img.attr('data-src') || ''; if (image && /avatar|logo|icon|emoji|loading/i.test(image)) image = ''; }
-  let views = '0';
-  const v1 = $('.single-views, .post-views, .views').first();
-  if (v1.length) views = v1.text().trim().replace(/[^0-9.]/g, '') || '0';
-  let originalDownload = '';
-  for (const p of [/https?:\/\/pan\.baidu\.com\/s\/\S+?["'\s>]+?/i, /https?:\/\/pan\.xunlei\.com\/s\/\S+?["'\s>]+?/i, /https?:\/\/yun\.139\.com\/\S+?["'\s>]+?/i, /https?:\/\/pan\.quark\.cn\/\S+?["'\s>]+?/i]) {
-    const m = content.match(p); if (m && m[0]) { originalDownload = m[0].replace(/["'<>\s]+$/g, ''); break; }
+  if (img.length) {
+    image = img.attr('data-src') || img.attr('src') || '';
+    if (image && /avatar|logo|icon|emoji|loading|placeholder/i.test(image)) image = '';
   }
-  return { title, content, description, category, date, image, views, comments: 0, originalDownload };
+
+  return { title, content, description, category, date, image, views: '0', comments: 0 };
 }
-function cleanDownloadSections(html) {
+
+// 把正文里所有"其他网盘"的下载段落删掉，只留百度网盘
+// 策略：删除整段包含 UC网盘/移动云盘/迅雷/夸克/115 等关键词的 <p>，
+// 以及"链接：+<a>"且 a 指向非百度网盘的 <p>；最后统一替换百度网盘区。
+function stripOtherDrives(html) {
   if (!html) return html;
   let c = html;
-  c = c.replace(/<p[^>]*>\s*[—–\-]{3,}\s*<\/p>/gi, '');
-  c = c.replace(/<p[^>]*>\s*百度网盘[：:][\s\S]*?<\/p>/gi, '');
-  c = c.replace(/<p[^>]*>\s*移动云盘[：:][\s\S]*?<\/p>/gi, '');
-  c = c.replace(/<p[^>]*>\s*(?:链接|下载)[：:]\s*<a[\s\S]*?<\/a>[\s\S]*?<\/p>/gi, '');
-  c = c.replace(/<p[^>]*>\s*迅雷[^：:]*[：:][\s\S]*?<\/p>/gi, '');
-  c = c.replace(/<p[^>]*>\s*夸克[^：:]*[：:][\s\S]*?<\/p>/gi, '');
-  c = c.replace(/<p[^>]*>\s*(?:开通|网盘会员|会员充值|下载通道|解压密码[：:]|解压码[：:])[\s\S]*?<\/p>/gi, '');
-  c = c.replace(/<p[^>]*>\s*百度口令[：:][\s\S]*?<\/p>/gi, '');
-  c = c.replace(/<p[^>]*>\s*(?:115[^：:]*[：:]|分享文件[：:])[\s\S]*?<\/p>/gi, '');
+  const otherDriveKeywords = ['UC网盘', 'uc网盘', '移动云盘', '迅雷', '夸克', '115', '云盘'];
+  // 1) 删除含其他网盘关键词的整个 <p>...</p>
+  c = c.replace(/<p[^>]*>[\s\S]*?(?:UC网盘|uc网盘|移动云盘|迅雷|夸克|115\.com|yun\.139\.com|pan\.xunlei\.com|pan\.quark\.cn|drive\.uc\.cn|drive\.uc|caiyun\.139\.com)[\s\S]*?<\/p>/gi, '');
+  // 2) 删除"链接：<a href=...>"段，只要 a 的 href 不是百度网盘
+  c = c.replace(/<p[^>]*>\s*链接[：:]\s*<a[^>]*href="[^"]*"[^>]*>[\s\S]*?<\/a>[\s\S]*?<\/p>/gi, (match, p1) => {
+    const hrefMatch = match.match(/href="([^"]*)"/i);
+    const href = hrefMatch ? hrefMatch[1] : '';
+    if (/pan\.baidu\.com/i.test(href)) return match; // 保留百度
+    return '';
+  });
+  // 3) 删除"提取码/密码/访问码：xxx"独立段（非百度）
+  c = c.replace(/<p[^>]*>\s*(?:提取码|密码|访问码)[：:]\s*\S+\s*<\/p>/gi, '');
+  // 4) 删除分隔线
+  c = c.replace(/<p[^>]*>\s*[—–\-]{3,}[：:]?[\s\S]*?<\/p>/gi, '');
+  // 5) 清理连续空 <p>
   c = c.replace(/<p[^>]*>\s*(?:<br\s*\/?>\s*)*\s*<\/p>/gi, '');
   c = c.replace(/(<p[^>]*>\s*<\/p>\s*){2,}/gi, '');
   return c;
 }
-function parseBaiduLink(link) {
-  if (!link) return { url: '', pwd: '' };
-  const m = link.match(/(https?:\/\/pan\.baidu\.com\/s\/[^\s"&']+)(?:\?pwd=([^\s"&]+))?/i);
-  return m ? { url: m[1], pwd: m[2] || '' } : { url: link, pwd: '' };
-}
 function buildBaiduBlock(link, code) {
-  const p = parseBaiduLink(link);
-  if (!p.url) return '';
+  const m = String(link).match(/(https?:\/\/pan\.baidu\.com\/s\/[^\s"&']+)(?:\?pwd=([^\s"&]+))?/i);
+  const url = m ? m[1] : link;
+  const pwd = m ? (m[2] || '') : '';
+  if (!url) return '';
   let l = '';
   if (code) l += '百度网盘：' + code + '<br>';
-  l += '链接：<a href="' + p.url + '" target="_blank" rel="noopener">' + p.url + '</a>';
-  if (p.pwd) l += '<br>提取码：' + p.pwd;
+  l += '链接：<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>';
+  if (pwd) l += '<br>提取码：' + pwd;
   return '<p>' + l + '</p>';
 }
 function autoGenerateTags(a) {
@@ -182,61 +187,48 @@ function makePost(a, id, src) {
     author: 'CL', authorAvatar: '恋', views: a.views, comments: a.comments, date: a.date, source: src,
   };
 }
-
-// 多轮搜索：多组搜索词 × 全部候选，取第一个严格命中的
 async function resolveRow(row) {
-  const keys = [
-    extractSearchKey(row.expectedTitle),
-    row.expectedTitle.replace(/\[|\]/g, ' ').trim().split(/\s+/).slice(1, 4).join(' '),
-    row.expectedTitle.replace(/\[|\]/g, '').trim().substring(0, 40),
-  ].filter(k => k && k.length >= 4);
-
+  const keys = [extractSearchKey(row.expectedTitle), row.expectedTitle.replace(/\[|\]/g, ' ').trim().split(/\s+/).slice(1, 4).join(' '), row.expectedTitle.replace(/\[|\]/g, '').trim().substring(0, 40)].filter(k => k && k.length >= 4);
   const seen = new Set();
   for (const key of keys) {
     let cands;
-    try { cands = await searchCandidates(key); }
-    catch (e) { continue; }
+    try { cands = await searchCandidates(key); } catch (e) { continue; }
     for (const c of cands) {
       if (seen.has(c.id)) continue;
       seen.add(c.id);
       try {
         const html = await fetchWithRetry(c.url);
         const parsed = parseArticle(html, c.url);
-        if (strictCoreMatch(row.expectedTitle, parsed.title)) {
-          return { url: c.url, parsed };
-        }
-      } catch (e) { /* 单条失败不影响其他候选 */ }
+        if (strictCoreMatch(row.expectedTitle, parsed.title)) return { url: c.url, parsed };
+      } catch (e) {}
     }
   }
   return null;
 }
-
 async function main() {
-  console.log('按标题搜索抓取 + 百度链接替换（id=行号，全候选校验）');
+  console.log('抓取（仅百度网盘）+ 封面修复 + 只留百度链接（v3）');
   const excelRows = readExcelRows();
-  console.log('Excel: ' + excelRows.length + ' 行, 带百度链接 ' + excelRows.filter(r => r.baiduLink).length + ' 行');
+  console.log('Excel 有百度链接的行: ' + excelRows.length);
 
-  // 顺序处理每行（每行内并发抓候选标题），保证日志按行号
   const resolved = [];
   for (const row of excelRows) {
     const hit = await resolveRow(row);
     if (!hit) {
-      resolved.push({ row, ok: false, error: '未命中（搜索词: ' + extractSearchKey(row.expectedTitle) + '）' });
+      resolved.push({ row, ok: false, error: '未命中' });
       console.log('  行 ' + String(row.lineNo).padStart(2) + ' 未命中: ' + row.expectedTitle.substring(0, 45));
       continue;
     }
-    let replaced = false, replacedUrl = '';
+    // 1) 删掉其他网盘段落，只留百度
+    let content = stripOtherDrives(hit.parsed.content);
+    // 2) 在末尾追加百度网盘区
     const block = buildBaiduBlock(row.baiduLink, BUDGET_CODE);
-    if (block) {
-      hit.parsed.content = cleanDownloadSections(hit.parsed.content) + '\n<hr>\n<p><strong>— 下载 —</strong></p>\n' + block;
-      replacedUrl = parseBaiduLink(row.baiduLink).url;
-      replaced = true;
-    }
-    resolved.push({ row, ok: true, parsed: hit.parsed, hitUrl: hit.url, replaced, replacedUrl });
-    console.log('  行 ' + String(row.lineNo).padStart(2) + ' [' + (replaced ? '已替换' : '  无链接') + '] ' + hit.parsed.title.substring(0, 45));
+    if (block) content = content + '\n<hr>\n<p><strong>— 下载 —</strong></p>\n' + block;
+    hit.parsed.content = content;
+    const baiduUrl = String(row.baiduLink).match(/(https?:\/\/pan\.baidu\.com\/s\/[^\s"&']+)(?:\?pwd=([^\s"&]+))?/i);
+    resolved.push({ row, ok: true, parsed: hit.parsed, hitUrl: hit.url, replacedUrl: baiduUrl ? baiduUrl[1] : row.baiduLink });
+    console.log('  行 ' + String(row.lineNo).padStart(2) + ' [封面:' + (hit.parsed.image ? 'Y' : 'N') + '] ' + hit.parsed.title.substring(0, 45));
   }
 
-  // 按行号排序分配 id
   resolved.sort((a, b) => a.row.lineNo - b.row.lineNo);
   const posts = [];
   const mappingArticles = [];
@@ -246,34 +238,24 @@ async function main() {
     if (item.ok) {
       const id = idx + 1;
       const post = makePost(item.parsed, id, item.hitUrl);
-      if (item.replacedUrl) post.download = item.replacedUrl;
+      post.download = item.replacedUrl;
       posts.push(post);
       mappingArticles.push({
         title: post.title, url: post.link, category: post.category,
-        baiduCode: item.replaced ? BUDGET_CODE : '', baiduPhrase: '',
-        originalLinks: {
-          baiduUrls: item.parsed.originalDownload && /baidu/i.test(item.parsed.originalDownload) ? [item.parsed.originalDownload] : [],
-          xunleiUrls: item.parsed.originalDownload && /xunlei/i.test(item.parsed.originalDownload) ? [item.parsed.originalDownload] : [],
-          yun139Urls: item.parsed.originalDownload && /yun\.139/i.test(item.parsed.originalDownload) ? [item.parsed.originalDownload] : [],
-          quarkUrls: item.parsed.originalDownload && /quark/i.test(item.parsed.originalDownload) ? [item.parsed.originalDownload] : [],
-          cloud115Urls: item.parsed.originalDownload && /115\.com/i.test(item.parsed.originalDownload) ? [item.parsed.originalDownload] : [],
-        },
+        baiduCode: BUDGET_CODE, baiduPhrase: '',
+        originalLinks: { baiduUrls: [], yun139Urls: [], xunleiUrls: [], quarkUrls: [], cloud115Urls: [] },
         myLinks: {
-          baidu: item.replaced ? { url: item.replacedUrl, pwd: parseBaiduLink(item.row.baiduLink).pwd, code: BUDGET_CODE } : { url: '', pwd: '', code: BUDGET_CODE },
-          yun139: { url: '', pwd: '', code: BUDGET_CODE },
-          xunlei: { url: '', pwd: '', code: BUDGET_CODE },
-          quark: { url: '', pwd: '', code: BUDGET_CODE },
-          cloud115: { url: '', pwd: '', code: BUDGET_CODE },
+          baidu: { url: item.replacedUrl, pwd: String(item.row.baiduLink).match(/pwd=([^\s"&]+)/) ? String(item.row.baiduLink).match(/pwd=([^\s"&]+)/)[1] : '', code: BUDGET_CODE },
+          yun139: { url: '', pwd: '', code: BUDGET_CODE }, xunlei: { url: '', pwd: '', code: BUDGET_CODE }, quark: { url: '', pwd: '', code: BUDGET_CODE }, cloud115: { url: '', pwd: '', code: BUDGET_CODE },
         },
-        note: 'excel行' + lineNo, status: item.replaced ? 'done' : 'pending',
+        note: 'excel行' + lineNo, status: 'done',
       });
-      reportRows.push({ lineNo, expectedTitle: item.row.expectedTitle, id, actualTitle: item.parsed.title, category: post.category, date: post.date, hasBaidu: item.row.baiduLink ? 'Y' : 'N', replaced: item.replaced ? 'Y' : 'N', shareFile: item.row.shareFile, baiduUrl: item.replacedUrl, note: '' });
+      reportRows.push({ lineNo, expectedTitle: item.row.expectedTitle, id, actualTitle: item.parsed.title, category: post.category, date: post.date, hasBaidu: 'Y', replaced: 'Y', image: item.parsed.image ? 'Y' : 'N', baiduUrl: item.replacedUrl, note: '' });
     } else {
-      reportRows.push({ lineNo, expectedTitle: item.row.expectedTitle, id: null, actualTitle: '', category: '', date: '', hasBaidu: item.row.baiduLink ? 'Y' : 'N', replaced: 'N', shareFile: item.row.shareFile, baiduUrl: '', note: item.error });
+      reportRows.push({ lineNo, expectedTitle: item.row.expectedTitle, id: null, actualTitle: '', category: '', date: '', hasBaidu: 'Y', replaced: 'N', image: '', baiduUrl: item.row.baiduLink, note: item.error });
     }
   });
 
-  console.log('\n写入数据文件 + 生成预览报告...');
   const postsJson = {
     site: { title: 'CL游戏姬', subtitle: '小黄油,galgame,cos福利… 免费下载！', footer: '解压密码: acgyxj.xyz / acgyxj.cc / acgyxj.top' },
     posts,
@@ -298,20 +280,16 @@ async function main() {
   for (const a of mappingArticles) if (!kept.has(a.title)) merged.unshift(a);
   fs.writeFileSync(oldMappingPath, JSON.stringify({ version: 2, articles: merged }, null, 2), 'utf8');
 
-  const lines = ['# 抓取预览报告（全候选校验 + id=行号）', '', '时间: ' + new Date().toISOString(),
-    'Excel 行数: ' + excelRows.length + ' | 命中: ' + reportRows.filter(r => r.id).length + ' | 未命中: ' + reportRows.filter(r => !r.id).length,
-    '已替换百度链接: ' + reportRows.filter(r => r.replaced === 'Y').length + ' / ' + reportRows.filter(r => r.hasBaidu === 'Y').length, '',
-    '| 行 | Excel标题 | id | 实际标题 | 分类 | 日期 | 百度 | 已替换 |', '|---|---|---|---|---|---|---|---|'];
-  for (const r of reportRows) lines.push('| ' + r.lineNo + ' | ' + r.expectedTitle.substring(0, 25) + ' | ' + (r.id || '-') + ' | ' + (r.actualTitle || '').substring(0, 30) + ' | ' + r.category + ' | ' + r.date + ' | ' + r.hasBaidu + ' | ' + r.replaced + ' |');
+  const lines = ['# 抓取预览报告（仅百度 + 封面修复）', '', '时间: ' + new Date().toISOString(),
+    'Excel 行(有百度链接): ' + excelRows.length + ' | 命中: ' + reportRows.filter(r => r.id).length + ' | 未命中: ' + reportRows.filter(r => !r.id).length,
+    '有封面: ' + reportRows.filter(r => r.image === 'Y').length + ' / ' + reportRows.filter(r => r.id).length, '',
+    '| 行 | 文章ID | 实际标题 | 分类 | 封面 | 百度链接 |', '|---|---|---|---|---|---|'];
+  for (const r of reportRows) lines.push('| ' + r.lineNo + ' | ' + (r.id || '-') + ' | ' + (r.actualTitle || '').substring(0, 35) + ' | ' + r.category + ' | ' + r.image + ' | ' + (r.baiduUrl || '').substring(0, 40) + ' |');
   const unmatched = reportRows.filter(r => !r.id);
-  if (unmatched.length) {
-    lines.push('', '## 未命中（需人工处理）', '');
-    for (const r of unmatched) lines.push('- 行 ' + r.lineNo + ': ' + r.expectedTitle + (r.hasBaidu === 'Y' ? ' [百度: ' + r.baiduUrl + ']' : '') + '  →  ' + r.note);
-  }
+  if (unmatched.length) { lines.push('', '## 未命中', ''); for (const r of unmatched) lines.push('- 行 ' + r.lineNo + ': ' + r.expectedTitle + '  →  ' + r.note); }
   fs.writeFileSync(path.join(DATA_DIR, 'preview-report.md'), lines.join('\n'), 'utf8');
 
-  console.log('\n✅ 完成: 命中 ' + reportRows.filter(r => r.id).length + '/' + excelRows.length + ' | 已替换 ' + reportRows.filter(r => r.replaced === 'Y').length);
-  console.log('   预览报告: ' + path.join(DATA_DIR, 'preview-report.md'));
+  console.log('\n✅ 完成: 命中 ' + reportRows.filter(r => r.id).length + '/' + excelRows.length + ' | 有封面 ' + reportRows.filter(r => r.image === 'Y').length);
 }
 function buildTagCloud(posts) {
   const c = {};
