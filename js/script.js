@@ -124,6 +124,7 @@ function renderPosts() {
             : coverImg;
         const imgHtml = imgUrl
             ? `<img src="${imgUrl}" alt="${post.title}" class="img-fluid rounded-3">`
+            : `<img src="${imgUrl}" alt="${post.title}" class="img-fluid rounded-3" onerror="this.style.display='none'">`
             : `<div class="img-placeholder" style="background:${post.gradient};">
                 <span class="placeholder-icon"><i class="fa ${post.icon}"></i></span>
                </div>`;
