@@ -49,6 +49,12 @@ function renderPosts() {
 
     // 按标签筛选
     let filteredPosts = siteData.posts;
+    // 首页永远最新:按日期倒序,同日按 id 倒序(新文章在前)
+    filteredPosts = filteredPosts.slice().sort((a, b) => {
+      const da = a.date || '', db = b.date || '';
+      if (da !== db) return da < db ? 1 : -1;
+      return (b.id || 0) - (a.id || 0);
+    });
     if (activeTag) {
         const tagLower = activeTag.toLowerCase();
         filteredPosts = siteData.posts.filter(post => {
