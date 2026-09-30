@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
 
-const full = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'page2395-full.json'), 'utf8'));
+const full = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'page2-full.json'), 'utf8'));
 const PAGE = full.page;
 const outPath = 'E:/主线/主线/正在做的/游戏站/百度提取的分享链接/第' + PAGE + '页_待填百度链接_v3.xlsx';
 

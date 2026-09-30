@@ -33,8 +33,22 @@ function extractDriveLinks(html) {
   const $ = cheerio.load(html);
   const text = $('body').text() + ' ' + html;
   const find = re => { const m = text.match(re) || []; return [...new Set(m.map(x => x))]; };
+  // baidu 带标签:按网盘行前面的 PC/AZ 标号,保留两端
+  // baidu 带标签:维护 currentLabel,按顺序配对 PC/AZ 端(标题行在前,链接行在后)
+  let curLabel = '';
+  const baiduList = [];
+  $('div, p').each((i, el) => {
+    const txt = ($(el).text() || '').replace(/\s+/g, ' ');
+    if (txt.length > 200) return;
+    const lab = txt.match(/百度网盘\s*[：:]\s*(PC|AZ)/i);
+    if (lab) { curLabel = lab[1].toUpperCase(); return; }
+    const um = txt.match(/https?:\/\/pan\.baidu\.com\/s\/[A-Za-z0-9\-_]+/);
+    if (um) baiduList.push({ url: um[0], label: curLabel });
+  });
+  const seenB = new Set();
+  const baidu = baiduList.filter(b => { if (seenB.has(b.url)) return false; seenB.add(b.url); return true; });
   return {
-    baidu: find(/https?:\/\/pan\.baidu\.com\/s\/[A-Za-z0-9\-_]+/g),
+    baidu,
     uc: find(/https?:\/\/drive\.uc\.cn\/s\/[A-Za-z0-9\-_?=&]+/g),
     yun139: find(/https?:\/\/(?:caiyun|yun)\.139\.com\/[^\s<>&"]+/g),
     xunlei: find(/https?:\/\/pan\.xunlei\.com\/[^\s<>&"]+/g),
@@ -51,7 +65,7 @@ function extractPwd(html) {
   return [...found].join(' ');
 }
 async function main() {
-  const PAGE = 2395;
+  const PAGE = parseInt(process.argv[2]) || 2; // 用法: node fetch_full.js <页号>
   const listHtml = await withRetry('https://www.acgyxjvip2.com/page/' + PAGE);
   const $ = cheerio.load(listHtml);
   // 只取正文区 article 标签内的标题链接（正好是本页的 10 篇）

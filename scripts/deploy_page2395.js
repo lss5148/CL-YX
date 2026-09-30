@@ -82,6 +82,15 @@ function cleanTitle(t) {
 function buildBaiduBlock(pwd, link) {
   return '<p>——————————————————</p>\n<hr>\n<p><strong>— 下载 —</strong></p>\n<p>百度网盘：' + pwd + '<br>链接：<a href="' + link + '" target="_blank" rel="noopener">' + link + '</a></p>';
 }
+// 支持多个百度链接(同一文章 PC 端 + AZ 端):links = [{url, label}]，label 可为空
+function buildBaiduBlockMulti(pwd, links) {
+  let html = '<p>——————————————————</p>\n<hr>\n<p><strong>— 下载 —</strong></p>';
+  links.forEach(l => {
+    const tag = l.label ? '百度网盘：' + l.label + '  ' : '百度网盘：';
+    html += '<p>' + tag + pwd + '<br>链接：<a href="' + l.url + '" target="_blank" rel="noopener">' + l.url + '</a></p>';
+  });
+  return html;
+}
 
 async function main() {
   const page = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'page2395-full.json'), 'utf8'));
@@ -96,7 +105,9 @@ async function main() {
     // 安全:去掉正文里任何残留的其他网盘链接(UC/迅雷/夸克/115/移动云)
     content = content.replace(/<p>(?:(?!网盘).)*UC网盘.*<\/p>/s, '');
     const pwd = 'jxnf';
-    content = content + '\n' + buildBaiduBlock(pwd, it.myLink);
+    // 多链接(同一文章 PC+AZ 两端)用 Multi 块;单链接用老块
+    const links = it.myLinks || [{ url: it.myLink, label: '' }];
+    content = content + '\n' + buildBaiduBlockMulti(pwd, links);
     const post = {
       id: 0, // commit 时再编号
       title: cleanTitle(it.title),
@@ -105,7 +116,8 @@ async function main() {
       content,
       image: coverFrom(content),
       link: '', // commit 时填 /article.html?id=N
-      download: it.myLink,
+      download: (it.myLinks || [{ url: it.myLink }]).map(l => l.url).filter(Boolean).join(' '),
+      // 兼容多链接:download 拼接全部链接
       category: 'PC',
       gradient: 'linear-gradient(135deg,#3498DB,#2980B9)',
       icon: 'fa-gamepad',
