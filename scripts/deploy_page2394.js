@@ -153,6 +153,49 @@ async function main() {
     obj.pagination = { total: all.length };
     fs.writeFileSync(dataPath, JSON.stringify(obj, null, 2));
     console.log('✅ 已写入 posts.json,现在共 ' + all.length + ' 篇');
+    // === 图片本地化:下载新文章外链图到 assets/img/ ===
+    const ids = newPosts.map(x => String(x.id));
+    console.log('\ud83d\udd78 本地化新文章图片...');
+    const https2 = require('https'), http2 = require('http');
+    const assetsDir = path.join(__dirname, '..', 'assets', 'img');
+    if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
+    const uniq = new Set();
+    for (const p of obj.posts) {
+      if (!ids.includes(String(p.id))) continue;
+      const re2 = new RegExp('<img src="([^"]+)"', 'g'); let mm;
+      while ((mm = re2.exec(p.content)) !== null) { if (!mm[1].startsWith('/assets/')) uniq.add(mm[1]); }
+      if (p.image && !p.image.startsWith('/assets/')) uniq.add(p.image);
+    }
+    const imgList = [...uniq];
+    console.log('  待本地化 ' + imgList.length + ' 张');
+    const localMap = {};
+    for (const u of imgList) {
+      const ext = (u.match(/\.(jpg|jpeg|png|webp|gif)$/i) || ['jpg'])[0].toLowerCase();
+      const hash = u.replace(/[^a-z0-9]/gi, '').slice(0, 10);
+      const fname = 'img_' + hash + '.' + ext;
+      const dest = path.join(assetsDir, fname);
+      const localPath = '/assets/img/' + fname;
+      if (fs.existsSync(dest) && fs.statSync(dest).size > 0) { localMap[u] = localPath; continue; }
+      await new Promise(res => {
+        const lib = u.startsWith('https') ? https2 : http2;
+        const req = lib.get(u, { headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://acgyxjvip2.com/' }, timeout: 6000 }, r => {
+          if (r.statusCode !== 200) { r.resume(); console.log('  失败' + r.statusCode + ' ' + u.substring(0, 50)); return res(); }
+          const ws = fs.createWriteStream(dest); r.pipe(ws);
+          ws.on('finish', () => { ws.close(); const s2 = fs.statSync(dest).size; if (s2 > 0) localMap[u] = localPath; console.log('  ' + (s2 > 0 ? 'OK' : '空') + ' ' + localPath); res(); });
+          ws.on('error', () => res());
+        });
+        req.on('timeout', () => { req.destroy(); res(); });
+        req.on('error', e => { console.log('  网络' + e.code + ' ' + u.substring(0, 50)); res(); });
+      });
+    }
+    const IMGRE = new RegExp('<img src="([^"]+)"', 'g');
+    for (const p of obj.posts) {
+      if (!ids.includes(String(p.id))) continue;
+      p.content = p.content.replace(IMGRE, function (mm, src) { return localMap[src] ? mm.replace(src, localMap[src]) : mm; });
+      if (p.image && localMap[p.image]) p.image = localMap[p.image];
+    }
+    fs.writeFileSync(dataPath, JSON.stringify(obj, null, 2));
+    console.log('\ud83d\udd78 本地化完成: 成功 ' + Object.keys(localMap).length + ' / ' + imgList.length + ' 张');
   } else {
     console.log('\n👀 预览模式,未写文件。预览在 data/preview-2394.md');
   }
