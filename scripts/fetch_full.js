@@ -51,7 +51,7 @@ function extractPwd(html) {
   return [...found].join(' ');
 }
 async function main() {
-  const PAGE = 2394;
+  const PAGE = 2395;
   const listHtml = await withRetry('https://www.acgyxjvip2.com/page/' + PAGE);
   const $ = cheerio.load(listHtml);
   // 只取正文区 article 标签内的标题链接（正好是本页的 10 篇）

@@ -42,7 +42,7 @@ function extractRealFileName(html) {
   return [...names];
 }
 async function main() {
-  const full = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'page2394-full.json'), 'utf8'));
+  const full = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'page2395-full.json'), 'utf8'));
   for (let i = 0; i < full.items.length; i++) {
     const it = full.items[i];
     try {
@@ -55,7 +55,7 @@ async function main() {
     }
     await new Promise(r => setTimeout(r, 300));
   }
-  fs.writeFileSync(path.join(__dirname, '..', 'data', 'page2394-full.json'), JSON.stringify(full, null, 2), 'utf8');
+  fs.writeFileSync(path.join(__dirname, '..', 'data', 'page2395-full.json'), JSON.stringify(full, null, 2), 'utf8');
   console.log('\n✅ 已写回 realFileNames');
 }
 main().catch(e => { console.error(e); process.exit(1); });
