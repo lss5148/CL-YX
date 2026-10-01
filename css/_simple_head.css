@@ -1,0 +1,79 @@
+/*
+ * CL游戏姬 — 简约版(2026-10-01)
+ * 灰阶 + 低饱和蓝灰强调色,去掉霓虹/扫描线/彩色渐变
+ */
+
+/* ========== FONTS ========== */
+@font-face {
+    font-family: "boxmoe";
+    src: url("/vendor/fonts/alimama.woff2") format("woff2");
+    font-display: swap;
+}
+
+/* ========== SCROLLBAR ========== */
+*::-webkit-scrollbar { height: 8px; width: 8px; }
+*::-webkit-scrollbar-track { background: #101014; }
+*::-webkit-scrollbar-thumb { background: #3a3a44; border-radius: 4px; border: 2px solid #101014; }
+*::-webkit-scrollbar-thumb:hover { background: #4a4a55; }
+
+/* ========== CSS VARIABLES — 简约深色 ========== */
+:root {
+    --bg-deep: #101014;
+    --bg-card: #18181d;
+    --bg-elevated: #1f1f26;
+    --text-primary: #e8e8ec;
+    --text-secondary: #9a9aa5;
+    --text-muted: #6a6a75;
+    --accent: #5a9bd8;
+    --accent-soft: rgba(90, 155, 216, 0.12);
+    --neon-cyan: #5a9bd8;
+    --neon-magenta: #8a8a95;
+    --neon-gold: #8a8a95;
+    --neon-green: #6f8f6f;
+    --border-dim: #2a2a33;
+    --border-glow: #2a2a33;
+    --shadow-neon: 0 2px 12px rgba(0, 0, 0, 0.35);
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+    --card-bg: #18181d;
+    --card-border: #2a2a33;
+    --nav-bg: rgba(16, 16, 20, 0.88);
+    --banner-height: 440px;
+    --accent2: #5a9bd8;
+}
+
+[data-bs-theme="dark"] {
+    --bg-deep: #101014;
+    --bg-card: #18181d;
+    --bg-elevated: #1f1f26;
+    --text-primary: #e8e8ec;
+    --text-secondary: #9a9aa5;
+    --text-muted: #6a6a75;
+    --card-bg: #18181d;
+    --card-border: #2a2a33;
+    --nav-bg: rgba(16, 16, 20, 0.88);
+}
+
+/* 简约浅色 */
+[data-bs-theme="light"] {
+    --bg-deep: #f5f6f8;
+    --bg-card: #ffffff;
+    --bg-elevated: #f0f1f4;
+    --text-primary: #1f2329;
+    --text-secondary: #5c6270;
+    --text-muted: #9aa0ac;
+    --accent: #3d7ab5;
+    --accent-soft: rgba(61, 122, 181, 0.10);
+    --neon-cyan: #3d7ab5;
+    --neon-magenta: #8a8a95;
+    --neon-gold: #8a8a95;
+    --neon-green: #6f8f6f;
+    --border-dim: #e2e4e9;
+    --border-glow: #e2e4e9;
+    --shadow-neon: 0 2px 12px rgba(0, 0, 0, 0.08);
+    --card-bg: #ffffff;
+    --card-border: #e2e4e9;
+    --nav-bg: rgba(255, 255, 255, 0.92);
+    --banner-height: 440px;
+    --accent2: #3d7ab5;
+}
+
