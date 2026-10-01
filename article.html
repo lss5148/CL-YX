@@ -13,6 +13,13 @@
         .article-detail { min-height: 400px; }
         .post-single { padding: 1.5rem; }
         .single-title { font-size: 1.5rem; font-weight: 800; line-height: 1.4; margin-bottom: 0.5rem; }
+        .single-cover { position: relative; border-radius: 8px; overflow: hidden; margin: 0 0 1.2rem; background: var(--bg-elevated); min-height: 220px; display: flex; align-items: flex-end; }
+        .single-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4; filter: saturate(0.7); }
+        .single-cover .cover-inner { position: relative; padding: 1.2rem 1.4rem; width: 100%; }
+        .single-cover .single-title { font-size: 1.3rem; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+        .single-content p { line-height: 2; }
+        .single-content img { display: block; margin: 1.2rem auto; max-width: 100%; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
+        .single-content a { color: var(--accent); word-break: break-all; }
         .single-category { margin-bottom: 0.5rem; }
         .single-category a {
             display: inline-flex; align-items: center; gap: 0.3rem;
@@ -208,6 +215,15 @@
                 <div id="articleContent" style="display:none;">
                     <div class="blog-single blog-border">
                         <div class="post-single">
+                            <!-- 封面横幅 -->
+                            <div class="single-cover" id="articleCover" style="display:none;">
+                                <img id="articleCoverImg" src="" alt="cover">
+                                <div class="cover-inner">
+                                    <div class="single-category" style="margin-bottom:0.4rem;"><a href="/"><i class="fa fa-dot-circle-o"></i><span id="articleCategory2"></span></a></div>
+                                    <h1 class="single-title" id="articleTitle2"></h1>
+                                </div>
+                            </div>
+
                             <!-- 分类 -->
                             <div class="single-category">
                                 <a href="/"><i class="fa fa-dot-circle-o"></i><span id="articleCategory"></span></a>
@@ -381,6 +397,22 @@
 
                     document.title = post.title + ' - CL游戏姬';
                     document.getElementById('articleTitle').textContent = post.title;
+                    // 封面横幅:有封面图就展示,并把标题/分类移到封面上(隐藏原位置的同名元素)
+                    if (post.image) {
+                        document.getElementById('articleCover').style.display = 'flex';
+                        const coverImg = document.getElementById('articleCoverImg');
+                        coverImg.src = post.image;
+                        coverImg.addEventListener('error', function () {
+                          this.dataset.ph = '1';
+                          const f = this.closest('.single-cover');
+                          if (f) f.style.display = 'none';
+                        }, { once: true });
+                        document.getElementById('articleTitle2').textContent = post.title;
+                        document.getElementById('articleCategory2').textContent = post.category;
+                        document.getElementById('articleTitle').style.display = 'none';
+                        const catDiv = document.querySelector('#articleContent .single-category');
+                        if (catDiv) catDiv.style.display = 'none';
+                    }
                     document.getElementById('articleCategory').textContent = post.category;
                     document.getElementById('articleAuthor').textContent = post.author;
                     document.getElementById('articleDate').textContent = post.date;
