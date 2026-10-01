@@ -405,3 +405,32 @@ node scripts/fix_images.js
 - GitHub PAT with `repo` scope is stored in browser `localStorage`
 - Decompression passwords are embedded in `data/posts.json` (not security-sensitive by design)
 - Image proxy (`img.js`) only proxies image file extensions to prevent SSRF
+
+---
+
+## 工作流程（自动加载）
+完整抓取→部署→验证流程与踩坑规则见项目根目录 `../AGENTS.md`（`E:\主线\主线\正在做的\游戏站\AGENTS.md`）。新对话默认按该文件执行：wp_scraper 抓页 → make_excel 4列待填表 → 用户回传 CSV → deploy_page2 preview/commit → fix_content_interleave → fix_meta_fields → rebuild_index → git push 自动部署 → 线上验证 posts-index.json total。关键规则：只留百度网盘、双端 C=PC/D=AZ、posts.json 与 posts-index.json 必须同步、改 JS 先 node --check、randomPosts 是对象数组、每页做备份可回退。
+
+---
+
+## 工作流程（新对话默认按此执行，勿反复询问用户）
+
+完整约定见外层 `../AGENTS.md` 与 `docs/流程记录.md`。用户说"抓第 N 页"时，默认指 acgyxjvip2.com 的 /page/N，按下述流程执行，不要反问要链接。
+
+抓取阶段：
+1. 用 wp_scraper 抓 https://www.acgyxjvip2.com/page/N，输出 data/pageN-full.json
+2. node scripts/make_excel.js 出 4 列待填表：游戏标题 | 分享文件名 | PC端百度链接 | AZ端百度链接
+   - 只保留百度网盘，不要 UC/迅雷/夸克/115
+   - C=PC、D=AZ，格式「链接: url?pwd=码 提取码: 码」，B 列取每个百度链接自带 name（双端用 / 连）
+3. 把 Excel 发用户，等用户回传 CSV 分享链接
+
+部署阶段（收到 CSV 后）：
+1. node scripts/deploy_page2.js preview 给用户确认 → commit
+2. node scripts/fix_content_interleave.js 图文交替
+3. node scripts/fix_meta_fields.js 补 author=CL / views=0 / comments=0
+4. node scripts/rebuild_index.js
+5. git push 触发 Cloudflare Pages 自动部署
+6. 线上验证 cl-yx-e9c.pages.dev 首页新文章出现
+
+规则：没有用户分享链接的文章剔除不用找；只留百度网盘；改 JS 先 node --check 再 push；
+posts.json 与 posts-index.json 必须同步；randomPosts 是精简对象数组；封面 9:6（object-fit: cover）。
