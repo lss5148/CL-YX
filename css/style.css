@@ -443,7 +443,8 @@ p { color: var(--text-secondary); }
     margin: 0;
     overflow: hidden;
     border-radius: 6px;
-    height: 100%;
+    aspect-ratio: 3 / 4;
+    height: auto;
     min-height: 140px;
     position: relative;
 }
@@ -496,20 +497,29 @@ p { color: var(--text-secondary); }
 .tag-link, .tag-cloud {
     display: inline-flex;
     align-items: center;
-    padding: 0.12rem 0.55rem;
-    font-size: 0.7rem;
-    border-radius: 3px;
-    background: rgba(150,150,160,0.06);
+    gap: 0.3rem;
+    padding: 0.28rem 0.7rem;
+    font-size: 0.75rem;
+    border-radius: 999px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-dim);
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.tag-link .tagfa, .tag-cloud .tagfa {
+    width: 0.55rem; height: 0.55rem;
+    border-radius: 50%;
+    background: var(--accent-soft, rgba(90,155,216,0.15));
     color: var(--accent);
-    border: 1px solid rgba(150,150,160,0.15);
-    letter-spacing: 0.03em;
-    transition: all 0.25s;
+    font-size: 0.5rem;
+    display: inline-flex; align-items: center; justify-content: center;
 }
 .tag-link:hover, .tag-cloud:hover {
-    background: rgba(150,150,160,0.15);
+    background: var(--accent-soft, rgba(90,155,216,0.12));
     color: var(--accent);
     border-color: var(--accent);
-    
 }
 .tagfa { margin-right: 0.2rem; font-size: 0.45rem; }
 
@@ -665,22 +675,7 @@ p { color: var(--text-secondary); }
 .btn-search:hover { background: #fff; color: #fff; }
 
 /* Tag Cloud */
-.widget-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.widget-tag-cloud .tag-cloud {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-    border-radius: 3px;
-    background: rgba(150,150,160,0.04);
-    color: var(--text-muted);
-    border: 1px solid rgba(150,150,160,0.08);
-    transition: all 0.25s;
-}
-.widget-tag-cloud .tag-cloud:hover {
-    background: rgba(150,150,160,0.12);
-    color: var(--accent);
-    border-color: var(--accent);
-    
-}
+.widget-tag-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .widget-tag-cloud .tag-cloud-active,
 .tag-cloud-active {
     background: var(--accent) !important;

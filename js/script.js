@@ -226,6 +226,7 @@ function renderTags() {
 // ========== 渲染最新评论 ==========
 function renderComments() {
     const container = document.getElementById('comments-container');
+    if (!container) return;
     container.innerHTML = (siteData.comments || []).map(c =>
         `<li class="comment-listitem">
             <div class="comment-user">
@@ -246,7 +247,7 @@ function renderRandomPosts() {
         `<article class="widget-post">
             <div class="info">
                 <a href="${p.link}" class="thumb">
-                    <div class="thumb-placeholder" style="background:${p.gradient};"></div>
+                    <div class="thumb-placeholder" style="background:${p.gradient};">${p.image ? `<img src="${p.image}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" loading="lazy">` : ''}</div>
                 </a>
                 <h4 class="post-title-widget"><a href="${p.link}">${p.title}</a></h4>
                 <time>${p.date}</time>
