@@ -17,8 +17,9 @@
         .single-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4; filter: saturate(0.7); }
         .single-cover .cover-inner { position: relative; padding: 1.2rem 1.4rem; width: 100%; }
         .single-cover .single-title { font-size: 1.3rem; font-weight: 700; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
-        .single-content p { line-height: 2; }
-        .single-content img { display: block; margin: 1.2rem auto; max-width: 100%; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,0.25); }
+        .single-content p { line-height: 1.9; margin-bottom: 0.8rem; }
+        .single-content h4 { color: var(--text-primary); font-size: 1rem; margin: 1rem 0 0.4rem; }
+        .single-content img { max-width: 100%; height: auto; border-radius: 6px; margin: 0.5rem 0; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
         .single-content a { color: var(--accent); word-break: break-all; }
         .single-category { margin-bottom: 0.5rem; }
         .single-category a {
@@ -455,13 +456,8 @@
                     }
 
                     // 描述
-                    const descEl = document.getElementById('articleDescription');
-                    if (post.description) {
-                        descEl.textContent = post.description;
-                    } else {
-                        descEl.style.display = 'none';
-                    }
-
+                    // 描述已并入正文(图文交替),不再单独展示
+                    document.getElementById('articleDescription').style.display = 'none';
                     // 标签
                     const tagsContainer = document.getElementById('articleTags');
                     if (post.tags && post.tags.length > 0) {
