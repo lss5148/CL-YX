@@ -237,6 +237,9 @@ async function main() {
     }
     fs.writeFileSync(dataPath, JSON.stringify(obj, null, 2));
     console.log('\u{1F501} 本地化完成: 成功 ' + Object.keys(localMap).length + ' / ' + imgList.length + ' 张');
+    // 同步 posts-index.json(前端实际 fetch 的文件),否则首页不显示新文章
+    console.log('重建 posts-index.json ...');
+    require('child_process').execSync('node scripts/rebuild_index.js', { cwd: path.join(__dirname, '..'), stdio: 'inherit' });
   } else {
     console.log('\n\ud83d\udc40 预览模式,未写文件。预览在 data/preview-page2.md');
   }

@@ -4,7 +4,7 @@
  * 规则:
  *   - posts: 取 posts.json 全部 55 篇,每篇保留 index 所需字段(去掉 content/download/author/authorAvatar/comments/source/views)
  *   - tags: 字符串数组(旧文件误存成对象数组,导致标签云显示 [object Object])
- *   - randomPosts: 最新 5 篇的 id
+ *   - randomPosts: 最新 5 篇的精简对象(保留 title/link/gradient/date),前端 renderRandomPosts 按对象字段渲染
  *   - pagination: total/perPage 同步
  */
 const fs = require('fs');
@@ -32,7 +32,11 @@ const sorted = [...full.posts].sort((a, b) => {
   if (da !== db) return da < db ? 1 : -1;
   return (b.id || 0) - (a.id || 0);
 });
-const randomPosts = sorted.slice(0, 5).map(p => p.id);
+const randomPosts = sorted.slice(0, 5).map(p => {
+  const o = {};
+  KEEP.forEach(k => { if (p[k] !== undefined) o[k] = p[k]; });
+  return o;
+});
 
 const newIndex = {
   site: oldIndex.site,
@@ -45,5 +49,5 @@ const newIndex = {
 
 const out = path.join(__dirname, '..', 'data', 'posts-index.json');
 fs.writeFileSync(out, JSON.stringify(newIndex, null, 2));
-console.log('✅ 重建 posts-index.json:', newIndex.posts.length, '篇, tags', tags.length, '个, randomPosts', randomPosts.join(','));
+console.log('✅ 重建 posts-index.json:', newIndex.posts.length, '篇, tags', tags.length, '个, randomPosts', randomPosts.map(p=>p.id).join(','));
 console.log('   最大 id:', Math.max(...newIndex.posts.map(p => p.id)));
