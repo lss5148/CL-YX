@@ -443,7 +443,7 @@ p { color: var(--text-secondary); }
     margin: 0;
     overflow: hidden;
     border-radius: 6px;
-    aspect-ratio: 6 / 5;
+    aspect-ratio: 9 / 6;
     height: auto;
     min-height: 140px;
     position: relative;
