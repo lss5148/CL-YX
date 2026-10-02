@@ -202,15 +202,7 @@ p { color: var(--text-secondary); }
 .boxmoe_header_banner_img {
     width: 100%; height: 100%;
     position: relative;
-    transform: scale(1.4);
-    opacity: 0;
-    visibility: hidden;
-    transition: all 1.8s cubic-bezier(0.5, 0, 0, 1);
-}
-.boxmoe_header_banner_img.loaded {
-    transform: scale(1);
-    opacity: 1;
-    visibility: visible;
+    overflow: hidden;
 }
 /* 原站 ::before 顶部 15% 白色→透明 渐变（压亮） */
 .boxmoe_header_banner_img::before {
@@ -224,15 +216,7 @@ p { color: var(--text-secondary); }
     z-index: 2;
 }
 /* 原站 ::after 整层 25% 黑遮罩 */
-.boxmoe_header_banner_img::after {
-    content: "";
-    position: absolute;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.25);
-    user-select: none; pointer-events: none;
-    z-index: 2;
-}
+
 /* 原站：图铺满 + 不可交互 */
 .boxmoe_header_banner_img img {
     width: 100%; height: 100%;
@@ -272,6 +256,27 @@ p { color: var(--text-secondary); }
     0% { transform: translate3d(-90px, 0, 0); }
     100% { transform: translate3d(85px, 0, 0); }
 }
+
+/* 图床被墙：CSS 渐变模拟原站粉紫 banner（浅色主题） */
+.banner-gradient {
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 20% 25%, rgba(239,167,236,0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 55% 45% at 80% 20%, rgba(172,191,241,0.30) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 60% at 70% 80%, rgba(203,253,177,0.22) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 30% 85%, rgba(255,206,236,0.28) 0%, transparent 60%),
+        linear-gradient(135deg, #fdf3ff 0%, #f7edfd 50%, #fdf5f3 100%);
+    background-size: cover;
+}
+[data-bs-theme="dark"] .banner-gradient {
+    background:
+        radial-gradient(ellipse 60% 50% at 20% 25%, rgba(155,81,224,0.45) 0%, transparent 60%),
+        radial-gradient(ellipse 55% 45% at 80% 20%, rgba(6,147,227,0.38) 0%, transparent 60%),
+        radial-gradient(ellipse 70% 60% at 70% 80%, rgba(122,220,180,0.28) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 30% 85%, rgba(255,105,0,0.22) 0%, transparent 60%),
+        linear-gradient(135deg, #16131f 0%, #14162a 50%, #1a1420 100%);
+}
+
 
 /* ========== MAIN / BREADCRUMB（原站：小圆角 HOME 条） ========== */
 .boxmoe-container {
