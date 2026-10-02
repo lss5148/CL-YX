@@ -40,14 +40,15 @@ function interleavedBody(html) {
     $(el).attr('decoding', 'async');
   });
   sec.find('script, iframe').remove();
-  // 只保留我们自己的百度网盘,清掉其他网盘
+  // 清掉原站自带的所有网盘块:百度网盘的 h4 标签 + 含网盘链接的 p
+  // (我们的百度链接统一由 deploy 阶段 buildBaiduBlock 追加在尾部,正文这里不要保留原站的)
   sec.find('h4').each((i, el) => {
     const t = $(el).text();
-    if (/UC网盘|迅雷|夸克|115|移动云/i.test(t)) $(el).remove();
+    if (/百度网盘|UC网盘|迅雷|夸克|115|移动云/i.test(t)) $(el).remove();
   });
   sec.find('p').each((i, el) => {
     const t = $(el).text();
-    if (/drive\.uc|quark|139\.com|115\.com|xunlei/i.test(t)) $(el).remove();
+    if (/pan\.baidu|drive\.uc|quark|139\.com|115\.com|xunlei|百度网盘/i.test(t)) $(el).remove();
   });
   return sec.html().trim();
 }
@@ -77,9 +78,22 @@ function interleavedBody(html) {
         fail++;
         continue;
       }
-      p.content = body;
+      // 把本批下载区(我们自己的百度链接)追加回去:interleave 整体替换正文会丢掉 deploy 时加的尾部
+      if (p.download && p.download.trim()) {
+        const links = p.download.split(/\s+/).filter(Boolean);
+        const tagSet = new Set((item.drives && item.drives.baidu) ? item.drives.baidu.map(b => b.label).filter(Boolean) : []);
+        const labels = tagSet.has('PC') && tagSet.has('AZ') && links.length === 2 ? ['PC', 'AZ'] : (tagSet.has('PC') && tagSet.has('AZ') ? ['PC'] : []);
+        let block = '<p>——————————————————</p>\n<hr>\n<p><strong>— 下载 —</strong></p>';
+        links.forEach((u, i) => {
+          const tag = labels[i] ? '百度网盘：' + labels[i] + '<br>' : '';
+          block += '<p>' + tag + '<a href="' + u + '" target="_blank" rel="noopener">' + u + '</a></p>';
+        });
+        p.content = body + '\n' + block;
+      } else {
+        p.content = body;
+      }
       ok++;
-      console.log('#' + p.id, 'OK,图片', (body.match(/<img/g) || []).length, '张');
+      console.log('#' + p.id, 'OK,图片', (body.match(/<img/g) || []).length, '张, 尾部下载区已重拼');
     } catch (e) {
       console.log('#' + p.id, '抓取失败:', e.message, ',保留旧 content');
       fail++;
