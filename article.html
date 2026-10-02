@@ -232,10 +232,6 @@
                                 <span class="single-author-name"><i class="fa fa-user"></i><span id="articleAuthor"></span></span>
                                 <span class="dot"></span>
                                 <span class="data"><i class="fa fa-calendar"></i><span id="articleDate"></span></span>
-                                <span class="dot"></span>
-                                <span><i class="fa fa-street-view"></i><span id="articleViews"></span> 次浏览</span>
-                                <span class="dot"></span>
-                                <span><i class="fa fa-comments-o"></i><span id="articleComments"></span> 条评论</span>
                             </div>
 
                             <hr class="horizontal dark">
@@ -273,11 +269,7 @@
                         </div>
                     </div>
 
-                    <!-- 评论区 -->
-                    <div class="blog-single blog-border post-comments mt-3">
-                        <h4><i class="fa fa-comments-o" style="color:var(--accent);"></i> 评论（<span id="commentCount">0</span>）</h4>
-                        <p class="text-muted small">评论功能暂未开放，敬请期待。</p>
-                    </div>
+                    <!-- 评论区已移除 -->
                 </div>
 
                 <!-- 404 -->
@@ -403,9 +395,6 @@
                     document.getElementById('articleCategory').textContent = post.category;
                     document.getElementById('articleAuthor').textContent = post.author;
                     document.getElementById('articleDate').textContent = post.date;
-                    document.getElementById('articleViews').textContent = post.views;
-                    document.getElementById('articleComments').textContent = post.comments || '0';
-                    document.getElementById('commentCount').textContent = post.comments || '0';
                     // 正文内容由 API 数据填充
 
                     // 文章正文
