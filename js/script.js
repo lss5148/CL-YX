@@ -154,15 +154,15 @@ function renderPosts() {
                 </div>
                 <div class="post-meta align-items-center">
                     <div class="post-list-avatar">
-                        <div class="avatar-placeholder">${post.authorAvatar}</div>
+                        <div class="avatar-placeholder">${post.authorAvatar || 'CL'}</div>
                     </div>
                     <div class="post-meta-info">
                         <div class="post-meta-stats">
-                            <span class="list-post-view"><i class="fa fa-street-view"></i>${post.views}</span>
-                            <span class="list-post-comment"><i class="fa fa-comments-o"></i>${post.comments}</span>
+                            <span class="list-post-view"><i class="fa fa-street-view"></i>${post.views ?? 0}</span>
+                            <span class="list-post-comment"><i class="fa fa-comments-o"></i>${post.comments ?? 0}</span>
                         </div>
                         <span class="list-post-author">
-                            <i class="fa fa-at"></i>${post.author}
+                            <i class="fa fa-at"></i>${post.author || 'CL'}
                             <span class="dot"></span>${post.date}
                         </span>
                     </div>

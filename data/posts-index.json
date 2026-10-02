@@ -21,7 +21,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 2,
@@ -40,7 +44,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 3,
@@ -56,7 +64,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 4,
@@ -72,7 +84,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 5,
@@ -89,7 +105,11 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 6,
@@ -105,7 +125,11 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 7,
@@ -121,7 +145,11 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 8,
@@ -138,7 +166,11 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 9,
@@ -155,7 +187,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 10,
@@ -171,7 +207,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 11,
@@ -189,7 +229,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 12,
@@ -205,7 +249,11 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 13,
@@ -221,7 +269,11 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 14,
@@ -240,7 +292,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 15,
@@ -257,7 +313,11 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 16,
@@ -277,7 +337,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 17,
@@ -294,7 +358,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 18,
@@ -311,7 +379,11 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 19,
@@ -327,7 +399,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 20,
@@ -346,7 +422,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 21,
@@ -363,7 +443,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 22,
@@ -378,7 +462,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 23,
@@ -397,7 +485,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 24,
@@ -414,7 +506,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 25,
@@ -430,7 +526,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 26,
@@ -448,7 +548,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 27,
@@ -464,7 +568,11 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 28,
@@ -483,7 +591,11 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 29,
@@ -502,7 +614,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 30,
@@ -519,7 +635,11 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 31,
@@ -534,7 +654,11 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 32,
@@ -552,7 +676,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 33,
@@ -570,7 +698,11 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 34,
@@ -586,7 +718,11 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 35,
@@ -605,7 +741,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29"
+      "date": "2026-09-29",
+      "author": "CL",
+      "authorAvatar": "恋",
+      "views": "0",
+      "comments": 0
     },
     {
       "id": 36,
@@ -620,7 +760,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 37,
@@ -635,7 +779,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 38,
@@ -650,7 +798,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 39,
@@ -665,7 +817,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 40,
@@ -680,7 +836,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 41,
@@ -695,7 +855,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 42,
@@ -710,7 +874,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 43,
@@ -725,7 +893,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 44,
@@ -740,7 +912,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 45,
@@ -755,7 +931,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30"
+      "date": "2026-09-30",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 46,
@@ -770,7 +950,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 47,
@@ -785,7 +969,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 48,
@@ -800,7 +988,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 49,
@@ -815,7 +1007,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 50,
@@ -830,7 +1026,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 51,
@@ -845,7 +1045,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 52,
@@ -860,7 +1064,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 53,
@@ -875,7 +1083,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 54,
@@ -890,7 +1102,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 55,
@@ -905,7 +1121,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-01",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 56,
@@ -920,7 +1140,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 57,
@@ -935,7 +1159,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 58,
@@ -950,7 +1178,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 59,
@@ -965,7 +1197,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 60,
@@ -980,7 +1216,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 61,
@@ -995,7 +1235,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 62,
@@ -1010,7 +1254,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 63,
@@ -1025,7 +1273,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 64,
@@ -1040,7 +1292,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 65,
@@ -1055,7 +1311,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     }
   ],
   "tags": [
@@ -1099,7 +1359,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 64,
@@ -1114,7 +1378,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 63,
@@ -1129,7 +1397,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 62,
@@ -1144,7 +1416,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     },
     {
       "id": 61,
@@ -1159,7 +1435,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-02"
+      "date": "2026-10-02",
+      "author": "CL",
+      "authorAvatar": "C",
+      "views": 0,
+      "comments": 0
     }
   ],
   "pagination": {

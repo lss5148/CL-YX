@@ -13,8 +13,8 @@ const path = require('path');
 const full = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'posts.json'), 'utf8'));
 const oldIndex = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'posts-index.json'), 'utf8'));
 
-// 每篇精简:保留 index 需要的字段
-const KEEP = ['id', 'title', 'link', 'description', 'image', 'tags', 'category', 'gradient', 'icon', 'date'];
+// 每篇精简:保留 index 需要的字段(卡片 meta 区需要 author/authorAvatar/views/comments)
+const KEEP = ['id', 'title', 'link', 'description', 'image', 'tags', 'category', 'gradient', 'icon', 'date', 'author', 'authorAvatar', 'views', 'comments'];
 const slimPosts = full.posts.map(p => {
   const o = {};
   KEEP.forEach(k => { if (p[k] !== undefined) o[k] = p[k]; });
