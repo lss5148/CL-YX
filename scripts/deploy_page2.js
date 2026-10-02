@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const MODE = process.argv[2] || 'preview';
 
-const CSV = 'C:/Users/Administrator/Downloads/批量分享记录_202610010838.csv';
+const CSV = process.argv[3] || 'E:/主线/主线/正在做的/游戏站/百度提取的分享链接/批量分享记录_20261002.csv';
 function getFinal(url, depth) {
   depth = depth || 0;
   return new Promise((res, rej) => {
@@ -41,8 +41,10 @@ function loadCsvLinks() {
   const raw = fs.readFileSync(CSV, 'utf8').replace(/^\uFEFF/, '');
   const lines = raw.split(/\r?\n/).filter(l => l.trim());
   const map = {};
+  // 首列名可能是"文件名"或"文件名列"，按第 1 列取
   for (let i = 1; i < lines.length; i++) {
     const p = lines[i].split(',');
+    if (p.length < 3) continue;
     const name = p[0].trim();
     let link = p[1].trim();
     // 确保带 ?pwd=

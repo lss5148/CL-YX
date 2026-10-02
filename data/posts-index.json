@@ -21,10 +21,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 2,
@@ -43,10 +40,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 3,
@@ -62,10 +56,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 4,
@@ -81,10 +72,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 5,
@@ -101,10 +89,7 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 6,
@@ -120,10 +105,7 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 7,
@@ -139,10 +121,7 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 8,
@@ -159,10 +138,7 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 9,
@@ -179,10 +155,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 10,
@@ -198,10 +171,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 11,
@@ -219,10 +189,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 12,
@@ -238,10 +205,7 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 13,
@@ -257,10 +221,7 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 14,
@@ -279,10 +240,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 15,
@@ -299,10 +257,7 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 16,
@@ -322,10 +277,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 17,
@@ -342,10 +294,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 18,
@@ -362,10 +311,7 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 19,
@@ -381,10 +327,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 20,
@@ -403,10 +346,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 21,
@@ -423,10 +363,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 22,
@@ -441,10 +378,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 23,
@@ -463,10 +397,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 24,
@@ -483,10 +414,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 25,
@@ -502,10 +430,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 26,
@@ -523,10 +448,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 27,
@@ -542,10 +464,7 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 28,
@@ -564,10 +483,7 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 29,
@@ -586,10 +502,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 30,
@@ -606,10 +519,7 @@
       "category": "ADV",
       "gradient": "linear-gradient(135deg,#4ECDC4,#2C3E50)",
       "icon": "fa-star",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 31,
@@ -624,10 +534,7 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 32,
@@ -645,10 +552,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 33,
@@ -666,10 +570,7 @@
       "category": "RPG",
       "gradient": "linear-gradient(135deg,#FF6B6B,#C0392B)",
       "icon": "fa-flag",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 34,
@@ -685,10 +586,7 @@
       "category": "SLG",
       "gradient": "linear-gradient(135deg,#D87CFF,#9B59B6)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 35,
@@ -707,10 +605,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#2ECC71,#27AE60)",
       "icon": "fa-gamepad",
-      "date": "2026-09-29",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-29"
     },
     {
       "id": 36,
@@ -725,10 +620,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 37,
@@ -743,10 +635,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 38,
@@ -761,10 +650,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 39,
@@ -779,10 +665,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 40,
@@ -797,10 +680,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 41,
@@ -815,10 +695,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 42,
@@ -833,10 +710,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 43,
@@ -851,10 +725,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 44,
@@ -869,17 +740,14 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 45,
       "title": "[更新]【卡牌肉鸽SLG/3D作品/全动态】催眠卡牌2 幸福生活（Hypnosis Card 2 Happy Life）V1.0.13 STEAM官中【1.10G】",
       "link": "/article.html?id=45",
       "description": "男主是一个母胎单身的牌佬，眼里只有打牌。 30岁生日这天，他获得了可以催眠女孩的神奇卡牌。 在本作中，他将邂逅更多女孩，并对她们施展魔法，在卡牌对战将她们催眠，并对她们做瑟瑟的事情！ 游戏玩法 玩家在随机生成的地图中，构筑卡组，并使用卡牌与",
-      "image": "https://img401.imagetwist.com/th/65604/lm7foezq2833.jpg",
+      "image": "/assets/img/img_httpsimg40..jpg",
       "tags": [
         "PC",
         "安卓"
@@ -887,10 +755,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-09-30",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-09-30"
     },
     {
       "id": 46,
@@ -905,10 +770,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
     },
     {
       "id": 47,
@@ -923,10 +785,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
     },
     {
       "id": 48,
@@ -941,10 +800,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
     },
     {
       "id": 49,
@@ -959,10 +815,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
     },
     {
       "id": 50,
@@ -977,10 +830,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
     },
     {
       "id": 51,
@@ -995,10 +845,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
     },
     {
       "id": 52,
@@ -1013,10 +860,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
     },
     {
       "id": 53,
@@ -1031,10 +875,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
     },
     {
       "id": 54,
@@ -1049,10 +890,7 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
     },
     {
       "id": 55,
@@ -1067,10 +905,157 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01",
-      "author": "CL",
-      "views": 0,
-      "comments": "0"
+      "date": "2026-10-01"
+    },
+    {
+      "id": 56,
+      "title": "更新[亚洲风SLG/动态] 凤凰 Phoenixes V0.17.0.1  官中步兵版+赞助码 [PC+安卓 6.40G]",
+      "link": "/article.html?id=56",
+      "description": "游戏概述： 这是著名大作[美德]的作者最新制作的新作神级国风SLG游戏。 玩过美德的都知道美德的画质有多高，这部新作品质更上一层楼。 并且本次已经不需要汉化组干活，作者直接发布了官方中文版本！ 游戏世界发生在未来都市，一个科学和魔法都非常发",
+      "image": "https://image.acg.lol/file/2026/08/06/111e9c573d45125988.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
+    },
+    {
+      "id": 57,
+      "title": "更新[欧美SLG/动态] 友善主妇 Friendly Housewife v0.5.5 汉化版 [PC+安卓 4.50G]",
+      "link": "/article.html?id=57",
+      "description": "游戏内容 Mike和Mia独自住在某个公寓里，有一天邻居搬进了隔壁， 一位单亲妈妈和她的继子Farah和Fin。 傍晚时分，Mia和Mike决定打个招呼，事情发生了变化， 也开始了本不该永远持续下去的事情。 更新日志 102张图片 135个",
+      "image": "https://image.acg.lol/file/2026/08/12/photo_2_2026-08-12_12-05-17.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
+    },
+    {
+      "id": 58,
+      "title": "更新[欧美SLG/动态] 善意沦陷 Cane and Able v0.11 汉化版 [PC+安卓 2.50G]",
+      "link": "/article.html?id=58",
+      "description": "游戏介绍 《善意沦陷》是一款画风精良的3DCG策略SLG游戏。 游戏构建了一个充满张力的情感博弈世界，通过细腻的动画风格呈现角色互动。 玩家将在复杂的社交关系网中穿梭，体验从调情到深度互动的沉浸式剧情。 本作的核心魅力在于其丰富的女性角色设",
+      "image": "https://image.acg.lol/file/2026/09/24/photo_3_2026-09-23_10-00-28.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
+    },
+    {
+      "id": 59,
+      "title": "更新[欧美SLG/动态] 镜头之下 Under the Lens v0.3.0 汉化版 [PC+安卓 2.20G]",
+      "link": "/article.html?id=59",
+      "description": "游戏内容 欢迎来到星光之城，在这里，梦想往往止步于豪华酒店套房的角落。 你扮演一位年轻的自由摄影师，在竞争残酷的好莱坞苦苦挣扎。 一切都随着你的朋友艾迪——一位行事诡秘的模特经纪人—— 为你安排与业内甜心艾姆·迈尔斯的拍摄工作而改变。 但这",
+      "image": "https://image.acg.lol/file/2026/08/01/photo_5_2026-07-30_17-24-45.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
+    },
+    {
+      "id": 60,
+      "title": "更新[亚洲风SLG/沙盒后宫/动态] 永恒不再 Goodbye Eternity V0.14.1 官中版+存档 [PC+安卓 2.0G]",
+      "link": "/article.html?id=60",
+      "description": "✅作者：#RNGeusEX ▫️名称：二次人生/永恒不再 ▫️原名：Goodbye Eternity ▫️版本：v0.14.1 ▫️更新日期：2026年07月04日 ▫️标签：#精品 #SLG #官中 #安卓直装 #PC #MAC #无码 ",
+      "image": "https://image.acg.lol/file/2026/07/05/photo_1_2026-07-04_23-39-19.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
+    },
+    {
+      "id": 61,
+      "title": "更新[互动3D/触摸触摸/动态] 拘束俱乐部 拘束クラブ v1.2.5 生肉版 [570M]",
+      "link": "/article.html?id=61",
+      "description": "✅社团名：#SDT ▫️名称：拘束俱乐部 ▫️原名：拘束クラブ ▫️版本：——— ▫️贩卖日： 2026年04月28日 0时 ▫️标签：#3D #生肉 #PC #MAC #动态,触摸,触摸 ,巨乳,爆乳,拘束,玩具,调教,互动 游戏介绍 世",
+      "image": "https://image.acg.lol/file/2026/09/29/photo_1_2026-09-29_02-45-26.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
+    },
+    {
+      "id": 62,
+      "title": "新作[日式RPG/魔物娘/睡X] 大小姐与迷宫攻略 お嬢様とダンジョン攻略 AI汉化版 [310M]",
+      "link": "/article.html?id=62",
+      "description": "✅社团名：#人々方々 ▫️名称：大小姐与迷宫攻略 ▫️原名：お嬢様とダンジョン攻略 ▫️标签：#RPG #AI汉化 #PC #MTool #魔物娘 #奇幻 #大小姐 #睡奸 一边被大小姐欺负、一边又欺负回去，同时攻略迷宫的RPG。 包含S向",
+      "image": "https://image.acg.lol/file/2026/09/29/photo_1_2026-09-29_13-23-06.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
+    },
+    {
+      "id": 63,
+      "title": "更新[互动3D/露出/动态] 凉花酱的烦恼 涼花ちゃんの悩み v1.1.2 官中版 去码版+MOD+存档 [2.40G]",
+      "link": "/article.html?id=63",
+      "description": "✅社团名：#Utatane Club ▫️名称：凉花酱的烦恼 ▫️原名：涼花ちゃんの悩み ▫️版本：v1.0.1 ▫️贩卖日：2026年04月30日 0时 ▫️标签：#3D #官中 #PC #道具 #女主人公,日常,动态,露出 ,援交,拘束",
+      "image": "https://image.acg.lol/file/2026/05/01/photo_1_2026-04-30_12-10-30.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
+    },
+    {
+      "id": 64,
+      "title": "更新[卡牌SLG/逆推互动/Live2D动态] 淫魔再诞 淫魔再誕 SuccubusReborn v20260928a 官中版+自带全回想 [1.50G]",
+      "link": "/article.html?id=64",
+      "description": "发布日期：2026-07-23 开发团队：Sda-lab 是否删减：是 版本：20260724a 操作系统：Windows 语言：英语（机翻）、日语、简体中文 类型：2D游戏 2DCG 肛交 动画 巨臀 巨乳 内射 奇幻 女性支配 足交 群",
+      "image": "https://image.acg.lol/file/2025/02/05/photo_2_2025-02-03_02-34-05.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
+    },
+    {
+      "id": 65,
+      "title": "更新[日式ACT/伪娘/动态] 女装侦探叶语嫣 3 Crossdresser Detective 3 v0.0.2 官中版 [280M]",
+      "link": "/article.html?id=65",
+      "description": "✅社团名：#FT少女 ▫️名称：女装侦探叶语嫣 3 ▫️原名：Crossdresser Detective 3 ▫️版本：v0.0.1.2 ▫️更新日期：2026年09月19日 ▫️标签：#ACT #官中 #PC #动态 #女装 #伪娘 #",
+      "image": "https://image.acg.lol/file/2026/09/19/photo_1_2026-09-19_20-08-07.jpg",
+      "tags": [
+        "PC",
+        "安卓"
+      ],
+      "category": "PC",
+      "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
+      "icon": "fa-gamepad",
+      "date": "2026-10-02"
     }
   ],
   "tags": [
@@ -1102,11 +1087,11 @@
   "comments": [],
   "randomPosts": [
     {
-      "id": 55,
-      "title": "新步兵[互动SLG/3D作品/动态] 情事旅馆：我儿子的朋友的妈妈 The Affair Ryokan My Son’s Friend’s Mom v1.0.1 ST官中版 去码版 [440M]",
-      "link": "/article.html?id=55",
-      "description": "#情事旅馆：我儿子的朋友的妈妈 #The Affair Ryokan: My Son’s Friend’s Mom 官方中文版【2026年09月26日 发售】 ·游戏介绍· 与你儿子的朋友的妈妈，共度激情一夜。 《不伦旅馆》是一款以两位成熟",
-      "image": "https://image.acg.lol/file/2026/09/26/photo_1_2026-09-26_13-34-36.jpg",
+      "id": 65,
+      "title": "更新[日式ACT/伪娘/动态] 女装侦探叶语嫣 3 Crossdresser Detective 3 v0.0.2 官中版 [280M]",
+      "link": "/article.html?id=65",
+      "description": "✅社团名：#FT少女 ▫️名称：女装侦探叶语嫣 3 ▫️原名：Crossdresser Detective 3 ▫️版本：v0.0.1.2 ▫️更新日期：2026年09月19日 ▫️标签：#ACT #官中 #PC #动态 #女装 #伪娘 #",
+      "image": "https://image.acg.lol/file/2026/09/19/photo_1_2026-09-19_20-08-07.jpg",
       "tags": [
         "PC",
         "安卓"
@@ -1114,14 +1099,14 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-02"
     },
     {
-      "id": 54,
-      "title": "更新[精品互动SLG/调教/像素动态] 恶魔女王的诱惑 Seduction Of The Demon Queen v0.6.3.0 官中步兵版+存档 [PC+安卓 1.0G]",
-      "link": "/article.html?id=54",
-      "description": "发布日期：2026-02-20 开发者：VaRoTeam 审查：否 版本：0.4.6.1 操作系统：Windows 语言：英语、俄语、西班牙语、葡萄牙语、法语、德语、中文、日语、韩语 类型：2D游戏 2DCG 高潮脸 AICG 肛交 动画 ",
-      "image": "https://image.acg.lol/file/2025/09/07/cover.md.gif",
+      "id": 64,
+      "title": "更新[卡牌SLG/逆推互动/Live2D动态] 淫魔再诞 淫魔再誕 SuccubusReborn v20260928a 官中版+自带全回想 [1.50G]",
+      "link": "/article.html?id=64",
+      "description": "发布日期：2026-07-23 开发团队：Sda-lab 是否删减：是 版本：20260724a 操作系统：Windows 语言：英语（机翻）、日语、简体中文 类型：2D游戏 2DCG 肛交 动画 巨臀 巨乳 内射 奇幻 女性支配 足交 群",
+      "image": "https://image.acg.lol/file/2025/02/05/photo_2_2025-02-03_02-34-05.jpg",
       "tags": [
         "PC",
         "安卓"
@@ -1129,14 +1114,14 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-02"
     },
     {
-      "id": 53,
-      "title": "更新[欧美SLG/乱伦/动态] 郊区王子 Prince of Suburbia v1.5.4 P1-P2 汉化版+DLC [8.70G]",
-      "link": "/article.html?id=53",
-      "description": "游戏内容 在《郊区王子》中化身郊区王子，体验一段轻松而充满诱惑的成人视觉小说！ 带你无障碍畅玩。邂逅各具魅力的性感熟女，她们对你情有独钟，渴望与你展开一段段火辣的约会剧情。 2D动漫风格，线性剧情，简单沙盒导航，让你尽情享受这个充满各种成人",
-      "image": "https://image.acg.lol/file/2026/05/01/photo_1_2026-04-30_10-45-05.jpg",
+      "id": 63,
+      "title": "更新[互动3D/露出/动态] 凉花酱的烦恼 涼花ちゃんの悩み v1.1.2 官中版 去码版+MOD+存档 [2.40G]",
+      "link": "/article.html?id=63",
+      "description": "✅社团名：#Utatane Club ▫️名称：凉花酱的烦恼 ▫️原名：涼花ちゃんの悩み ▫️版本：v1.0.1 ▫️贩卖日：2026年04月30日 0时 ▫️标签：#3D #官中 #PC #道具 #女主人公,日常,动态,露出 ,援交,拘束",
+      "image": "https://image.acg.lol/file/2026/05/01/photo_1_2026-04-30_12-10-30.jpg",
       "tags": [
         "PC",
         "安卓"
@@ -1144,14 +1129,14 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-02"
     },
     {
-      "id": 52,
-      "title": "更新[射击SLG/策略经营] 在逃死刑犯2–抵抗组织 Death row inmates on the run 2–The Resistance v1.1.8 官中版 [2.60G]",
-      "link": "/article.html?id=52",
-      "description": "游戏介绍 这是一款18禁的第一人称射击游戏。 游戏通过鼠标操作， 分为策略界面和战斗界面， 从一个城市开始，建造基地招募英雄，打败外星入侵者，征服世界。 这是一款18禁的第一人称射击游戏。在此基础上，游戏还融合了策略和经营的玩法。 游戏背景",
-      "image": "/assets/img/img_httpsiimg1..jpg",
+      "id": 62,
+      "title": "新作[日式RPG/魔物娘/睡X] 大小姐与迷宫攻略 お嬢様とダンジョン攻略 AI汉化版 [310M]",
+      "link": "/article.html?id=62",
+      "description": "✅社团名：#人々方々 ▫️名称：大小姐与迷宫攻略 ▫️原名：お嬢様とダンジョン攻略 ▫️标签：#RPG #AI汉化 #PC #MTool #魔物娘 #奇幻 #大小姐 #睡奸 一边被大小姐欺负、一边又欺负回去，同时攻略迷宫的RPG。 包含S向",
+      "image": "https://image.acg.lol/file/2026/09/29/photo_1_2026-09-29_13-23-06.jpg",
       "tags": [
         "PC",
         "安卓"
@@ -1159,14 +1144,14 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-02"
     },
     {
-      "id": 51,
-      "title": "更新[日式3D/异种X/动态] 魅魔的梦魇 Succubus Nightmare サキュバスの牢獄 v1.2.14 官中步兵版+存档 [2.80G]",
-      "link": "/article.html?id=51",
-      "description": "#魅魔的梦魇 #Succubus Nightmare #サキュバスの牢獄 ·游戏介绍· 魅魔的梦魇是一款3D解谜色情游戏 玩家将扮演继姊妹中的姊姊夏洛特 一步一步带领妹妹离开由魅魔掌控的豪宅庄园 随着游戏进行，你逐渐看清一切的谜团，而背后的",
-      "image": "/assets/img/img_httpsiimg1..jpg",
+      "id": 61,
+      "title": "更新[互动3D/触摸触摸/动态] 拘束俱乐部 拘束クラブ v1.2.5 生肉版 [570M]",
+      "link": "/article.html?id=61",
+      "description": "✅社团名：#SDT ▫️名称：拘束俱乐部 ▫️原名：拘束クラブ ▫️版本：——— ▫️贩卖日： 2026年04月28日 0时 ▫️标签：#3D #生肉 #PC #MAC #动态,触摸,触摸 ,巨乳,爆乳,拘束,玩具,调教,互动 游戏介绍 世",
+      "image": "https://image.acg.lol/file/2026/09/29/photo_1_2026-09-29_02-45-26.jpg",
       "tags": [
         "PC",
         "安卓"
@@ -1174,11 +1159,11 @@
       "category": "PC",
       "gradient": "linear-gradient(135deg,#3498DB,#2980B9)",
       "icon": "fa-gamepad",
-      "date": "2026-10-01"
+      "date": "2026-10-02"
     }
   ],
   "pagination": {
-    "total": 55,
+    "total": 65,
     "perPage": 10
   }
 }

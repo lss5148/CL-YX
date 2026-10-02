@@ -1,6 +1,7 @@
 /**
- * 重建第2页(46-55)的 content:图文交替,对齐原站 single-content 结构
+ * 重建第2页(56-65)的 content:图文交替,对齐原站 single-content 结构
  * 用法:node scripts/fix_content_interleave.js
+ * 说明:新批次 id 从 56 开始,按 page2-full.json 的 url 匹配 posts.json 里的 source 字段
  */
 const fs = require('fs');
 const path = require('path');
@@ -55,11 +56,19 @@ function interleavedBody(html) {
   const posts = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'posts.json'), 'utf8'));
   const list = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'page2-full.json'), 'utf8'));
 
+  // 本次批次:posts.json 里 source 匹配 page2-full.json 中各 item.url 的新文章
+  const urlSet = new Set(list.items.map(x => x.url));
+  const newPosts = posts.posts.filter(p => urlSet.has(p.source));
+  console.log('找到新文章', newPosts.length, '篇, ids:', newPosts.map(p => p.id).join(','));
+
+  // 按 url 对应 page2-full.json 的 item
+  const byUrl = {};
+  list.items.forEach(it => { byUrl[it.url] = it; });
+
   let ok = 0, fail = 0;
-  for (let i = 0; i < 10; i++) {
-    const p = posts.posts[45 + i]; // id 46-55 按顺序
-    const item = list.items[i];
-    if (!p || !item) { console.log('索引缺失,跳过'); continue; }
+  for (const p of newPosts) {
+    const item = byUrl[p.source];
+    if (!item) { console.log('#' + p.id, 'url 无对应 item,跳过'); continue; }
     try {
       const html = await fetchHtml(item.url);
       const body = interleavedBody(html);

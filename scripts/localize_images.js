@@ -58,10 +58,16 @@ function finish() {
   console.log('\n=== 完成: 成功 ' + done + ' / 跳过 ' + skipped + ' (跳过的保持外链,页面 onerror 自动隐藏) ===');
 }
 
+// 主图床 image.acg.lol 被墙，自动 fallback 到 acgyx.us（同路径）
+function fallbackUrl(url) {
+  return url.replace('image.acg.lol', 'acgyx.us');
+}
 function fetchOne(url, depth, dest, cb) {
-  if (depth > 2) return cb(false, 'RETRY_MAX');
-  const lib = url.startsWith('https') ? https : http;
-  const req = lib.get(url, {
+  if (depth > 3) return cb(false, 'RETRY_MAX');
+  // depth>=1 时改用 fallback 域
+  const realUrl = depth >= 1 ? fallbackUrl(url) : url;
+  const lib = realUrl.startsWith('https') ? https : http;
+  const req = lib.get(realUrl, {
     headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://acgyxjvip2.com/' },
     timeout: 6000
   }, r => {
