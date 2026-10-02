@@ -42,10 +42,19 @@ function renderFooter() {
     // banner 标题渐变加载态
     const main = document.getElementById('site-main');
     if (main) main.classList.add('loaded');
-    // banner 图：注入原站同款图（可连的 acgyx.us），加载失败则隐藏避免灰底空洞
+    // banner 图：原站靠 JS 监听 img onload 才加 .loaded 显示
     const bannerImg = document.getElementById('banner-img');
     if (bannerImg) {
-        bannerImg.onerror = () => { bannerImg.style.display = 'none'; };
+        const bannerImgWrap = bannerImg.closest('.boxmoe_header_banner_img');
+        const showBanner = () => { if (bannerImgWrap) bannerImgWrap.classList.add('loaded'); };
+        if (bannerImg.complete && bannerImg.naturalWidth > 0) {
+            showBanner();
+        } else {
+            bannerImg.addEventListener('load', showBanner);
+            bannerImg.addEventListener('error', showBanner); // 图挂了也显示兜底渐变底
+            // 4 秒保险丝：防止 onload 不触发导致图永远不出现
+            setTimeout(showBanner, 4000);
+        }
     }
 }
 

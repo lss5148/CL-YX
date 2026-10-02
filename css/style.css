@@ -189,77 +189,86 @@ p { color: var(--text-secondary); }
 }
 .lighting li.active { background: var(--bs-dark); color: var(--bg-deep); border-color: var(--bs-dark); }
 
-/* ========== BANNER（原站 580px + 彩虹渐变流动标题） ========== */
+/* ========== BANNER（原站：80vh + 白波浪 + 图片 JS 加 .loaded 才显示） ========== */
 .boxmoe_header_banner {
     height: var(--banner-height);
     position: relative;
     margin-top: 56px;
     overflow: hidden;
+    background: rgba(51, 51, 51, 0.19);
+    background-position: 30% 30%;
 }
+/* 原站：初始 scale(1.4) 隐藏，.loaded 后缩放回显示 */
 .boxmoe_header_banner_img {
-    height: 100%; position: relative;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--bg-deep);
+    width: 100%; height: 100%;
+    position: relative;
+    transform: scale(1.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 1.8s cubic-bezier(0.5, 0, 0, 1);
 }
+.boxmoe_header_banner_img.loaded {
+    transform: scale(1);
+    opacity: 1;
+    visibility: visible;
+}
+/* 原站 ::before 顶部 15% 白色→透明 渐变（压亮） */
 .boxmoe_header_banner_img::before {
     content: '';
-    position: absolute; inset: 0;
-    background: rgba(0, 0, 0, 0.25);
-    z-index: 1;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    width: 100%; height: 15%;
+    min-height: 60px;
+    background: linear-gradient(to bottom, var(--bs-white), #00000000);
+    user-select: none; pointer-events: none;
+    z-index: 2;
 }
-.banner-img {
-    position: absolute; bottom: 0; left: 0;
+/* 原站 ::after 整层 25% 黑遮罩 */
+.boxmoe_header_banner_img::after {
+    content: "";
+    position: absolute;
+    left: 0; top: 0;
     width: 100%; height: 100%;
-    object-fit: cover; object-position: 50% 50%;
-    pointer-events: none; user-select: none;
+    background: rgba(0, 0, 0, 0.25);
+    user-select: none; pointer-events: none;
+    z-index: 2;
 }
-/* 图床被墙时的兜底渐变（原站风格） */
-.boxmoe_header_banner_img {
-    background:
-        radial-gradient(ellipse at 50% 30%, rgba(185,139,255,0.18) 0%, transparent 55%),
-        radial-gradient(ellipse at 20% 80%, rgba(203,253,177,0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(239,167,236,0.15) 0%, transparent 50%),
-        var(--bg-deep);
+/* 原站：图铺满 + 不可交互 */
+.boxmoe_header_banner_img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: 50% 50%;
+    user-select: none; pointer-events: none;
 }
 .site-main {
-    position: relative; z-index: 2; text-align: center; padding: 0 20px;
+    position: relative; z-index: 3;
+    text-align: center; padding: 0 20px;
 }
-/* 原站 .text-gradient.loaded：彩虹渐变 12s 流动 + 白描边 + 2px 字距 */
-.text-gradient {
-    font-size: 2.4rem; font-weight: 700;
-    letter-spacing: 2px;
-    color: var(--text-primary);
-    text-shadow: 1px 1px 0px rgba(255,255,255,0.6);
-}
-.site-main.loaded .text-gradient {
-    background: linear-gradient(to right, #cbfdb1, #acbff1, #efa7ec, #ffd6a5, #ffadad, #b5f4e2, #ffd1dc, #c5a3ff, #89cff0, #f0e68c);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-size: 1000% 100%;
-    animation: gradient 12s linear infinite;
-    text-shadow: none;
-}
-@keyframes gradient {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 1000% 50%; }
-}
-
-/* 原站波浪：4 层 fill */
+/* 原站波浪：白色 100px 高（浅色主题下和米白底融合） */
 .boxmoe_header_banner_waves {
-    position: absolute; bottom: -2px; left: 0;
-    width: 100%; height: 60px; z-index: 3; overflow: hidden;
+    width: 100%;
+    position: absolute;
+    bottom: 0; left: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 3;
 }
-.waves { position: relative; width: 100%; height: 60px; display: block; }
+.waves {
+    position: relative;
+    width: 100%; height: 100px;
+    margin-bottom: -7px;
+}
 .parallax > use {
-    fill: var(--bg-deep);
-    animation: waveMove 4s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
+    fill: var(--bs-white);
+    animation: moveForever 25s cubic-bezier(.55, .5, .45, .5) infinite;
+    transition: fill 0.4s cubic-bezier(0.345, 0.045, 0.345, 1);
 }
-.parallax > use:nth-child(1) { animation-duration: 7s; opacity: 0.55; }
-.parallax > use:nth-child(2) { animation-duration: 10s; opacity: 0.45; }
-.parallax > use:nth-child(3) { animation-duration: 13s; opacity: 0.35; }
-.parallax > use:nth-child(4) { animation-duration: 20s; }
-@keyframes waveMove {
+[data-bs-theme="dark"] .parallax > use { fill: var(--bg-deep); }
+.parallax > use:nth-child(1) { animation-delay: -2s; animation-duration: 7s; opacity: 0.7; }
+.parallax > use:nth-child(2) { animation-delay: -3s; animation-duration: 10s; opacity: 0.5; }
+.parallax > use:nth-child(3) { animation-delay: -4s; animation-duration: 13s; opacity: 0.3; }
+.parallax > use:nth-child(4) { animation-delay: -5s; animation-duration: 20s; opacity: 0.2; }
+@keyframes moveForever {
     0% { transform: translate3d(-90px, 0, 0); }
     100% { transform: translate3d(85px, 0, 0); }
 }
