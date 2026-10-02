@@ -10,7 +10,7 @@ const XLSX = require('xlsx');
 
 const full = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'page2-full.json'), 'utf8'));
 const PAGE = full.page;
-const outPath = 'E:/主线/主线/正在做的/游戏站/百度提取的分享链接/第' + PAGE + '页_待填百度链接_v11.xlsx';
+const outPath = 'E:/主线/主线/正在做的/游戏站/百度提取的分享链接/第' + PAGE + '页_待填百度链接_v13.xlsx';
 
 const header = ['游戏标题', '分享文件名', 'PC端百度链接', 'AZ端百度链接'];
 const rows = [header];
@@ -26,7 +26,7 @@ for (const it of full.items) {
   }
   if (!fname) fname = '(无分享名)';
   // C/D 列:PC 取 label=PC 或第1个,AZ 取 label=AZ 或第2个
-  const pc = bds.find(x => x.label === 'PC') || (bds.length && bds[0].label === '' ? bds[0] : null);
+  const pc = bds.find(x => x.label === 'PC') || (bds.length && !bds[0].label ? bds[0] : null);
   const az = bds.find(x => x.label === 'AZ') || (bds.length > 1 ? bds[1] : null);
   // 拼完整格式:链接: url?pwd=码 提取码: 码
   const fmt = x => {
