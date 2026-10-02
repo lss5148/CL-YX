@@ -1,7 +1,8 @@
 /**
- * 重建第2页(56-65)的 content:图文交替,对齐原站 single-content 结构
- * 用法:node scripts/fix_content_interleave.js
- * 说明:新批次 id 从 56 开始,按 page2-full.json 的 url 匹配 posts.json 里的 source 字段
+ * 重建指定页批次的 content:图文交替,对齐原站 single-content 结构
+ * 用法:node scripts/fix_content_interleave.js [pageX-full.json]
+ * 说明:不传参默认 page2-full.json;新批次传 page3-full.json 等
+ *      按 pageX-full.json 的 url 匹配 posts.json 里的 source 字段
  */
 const fs = require('fs');
 const path = require('path');
@@ -54,8 +55,9 @@ function interleavedBody(html) {
 }
 
 (async () => {
+  const pageFile = process.argv[2] || 'page2-full.json';
   const posts = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'posts.json'), 'utf8'));
-  const list = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'page2-full.json'), 'utf8'));
+  const list = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', pageFile), 'utf8'));
 
   // 本次批次:posts.json 里 source 匹配 page2-full.json 中各 item.url 的新文章
   const urlSet = new Set(list.items.map(x => x.url));
