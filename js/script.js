@@ -23,7 +23,40 @@ function renderAll() {
     renderPosts();
     renderTags();
     renderWeeklyRank();
+    renderRandomPosts();
     renderFooter();
+}
+
+// ========== 渲染随机推荐（文章页侧边栏,容器不存在时静默跳过) ==========
+function renderRandomPosts() {
+    const container = document.getElementById('random-posts-container');
+    if (!container) return;
+    if (!siteData.posts || siteData.posts.length === 0) return;
+    const shuffled = siteData.posts.slice().sort(() => Math.random() - 0.5);
+    const top = shuffled.slice(0, 5);
+    container.innerHTML = top.map(p => {
+        let coverImg = p.image || '';
+        if (!coverImg && p.content) {
+            const m = p.content.match(/src="([^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"/i);
+            if (m) coverImg = m[1];
+        }
+        const imgUrl = coverImg && (coverImg.startsWith('http') && !coverImg.includes(window.location.hostname))
+            ? '/img?url=' + encodeURIComponent(coverImg)
+            : coverImg;
+        const imgHtml = imgUrl
+            ? `<img src="${imgUrl}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" loading="lazy">`
+            : '';
+        return `
+        <article class="widget-post">
+            <div class="info">
+                <a href="${p.link || '/article.html?id=' + p.id}" class="thumb">
+                    <div class="thumb-placeholder" style="background:${p.gradient || 'var(--bg-elevated)'};">${imgHtml}</div>
+                </a>
+                <h4 class="post-title-widget"><a href="${p.link || '/article.html?id=' + p.id}">${p.title}</a></h4>
+                <time>${p.date}</time>
+            </div>
+        </article>`;
+    }).join('');
 }
 
 function renderFooter() {
