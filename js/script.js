@@ -23,7 +23,7 @@ function renderAll() {
     renderPosts();
     renderTags();
     renderComments();
-    renderRandomPosts();
+    renderWeeklyRank();
     renderFooter();
 }
 
@@ -32,6 +32,16 @@ function renderFooter() {
     if (el && siteData.site && siteData.site.footer) {
         el.textContent = siteData.site.footer;
     }
+    // 原站「本站已稳定运行了 X 天」
+    const daysEl = document.getElementById('running-days');
+    if (daysEl) {
+        const base = new Date(2020, 0, 1);
+        const diff = Math.floor((Date.now() - base.getTime()) / 86400000);
+        daysEl.textContent = diff;
+    }
+    // banner 标题渐变加载态
+    const main = document.getElementById('site-main');
+    if (main) main.classList.add('loaded');
 }
 
 // ========== 渲染文章列表 ==========
@@ -223,37 +233,69 @@ function renderTags() {
     }).join('');
 }
 
-// ========== 渲染最新评论 ==========
+// ========== 渲染最新评论（对齐原站 widget_comments） ==========
 function renderComments() {
     const container = document.getElementById('comments-container');
     if (!container) return;
-    container.innerHTML = (siteData.comments || []).map(c =>
+    const comments = (siteData.comments || []).slice(0, 5);
+    if (!comments.length) {
+        container.innerHTML = '<li class="comment-empty" style="color:var(--text-muted);font-size:0.75rem;padding:8px 0;">暂无评论</li>';
+        return;
+    }
+    container.innerHTML = comments.map(c =>
         `<li class="comment-listitem">
             <div class="comment-user">
-                <span class="comment-avatar">${c.avatar}</span>
+                <span class="comment-avatar">${c.avatar || c.author?.[0] || '?'}</span>
+                <div class="comment-author">${c.author}</div>
+                <span class="comment-date">${c.date || ''}</span>
             </div>
-            <div class="comment-body">
-                <span class="comment-author">${c.author}</span>
-                <p class="comment-content">${c.content}</p>
+            <div class="comment-content-link">
+                <a target="_blank" href="${c.link || '#'}" title="${c.title || ''}">
+                    <div class="comment-content">${c.content}</div>
+                </a>
             </div>
         </li>`
     ).join('');
 }
 
-// ========== 渲染随机推荐 ==========
-function renderRandomPosts() {
-    const container = document.getElementById('random-posts-container');
-    container.innerHTML = siteData.randomPosts.map(p =>
-        `<article class="widget-post">
+// ========== 渲染周榜（对齐原站 widget-latest） ==========
+function renderWeeklyRank() {
+    const container = document.getElementById('weekly-rank-container');
+    if (!container) return;
+    // 原站周榜 = 近 7 天阅读量 Top5
+    const now = Date.now();
+    const weekAgo = now - 7 * 86400000;
+    const weekPosts = siteData.posts.filter(p => {
+        const t = p.date ? new Date(p.date).getTime() : 0;
+        return t >= weekAgo;
+    });
+    const top = weekPosts.length
+        ? weekPosts.slice().sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5)
+        : (siteData.randomPosts || []).slice(0, 5);
+
+    container.innerHTML = top.map(p => {
+        let coverImg = p.image || '';
+        if (!coverImg && p.content) {
+            const m = p.content.match(/src="([^"]+\.(?:jpg|jpeg|png|webp|gif)[^"]*)"/i);
+            if (m) coverImg = m[1];
+        }
+        const imgUrl = coverImg && (coverImg.startsWith('http') && !coverImg.includes(window.location.hostname))
+            ? '/img?url=' + encodeURIComponent(coverImg)
+            : coverImg;
+        const imgHtml = imgUrl
+            ? `<img src="${imgUrl}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:8px;" loading="lazy">`
+            : '';
+        return `
+        <article class="widget-post">
             <div class="info">
                 <a href="${p.link}" class="thumb">
-                    <div class="thumb-placeholder" style="background:${p.gradient};">${p.image ? `<img src="${p.image}" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" loading="lazy">` : ''}</div>
+                    <div class="thumb-placeholder" style="background:${p.gradient || 'var(--bg-elevated)'};">${imgHtml}</div>
                 </a>
                 <h4 class="post-title-widget"><a href="${p.link}">${p.title}</a></h4>
                 <time>${p.date}</time>
             </div>
-        </article>`
-    ).join('');
+        </article>`;
+    }).join('');
 }
 
 // ========== 主题切换 ==========
@@ -354,4 +396,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ========== 加载数据 ==========
     loadData();
+
+    // ========== 返回顶部（原站 lolijump） ==========
+    const backtop = document.getElementById('lolijump');
+    if (backtop) {
+        backtop.addEventListener('click', function (e) {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    // ========== 侧边栏 offcanvas 关闭后恢复 ==========
+    const sideBar = document.getElementById('blog-sidebar');
+    if (sideBar) {
+        sideBar.addEventListener('click', function (e) {
+            if (e.target === this || e.target.classList.contains('btn-close')) {
+                // 点面板空白或关闭按钮时，移动端收起
+                if (window.innerWidth < 992) {
+                    bootstrap.Offcanvas.getOrCreateInstance(this).hide();
+                }
+            }
+        });
+    }
 });

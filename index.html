@@ -9,10 +9,14 @@
     <link href="/vendor/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/vendor/css/font-awesome.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .boxmoe_header_banner { height: 580px; }
+        @media (max-width: 768px) { .boxmoe_header_banner { height: 480px; } }
+    </style>
 </head>
 <body>
 
-    <!-- ========== NAVBAR ========== -->
+    <!-- ========== NAVBAR（100% 对齐原站 6 项） ========== -->
     <header class="boxmoe_header">
         <nav class="navbar navbar-expand-lg w-100">
             <div class="container d-flex justify-content-between align-items-center">
@@ -32,21 +36,28 @@
                     <button class="mobile-user-btn ms-2" type="button"><i class="fa fa-user"></i></button>
                 </div>
 
-                <!-- Desktop Nav -->
                 <div class="collapse navbar-collapse" id="mainNav">
                     <ul class="navbar-nav mx-auto align-items-lg-center">
+                        <li class="nav-item"><a href="https://t.me/acgyxj" target="_blank" class="nav-link">Telegram频道</a></li>
                         <li class="nav-item"><a href="/" class="nav-link active">首页</a></li>
                         <li class="nav-item dropdown">
-                            <a href="/" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">游戏</a>
+                            <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">游戏</a>
                             <ul class="dropdown-menu">
-                                <li><a href="/" class="dropdown-item">AZ</a></li>
-                                <li><a href="/" class="dropdown-item">PC</a></li>
+                                <li><a href="/?tag=AZ" class="dropdown-item">AZ</a></li>
+                                <li><a href="/?tag=PC" class="dropdown-item">PC</a></li>
                             </ul>
                         </li>
-                        <li class="nav-item"><a href="/" class="nav-link">解压说明</a></li>
-                        <li class="nav-item"><a href="/" class="nav-link">工具</a></li>
-                        <li class="nav-item"><a href="/" class="nav-link">免责声明</a></li>
-                        <li class="nav-item"><a href="/" class="nav-link">发布页</a></li>
+                        <li class="nav-item dropdown">
+                            <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">全年龄</a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/?tag=全年龄AZ" class="dropdown-item">全年龄AZ</a></li>
+                                <li><a href="/?tag=全年龄PC" class="dropdown-item">全年龄PC</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item"><a href="/extract-tool.html" class="nav-link">解压说明</a></li>
+                        <li class="nav-item"><a href="/docs.html" class="nav-link">工具</a></li>
+                        <li class="nav-item"><a href="/docs.html" class="nav-link">免责声明</a></li>
+                        <li class="nav-item"><a href="/admin" class="nav-link">发布页</a></li>
                     </ul>
                     <div class="nav-right-section d-flex align-items-center">
                         <div class="search-box">
@@ -86,94 +97,96 @@
         </div>
         <div class="offcanvas-body pt-0">
             <ul class="navbar-nav mx-auto align-items-lg-center">
+                <li class="nav-item"><a href="https://t.me/acgyxj" target="_blank" class="nav-link">Telegram频道</a></li>
                 <li class="nav-item"><a href="/" class="nav-link active">首页</a></li>
-                <li class="nav-item dropdown">
-                    <a href="/" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false">游戏</a>
-                    <ul class="dropdown-menu">
-                        <li><a href="/" class="dropdown-item">AZ</a></li>
-                        <li><a href="/" class="dropdown-item">PC</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item"><a href="/" class="nav-link">解压说明</a></li>
-                <li class="nav-item"><a href="/" class="nav-link">工具</a></li>
-                <li class="nav-item"><a href="/" class="nav-link">免责声明</a></li>
-                <li class="nav-item"><a href="/" class="nav-link">发布页</a></li>
+                <li class="nav-item"><a href="/?tag=AZ" class="nav-link">游戏AZ</a></li>
+                <li class="nav-item"><a href="/?tag=PC" class="nav-link">游戏PC</a></li>
+                <li class="nav-item"><a href="/?tag=全年龄AZ" class="nav-link">全年龄AZ</a></li>
+                <li class="nav-item"><a href="/?tag=全年龄PC" class="nav-link">全年龄PC</a></li>
+                <li class="nav-item"><a href="/extract-tool.html" class="nav-link">解压说明</a></li>
+                <li class="nav-item"><a href="/docs.html" class="nav-link">工具</a></li>
+                <li class="nav-item"><a href="/docs.html" class="nav-link">免责声明</a></li>
+                <li class="nav-item"><a href="/admin" class="nav-link">发布页</a></li>
             </ul>
         </div>
     </div>
 
-    <!-- ========== HERO BANNER ========== -->
+    <!-- ========== BANNER（原站 580px + 渐变文字动画） ========== -->
     <section class="boxmoe_header_banner">
         <div class="boxmoe_header_banner_img">
-            <div class="banner-overlay"></div>
-            <div class="site-main">
+            <img src="https://acgyx.us/wp-content/uploads/2026/04/washroom_sis_datsui1.webp" alt="banner" class="banner-img">
+            <div class="site-main" id="site-main">
                 <h2 class="text-gradient">小黄油,galgame,cos福利… 免费下载！</h2>
             </div>
         </div>
         <div class="boxmoe_header_banner_waves">
-            <svg class="waves" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+            <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
                 <defs>
                     <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/>
                 </defs>
                 <g class="parallax">
-                    <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(24,24,29,0.9)"/>
-                    <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(31,31,38,0.7)"/>
-                    <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(90,155,216,0.2)"/>
-                    <use xlink:href="#gentle-wave" x="48" y="7" fill="var(--bg-deep)"/>
+                    <use xlink:href="#gentle-wave" x="48" y="0"/>
+                    <use xlink:href="#gentle-wave" x="48" y="3"/>
+                    <use xlink:href="#gentle-wave" x="48" y="5"/>
+                    <use xlink:href="#gentle-wave" x="48" y="7"/>
                 </g>
             </svg>
         </div>
     </section>
 
-    <!-- ========== MAIN CONTENT ========== -->
+    <!-- ========== MAIN ========== -->
     <section class="boxmoe-container container">
         <div class="breadcrumb-head">
             <span><i class="fa fa-home"></i> HOME</span>
         </div>
         <div class="row">
-            <!-- Main Posts -->
+            <!-- 文章 -->
             <div class="col-lg-8 blog-post" id="posts-container">
-                <!-- 文章将由 JS 从 data/posts.json 动态渲染 -->
                 <div class="text-center py-5" id="posts-loading">
-                    <i class="fa fa-spinner fa-spin fa-2x" style="color:var(--accent);"></i>
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
                     <p class="mt-2">加载中...</p>
                 </div>
             </div>
 
-            <!-- ========== SIDEBAR ========== -->
+            <!-- 侧边栏：4 个 widget 对齐原站 -->
             <div class="col-lg-4 blog-sidebar">
                 <div class="position-sticky top">
-                    <div class="offcanvas-lg offcanvas-end" id="blog-sidebar" tabindex="-1">
+                    <div class="offcanvas-lg offcanvas-end" id="blog-sidebar" tabindex="-1" aria-labelledby="blog-sidebar">
                         <div class="offcanvas-header">
-                            <h5 class="offcanvas-title h4"><span class="text-inverse">CL游戏姬</span></h5>
+                            <h5 class="offcanvas-title h4" id="blog-sidebar"><span class="text-inverse">CL游戏姬</span></h5>
                             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#blog-sidebar"></button>
                         </div>
                         <div class="offcanvas-body flex-column">
 
-                            <!-- Widget: Search -->
+                            <!-- 搜索 -->
                             <div class="widget blog-border widget-search">
                                 <h4 class="widget-title">搜索</h4>
                                 <div class="widget-content">
                                     <form role="search" class="search-form">
                                         <div class="search-wrap">
-                                            <input type="search" class="form-control" placeholder="输入关键词搜索..." aria-label="Search">
-                                            <button type="submit" class="btn btn-search"><i class="fa fa-search"></i></button>
+                                            <input type="search" class="search-input" placeholder="搜索..." aria-label="Search">
+                                            <button type="submit" class="search-submit"><i class="fa fa-search"></i></button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
 
-                            <!-- Widget: Tag Cloud -->
+                            <!-- 标签云 -->
                             <div class="widget blog-border widget-tag">
                                 <h4 class="widget-title">标签云</h4>
-                                <div class="widget-tag-cloud" id="tags-container"></div>
+                                <div class="widget-tag" id="tags-container"></div>
                             </div>
 
+                            <!-- 周榜（新增，对齐原站） -->
+                            <div class="widget blog-border widget-latest">
+                                <h4 class="widget-title">周榜</h4>
+                                <div class="widget-content" id="weekly-rank-container"></div>
+                            </div>
 
-                            <!-- Widget: Random Posts -->
-                            <div class="widget blog-border widget-postlist">
-                                <h4 class="widget-title">随机推荐</h4>
-                                <div class="widget-content" id="random-posts-container"></div>
+                            <!-- 最新评论（新增，对齐原站） -->
+                            <div class="widget blog-border widget_comments">
+                                <h4 class="widget-title">最新评论</h4>
+                                <ul class="widget-latest-comment" id="comments-container"></ul>
                             </div>
 
                         </div>
@@ -183,27 +196,58 @@
         </div>
     </section>
 
-    <!-- ========== FOOTER ========== -->
+    <!-- ========== FOOTER（原站 4 列） ========== -->
     <footer class="mt-7">
         <hr class="horizontal dark">
         <div class="container pb-4">
-            <div class="row">
-                <div class="col-md-8 col-lg-4 mx-auto">
+            <div class="row align-items-center">
+                <div class="col-md-4 text-center text-md-start">
+                    <a class="mb-2 mb-lg-0 d-block" href="/">
+                        <span class="text-inverse">CL游戏姬</span>
+                    </a>
+                </div>
+                <div class="col-md-8 col-lg-4">
                     <div class="small mb-3 mb-lg-0 text-center">
                         <ul class="nav flex-row align-items-center mt-sm-0 justify-content-center nav-footer">
                             <span id="footer-text">解压密码: acgyxj.xyz / acgyxj.cc / acgyxj.top</span>
                         </ul>
                     </div>
                 </div>
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center justify-content-center justify-content-md-end" id="social-links">
+                        <div class="text-center text-md-end">
+                            <a href="https://t.me/acgyxj" target="_blank" class="text-reset btn btn-social btn-telegram">
+                                <i class="fa fa-telegram"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-12 text-center mt-3 copyright">
+                    <span>Copyright © 2026 <a href="/">CL游戏姬</a></span>
+                    <span>Theme by <a href="https://www.boxmoe.com" target="_blank">Boxmoe</a></span>
+                    本站已稳定运行了<span id="running-days" style="display:inline-block;">0</span>天
+                    <span id="query-info"></span>
+                </div>
             </div>
         </div>
     </footer>
 
-    <!-- Floating Action Menu -->
-    <div class="floating-action-menu d-lg-none">
-        <button class="float-btn" title="打开侧栏" data-bs-toggle="offcanvas" data-bs-target="#blog-sidebar" aria-controls="blog-sidebar">
-            <i class="fa fa-outdent"></i>
-        </button>
+    <!-- 浮动菜单（原站：打开侧栏 + 返回顶部） -->
+    <div class="floating-action-menu">
+        <nav class="floating-menu-items">
+            <ul>
+                <li class="d-lg-none">
+                    <button class="float-btn" title="打开侧栏" data-bs-toggle="offcanvas" href="#blog-sidebar" aria-controls="blog-sidebar">
+                        <i class="fa fa-outdent"></i>
+                    </button>
+                </li>
+                <li>
+                    <a id="lolijump" href="#" title="返回顶部">
+                        <img src="/vendor/images/lolisister2.gif" alt="返回顶部" onerror="this.outerHTML='<button class=\\'backtop-fallback\\'><i class=\\'fa fa-angle-up\\'></i></button>'">
+                    </a>
+                </li>
+            </ul>
+        </nav>
     </div>
 
     <div class="body-background"></div>
