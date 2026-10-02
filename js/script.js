@@ -22,7 +22,6 @@ function renderAll() {
     if (!siteData) return;
     renderPosts();
     renderTags();
-    renderComments();
     renderWeeklyRank();
     renderFooter();
 }
@@ -245,31 +244,6 @@ function renderTags() {
         const isActive = activeTag && tag.toLowerCase() === activeTag.toLowerCase();
         return `<a href="?tag=${encodeURIComponent(tag)}" class="tag-cloud${isActive ? ' tag-cloud-active' : ''}"><i class="tagfa fa fa-dot-circle-o"></i>${tag}</a>`;
     }).join('');
-}
-
-// ========== 渲染最新评论（对齐原站 widget_comments） ==========
-function renderComments() {
-    const container = document.getElementById('comments-container');
-    if (!container) return;
-    const comments = (siteData.comments || []).slice(0, 5);
-    if (!comments.length) {
-        container.innerHTML = '<li class="comment-empty" style="color:var(--text-muted);font-size:0.75rem;padding:8px 0;">暂无评论</li>';
-        return;
-    }
-    container.innerHTML = comments.map(c =>
-        `<li class="comment-listitem">
-            <div class="comment-user">
-                <span class="comment-avatar">${c.avatar || c.author?.[0] || '?'}</span>
-                <div class="comment-author">${c.author}</div>
-                <span class="comment-date">${c.date || ''}</span>
-            </div>
-            <div class="comment-content-link">
-                <a target="_blank" href="${c.link || '#'}" title="${c.title || ''}">
-                    <div class="comment-content">${c.content}</div>
-                </a>
-            </div>
-        </li>`
-    ).join('');
 }
 
 // ========== 渲染周榜（对齐原站 widget-latest） ==========
