@@ -31,11 +31,13 @@ function renderFooter() {
     if (el && siteData.site && siteData.site.footer) {
         el.textContent = siteData.site.footer;
     }
-    // 原站「本站已稳定运行了 X 天」
+    // 「本站已稳定运行了 X 天」：每日零点重置，从 1 天开始按 24 小时累加
     const daysEl = document.getElementById('running-days');
     if (daysEl) {
-        const base = new Date(2020, 0, 1);
-        const diff = Math.floor((Date.now() - base.getTime()) / 86400000);
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const base = startOfDay.getTime() - 86400000;
+        const diff = Math.max(1, Math.floor((Date.now() - base) / 86400000));
         daysEl.textContent = diff;
     }
     // banner 标题渐变加载态
