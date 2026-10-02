@@ -213,6 +213,14 @@ p { color: var(--text-secondary); }
     object-fit: cover; object-position: 50% 50%;
     pointer-events: none; user-select: none;
 }
+/* 图床被墙时的兜底渐变（原站风格） */
+.boxmoe_header_banner_img {
+    background:
+        radial-gradient(ellipse at 50% 30%, rgba(185,139,255,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 20% 80%, rgba(203,253,177,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(239,167,236,0.15) 0%, transparent 50%),
+        var(--bg-deep);
+}
 .site-main {
     position: relative; z-index: 2; text-align: center; padding: 0 20px;
 }
@@ -480,35 +488,82 @@ p { color: var(--text-secondary); }
     color: var(--text-primary);
 }
 
-/* 搜索 widget（原站：硬阴影输入框） */
-.search-wrap { display: flex; gap: 0.25rem; }
+/* 搜索 widget（原站：全宽 20px 胶囊输入框 + 内嵌按钮，focus 时硬阴影上移） */
+.widget-search .search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
 .widget-search .search-input {
-    flex: 1;
-    outline: none;
+    width: 100%;
+    height: 40px;
+    padding: 0 40px 0 15px;
     border: 1px solid var(--border-dim);
-    box-shadow: var(--hard-shadow);
-    transform: translate(-1px, -1px);
+    border-radius: 20px;
     background: var(--bg-card);
     color: var(--text-primary);
-    font-size: 0.8rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    transition: all 0.3s;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    outline: none;
 }
-.search-submit {
-    background: none;
-    border: 1px solid var(--border-dim);
+.widget-search .search-input:focus {
+    outline: none;
     box-shadow: var(--hard-shadow);
-    color: var(--text-primary);
-    border-radius: 6px;
-    padding: 0.5rem 0.75rem;
-    cursor: pointer;
-    transition: all 0.3s;
+    transform: translate(-1px, -1px);
 }
-.search-submit:hover { transform: translate(-1px, -1px); font-size: 0.9rem; }
+.widget-search .search-submit {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.3s ease;
+}
+.widget-search .search-submit:hover { color: var(--text-primary); }
+.widget-search .search-submit i { font-size: 0.9rem; }
 
-/* 标签云 */
-.widget-tag { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* 标签云（原站：白底 25px 胶囊，hover 上移+硬阴影，彩色圆点） */
+.widget-tag { display: flex; flex-wrap: wrap; gap: 0.45rem 0; }
+.tag-cloud, .tag-link {
+    display: inline-block;
+    padding: 6px 10px;
+    line-height: 1.2;
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    border-radius: 25px;
+    transition: all 300ms cubic-bezier(.5, 2.5, .7, .7);
+    margin-right: 10px;
+    margin-bottom: 12px;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+}
+.tag-cloud:hover, .tag-link:hover {
+    color: var(--text-primary) !important;
+    transform: translate(-1px, -1px);
+    box-shadow: var(--hard-shadow);
+}
+.tag-cloud i, .tag-link i {
+    margin-right: 5px;
+    /* 原站彩色圆点：按序号循环上色 */
+    color: #2ecc71;
+}
+/* 圆点循环色（模拟原站多色） */
+.tag-cloud:nth-child(6n+1) i { color: #2ecc71; }
+.tag-cloud:nth-child(6n+2) i { color: #1abc9c; }
+.tag-cloud:nth-child(6n+3) i { color: #3498db; }
+.tag-cloud:nth-child(6n+4) i { color: #f39c12; }
+.tag-cloud:nth-child(6n+5) i { color: #e91e63; }
+.tag-cloud:nth-child(6n+6) i { color: #9b51e0; }
+.tag-cloud-active {
+    background: var(--bs-dark);
+    color: var(--bg-deep) !important;
+    border-color: var(--bs-dark);
+    font-weight: 700;
+}
 
 /* 周榜（原站 widget-latest：thumb + title + date） */
 .widget-post {

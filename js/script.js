@@ -42,6 +42,11 @@ function renderFooter() {
     // banner 标题渐变加载态
     const main = document.getElementById('site-main');
     if (main) main.classList.add('loaded');
+    // banner 图：注入原站同款图（可连的 acgyx.us），加载失败则隐藏避免灰底空洞
+    const bannerImg = document.getElementById('banner-img');
+    if (bannerImg) {
+        bannerImg.onerror = () => { bannerImg.style.display = 'none'; };
+    }
 }
 
 // ========== 渲染文章列表 ==========
