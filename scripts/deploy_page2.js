@@ -10,12 +10,37 @@ const cheerio = require('cheerio');
 const fs = require('fs');
 const path = require('path');
 const MODE = process.argv[2] || 'preview';
+const USE_PROXY = process.env.USE_PROXY === '1' || process.env.PROXY !== undefined;
+const PROXY = process.env.PROXY || 'http://127.0.0.1:8899';
 
-const CSV = process.argv[3] || 'E:/主线/主线/正在做的/游戏站/百度提取的分享链接/批量分享记录_20261002.csv';
+const CSV = process.argv[3] || 'E:/主线/主线/正在做的/游戏站/.reasonix/attachments/clipboard-20261003-084511.313151-000001.csv';
+
 function getFinal(url, depth) {
   depth = depth || 0;
   return new Promise((res, rej) => {
     if (depth > 6) return rej(new Error('redirect loop'));
+    if (USE_PROXY) {
+      // 走本地 HTTP 代理(直连被 ECONNRESET 时用)。默认 127.0.0.1:8899
+      const u = new URL(url);
+      const pu = new URL(PROXY);
+      const opts = {
+        host: pu.hostname || '127.0.0.1', port: pu.port ? Number(pu.port) : 8899,
+        path: url, method: 'GET',
+        headers: { 'Host': u.host, 'User-Agent': 'Mozilla/5.0', 'Proxy-Connection': 'keep-alive' }
+      };
+      const pport = pu.port ? Number(pu.port) : 8899;
+      const req = require('http').request({ ...opts, port: pport }, r => {
+        if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) { r.resume(); return getFinal(r.headers.location, depth + 1).then(res, rej); }
+        if (r.statusCode !== 200) { r.resume(); return rej(new Error('HTTP ' + r.statusCode + ' (proxy)')); }
+        let d = '';
+        r.on('data', c => d += c);
+        r.on('end', () => res(d));
+      });
+      req.on('error', rej);
+      req.setTimeout(30000, () => { req.destroy(); rej(new Error('timeout(proxy)')); });
+      req.end();
+      return;
+    }
     const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, r => {
       if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) { r.resume(); return getFinal(r.headers.location, depth + 1).then(res, rej); }
       if (r.statusCode !== 200) return rej(new Error('HTTP ' + r.statusCode));
@@ -94,12 +119,13 @@ function cleanTitle(t) {
   return t.replace(/【更新】|【补档】|补档/g, '').trim();
 }
 
-// 下载区:按 label(PC/AZ) 分行显示,批次码用分享名
+// 下载区:按 label(PC/AZ) 分行, 标签行「百度网盘：分享名+端」, 下一行放完整可点击 URL(见 AGENTS.md 下载区格式)
 function buildBaiduBlock(links) {
   let html = '<p>——————————————————</p>\n<hr>\n<p><strong>— 下载 —</strong></p>';
   links.forEach(l => {
-    const tag = l.label ? '百度网盘：' + l.label + '<br>' : '';
-    html += '<p>' + tag + '<a href="' + l.url + '" target="_blank" rel="noopener">' + l.url + '</a></p>';
+    const tag = l.label ? '<p>百度网盘：' + l.label + '</p>\n' : (l.share ? '<p>百度网盘：' + l.share + '</p>\n' : '');
+    // 完整 URL 直接作为可见文本 + 可点击锚点(一键复制)
+    html += tag + '<p><a href="' + l.url + '" target="_blank" rel="noopener">' + l.url + '</a></p>\n';
   });
   return html;
 }
@@ -118,7 +144,7 @@ async function main() {
     let missing = [];
     for (const b of bds) {
       if (b.name && csvMap[b.name]) {
-        myLinks.push({ url: csvMap[b.name], label: b.label || '' });
+        myLinks.push({ url: csvMap[b.name], label: b.label || '', share: b.name });
       } else if (!b.name) {
         // 单链接且无 name:尝试用 pwd 锚点,但这里 CSV 都是按 name,单链接一般 name 也在
         missing.push('(无分享名)');
@@ -136,7 +162,14 @@ async function main() {
   const newPosts = [];
   for (const it of toDo) {
     let html;
-    try { html = await withRetry(it.url); } catch (e) { console.log('  抓取失败 ' + it.url + ' ' + e.message); continue; }
+    // 优先读本地正文缓存(避免直连 ECONNRESET / 代理语义问题)
+    const localBody = path.join(__dirname, '..', 'data', 'body-' + it.id + '.html');
+    if (process.env.LOCAL_BODY === '1' && fs.existsSync(localBody)) {
+      html = fs.readFileSync(localBody, 'utf8');
+      console.log('  [local] ' + it.id + ' 用本地正文缓存');
+    } else {
+      try { html = await withRetry(it.url); } catch (e) { console.log('  抓取失败 ' + it.url + ' ' + e.message); continue; }
+    }
     let content = extractBody(html);
     // 去掉正文里残留的其他网盘链接(UC/迅雷/夸克/115/移动云)
     content = content.replace(/<p>(?:(?!网盘).)*UC网盘.*<\/p>/s, '');
