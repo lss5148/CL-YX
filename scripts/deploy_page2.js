@@ -119,11 +119,13 @@ function cleanTitle(t) {
   return t.replace(/【更新】|【补档】|补档/g, '').trim();
 }
 
-// 下载区:按 label(PC/AZ) 分行, 标签行「百度网盘：分享名+端」, 下一行放完整可点击 URL(见 AGENTS.md 下载区格式)
+// 下载区:按 label(PC/AZ) 分行, 标签行「百度网盘：分享名+端」(有端标记时拼在后面, 无端标记时只显示分享名), 下一行放完整可点击 URL(见 AGENTS.md 下载区格式)
 function buildBaiduBlock(links) {
   let html = '<p>——————————————————</p>\n<hr>\n<p><strong>— 下载 —</strong></p>';
   links.forEach(l => {
-    const tag = l.label ? '<p>百度网盘：' + l.label + '</p>\n' : (l.share ? '<p>百度网盘：' + l.share + '</p>\n' : '');
+    // 分享名优先: l.share 有就拼 label(端), 没 share 才退而用 label
+    const sharePart = l.share ? (l.label ? l.share + ' ' + l.label : l.share) : (l.label ? l.label : '');
+    const tag = sharePart ? '<p>百度网盘：' + sharePart + '</p>\n' : '';
     // 完整 URL 直接作为可见文本 + 可点击锚点(一键复制)
     html += tag + '<p><a href="' + l.url + '" target="_blank" rel="noopener">' + l.url + '</a></p>\n';
   });
