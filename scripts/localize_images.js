@@ -29,10 +29,11 @@ console.log('目标篇数:', targets.length, onlyIds ? ('(id: ' + onlyIds.join('
 // 收集外链图(排除已本地的 /assets/)
 const urlSet = new Set();
 for (const p of targets) {
-  const re = /<img\s+src="([^"]+)"/g;
+  const re = /<img\b[^>]*\b(?:src|data-src)="([^"]+)"/g;
   let m;
   while ((m = re.exec(p.content)) !== null) {
-    if (!m[1].startsWith('/assets/')) urlSet.add(m[1]);
+    let src = m[1];
+    if (!src.startsWith('/assets/')) urlSet.add(src);
   }
   if (p.image && !p.image.startsWith('/assets/')) urlSet.add(p.image);
 }
@@ -46,7 +47,7 @@ let finished = false;
 function finish() {
   if (finished) return;
   finished = true;
-  const IMGRE = new RegExp('<img\\s+src="([^"]+)"', 'g');
+  const IMGRE = new RegExp('<img\\b[^>]*\\b(?:src|data-src)="([^"]+)"', 'g');
   for (const p of targets) {
     p.content = p.content.replace(IMGRE, function (mm, src) {
       const local = urlMap[src];
