@@ -251,8 +251,27 @@ function loadR2() {
   if (!fs.existsSync(f)) return null;
   try {
     const c = JSON.parse(fs.readFileSync(f, 'utf8'));
-    if (!c.accountId || !c.bucket || !c.publicBase || !c.accessKeyId || !c.secretAccessKey) return null;
+    if (!c.accountId || !c.bucket || !c.publicBase) return null;
     if (/^在 |^你的 /.test(String(c.accountId))) return null;
+    const publicBase = String(c.publicBase).trim().replace(/\/+$/, '');
+
+    // 优先 REST API(api.cloudflare.com); S3 域名在部分网络下会被 TLS 阻断
+    if (c.apiToken && !/^★/.test(String(c.apiToken))) {
+      return {
+        mode: 'REST', bucket: c.bucket, publicBase,
+        async put(key, buf, mime) {
+          const url = `https://api.cloudflare.com/client/v4/accounts/${c.accountId}/r2/buckets/${c.bucket}/objects/${encodeURIComponent(key)}`;
+          const r = await fetch(url, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${c.apiToken}`, 'Content-Type': mime || 'application/octet-stream' },
+            body: buf,
+          });
+          if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text()).slice(0, 160));
+        },
+      };
+    }
+
+    if (!c.accessKeyId || !c.secretAccessKey) return null;
     const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
     const s3 = new S3Client({
       region: 'auto',
@@ -260,8 +279,14 @@ function loadR2() {
       credentials: { accessKeyId: c.accessKeyId, secretAccessKey: c.secretAccessKey },
     });
     return {
-      s3, PutObjectCommand, bucket: c.bucket,
-      publicBase: String(c.publicBase).replace(/\/+$/, ''),
+      mode: 'S3', bucket: c.bucket, publicBase,
+      async put(key, buf, mime) {
+        await s3.send(new PutObjectCommand({
+          Bucket: c.bucket, Key: key, Body: buf,
+          ContentType: mime || 'application/octet-stream',
+          CacheControl: 'public, max-age=31536000, immutable',
+        }));
+      },
     };
   } catch (e) {
     console.log('  [R2] 配置读取失败, 回退本地化: ' + e.message);
@@ -378,11 +403,7 @@ async function main() {
           buf = await fetchImage(u);
           if (!isImage(buf)) { failDl++; console.log('  非图片, 跳过: ' + u.slice(0, 70)); continue; }
         }
-        await r2.s3.send(new r2.PutObjectCommand({
-          Bucket: r2.bucket, Key: fname, Body: buf,
-          ContentType: MIME[ext] || 'application/octet-stream',
-          CacheControl: 'public, max-age=31536000, immutable',
-        }));
+        await r2.put(fname, buf, MIME[ext] || 'application/octet-stream');
         localMap[u] = r2.publicBase + '/' + fname;
         okDl++;
       } catch (e) {
