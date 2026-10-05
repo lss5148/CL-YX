@@ -439,10 +439,38 @@ const server = http.createServer((req, res) => {
 
   if (api === '/api/download') {
     const t = u.searchParams.get('type');
-    const page = u.searchParams.get('page');
-    const fp = t === 'xlsx' ? path.join(ROOT, `data/acgyxjvip2_page${page}/page${page}_baidu.xlsx`)
-      : t === 'json' ? path.join(ROOT, `data/acgyxjvip2_page${page}/page${page}_posts.json`) : null;
-    if (!fp || !fs.existsSync(fp)) { res.statusCode = 404; res.end('not found'); return; }
+    const page = String(u.searchParams.get('page') || '').trim();
+    const base = path.join(ROOT, `data/acgyxjvip2_page${page}`);
+    let fp = t === 'xlsx' ? path.join(base, `page${page}_baidu.xlsx`)
+      : t === 'json' ? path.join(base, `page${page}_posts.json`) : null;
+
+    // 文件不存在且是 xlsx: 若该页数据已在, 自动生成一份(省掉手动点「生成待填 Excel」)
+    if (fp && !fs.existsSync(fp) && t === 'xlsx' && page) {
+      try {
+        const postsJson = JSON.parse(fs.readFileSync(path.join(base, `page${page}_posts.json`), 'utf8'));
+        log(`[下载] xlsx 不存在, 自动生成第 ${page} 页待填表`);
+        buildXlsx(page, postsJson.posts);
+      } catch (e) {
+        log('[下载] 自动生成失败: ' + e.message);
+      }
+    }
+
+    if (!fp || !fs.existsSync(fp)) {
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      const hint = !page
+        ? '页面上「页码」是空的, 请填入页码(例如 5)后重试。'
+        : `该文件还不存在: <code>${fp}</code><br>请先点「抓取本页」, 再点「生成待填 Excel」。`;
+      log(`[下载] 404 type=${t} page=${page}`);
+      res.end(`<meta charset="utf-8"><body style="font:14px/1.8 system-ui;padding:24px">
+<h3>下载失败 (404)</h3>
+<p>type=${t || '(空)'} · page=${page || '(空)'}</p>
+<p>${hint}</p>
+<p style="color:#888">路径: ${fp || '(无效)'}</p>
+</body>`);
+      return;
+    }
+
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${path.basename(fp)}"`);
     fs.createReadStream(fp).pipe(res);
@@ -669,7 +697,8 @@ async function loadStatus(){
 tail(); setInterval(tail, 2500);
 loadStatus(); setInterval(loadStatus, 15000);
 setInterval(() => {
-  el('dl_xlsx').href = '/api/download?type=xlsx&page=' + el('p').value;
-  el('dl_json').href = '/api/download?type=json&page=' + el('p').value;
+  const pg = String(el('p').value || '').trim() || '5';
+  el('dl_xlsx').href = '/api/download?type=xlsx&page=' + pg;
+  el('dl_json').href = '/api/download?type=json&page=' + pg;
 }, 700);
 </script></body></html>`;
