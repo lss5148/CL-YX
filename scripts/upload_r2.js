@@ -100,8 +100,10 @@ async function main() {
   console.log(`上传方式: ${uploader.mode}`);
   console.log(`本地图片: ${localFiles.length} 张`);
 
+  // 文件名里的 ".." 会被 Cloudflare WAF 当作路径穿越而 403, 这里规范化
+  const keyOf = f => f.replace(/\.{2,}/g, '.');
   const uploaded = new Map();
-  for (const f of localFiles) uploaded.set(f, `${cfg.publicBase}/${f}`);
+  for (const f of localFiles) uploaded.set(f, `${cfg.publicBase}/${keyOf(f)}`);
 
   if (!REWRITE_ONLY) {
     if (DRY) {
@@ -115,17 +117,25 @@ async function main() {
       const f = localFiles[i];
       const ext = (f.split('.').pop() || 'jpg').toLowerCase();
       const tag = `[${i + 1}/${localFiles.length}]`;
-      try {
-        const buf = fs.readFileSync(path.join(ASSETS, f));
-        await uploader.put(f, buf, MIME[ext] || 'application/octet-stream');
-        ok++;
-        if (i < 3 || i % 30 === 0 || i === localFiles.length - 1) console.log(`${tag} 已上传 ${f}`);
-      } catch (e) {
+      const mime = MIME[(f.split('.').pop() || 'jpg').toLowerCase()] || 'application/octet-stream';
+      let done = false;
+      let lastErr = null;
+      for (let attempt = 0; attempt < 3 && !done; attempt++) {
+        try {
+          if (attempt) await new Promise(r => setTimeout(r, 1500 * attempt));
+          await uploader.put(keyOf(f), fs.readFileSync(path.join(ASSETS, f)), mime);
+          done = true;
+          ok++;
+          if (i < 3 || i % 30 === 0 || i === localFiles.length - 1) console.log(`${tag} 已上传 ${f}`);
+        } catch (e) { lastErr = e; }
+      }
+      if (!done) {
         fail++;
-        const k = String(e.message).slice(0, 80);
+        const k = String(lastErr && lastErr.message || '').slice(0, 80);
         errs[k] = (errs[k] || 0) + 1;
         uploaded.delete(f);
       }
+      await new Promise(r => setTimeout(r, 120));
     }
     console.log(`\n上传完成: 成功 ${ok}, 失败 ${fail}`);
     if (fail) {

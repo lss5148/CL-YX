@@ -161,7 +161,7 @@ async function main() {
   for (let i = 0; i < list.length; i++) {
     const u = list[i];
     const tag = `[${i + 1}/${list.length}]`;
-    const ext = (u.match(/\.(jpg|jpeg|png|webp|gif)(?:\?|$)/i) || ['jpg'])[0].toLowerCase().replace('jpeg', 'jpg');
+    const ext = ((u.match(/\.(jpg|jpeg|png|webp|gif)(?:\?|$)/i) || ['.jpg'])[0].toLowerCase().replace('jpeg', 'jpg')).replace(/^\.+/, '') || 'jpg';
     const hash = u.replace(/[^a-z0-9]/gi, '').slice(-16);
     const fname = `img_${hash}.${ext}`;
     const dest = path.join(ASSETS, fname);

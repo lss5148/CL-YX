@@ -388,7 +388,7 @@ async function main() {
   const localMap = {};
   let okDl = 0, reuse = 0, failDl = 0;
   for (const u of imgList) {
-    const ext = (u.match(/\.(jpg|jpeg|png|webp|gif)(?:\?|$)/i) || ['jpg'])[0].toLowerCase().replace('jpeg', 'jpg');
+    const ext = ((u.match(/\.(jpg|jpeg|png|webp|gif)(?:\?|$)/i) || ['.jpg'])[0].toLowerCase().replace('jpeg', 'jpg')).replace(/^\.+/, '') || 'jpg';
     const hash = u.replace(/[^a-z0-9]/gi, '').slice(-16);
     const fname = `img_${hash}.${ext}`;
     const dest = path.join(assetsDir, fname);
