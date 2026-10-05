@@ -170,6 +170,145 @@ function buildXlsx(page, posts) {
   return out;
 }
 
+// ============ 子进程执行(转发日志) ============
+function runNode(args, env = {}, timeoutMs = 900000) {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(process.execPath, args, {
+      cwd: REPO, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let out = '';
+    const pipe = (d, tag) => {
+      const s = String(d);
+      out += s;
+      s.split(/\r?\n/).forEach(l => { if (l.trim()) log(tag + l.trim()); });
+    };
+    proc.stdout.on('data', d => pipe(d, '[run] '));
+    proc.stderr.on('data', d => pipe(d, '[run] '));
+    const timer = setTimeout(() => { try { proc.kill(); } catch (e) {} reject(new Error('执行超时')); }, timeoutMs);
+    proc.on('close', code => {
+      clearTimeout(timer);
+      code === 0 ? resolve(out) : reject(new Error('退出码 ' + code));
+    });
+    proc.on('error', e => { clearTimeout(timer); reject(e); });
+  });
+}
+
+// ============ 回填表解析(csv / xlsx) ============
+function normLink(u) {
+  if (!u) return '';
+  let s = String(u).trim().replace(/^https?:\/\//, '');
+  if (!/^pan\.baidu\.com/i.test(s)) s = 'pan.baidu.com/' + s.replace(/^pan\.baidu\.com/i, '');
+  s = 'https://' + s;
+  if (!s.includes('?pwd=')) {
+    const m = s.match(/pwd=([A-Za-z0-9]+)/);
+    if (m) s += (s.includes('?') ? '&' : '?') + 'pwd=' + m[1];
+  }
+  return s;
+}
+
+function parseUploadedTable(buf, filename) {
+  const cmap = {};
+  if (/\.xlsx?$/i.test(filename) || buf.slice(0, 2).toString() === 'PK') {
+    const XLSX = require('xlsx');
+    const wb = XLSX.read(buf, { type: 'buffer' });
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+    for (const r of rows) {
+      const cells = r.map(x => String(x || '').trim());
+      const nameCell = cells.find(c => SHARE_RE.test(c));
+      if (!nameCell) continue;
+      const name = (nameCell.match(SHARE_RE) || [])[0];
+      const linkCell = cells.find(c => /pan\.baidu\.com|^s\//i.test(c));
+      if (name && linkCell) cmap[name] = normLink(linkCell);
+    }
+    return { cmap, isXlsx: true };
+  }
+  const raw = buf.toString('utf8').replace(/^\uFEFF/, '');
+  for (const line of raw.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    const cells = line.split(',');
+    const nameCell = cells.find(c => SHARE_RE.test(c));
+    if (!nameCell) continue;
+    const name = (nameCell.match(SHARE_RE) || [])[0];
+    const linkCell = cells.find(c => /pan\.baidu\.com|^s\//i.test(c));
+    if (name && linkCell) cmap[name] = normLink(linkCell);
+  }
+  return { cmap, isXlsx: false };
+}
+
+function uploadMissing(page, cmap) {
+  let posts = [];
+  try { posts = JSON.parse(fs.readFileSync(path.join(ROOT, `data/acgyxjvip2_page${page}/page${page}_posts.json`), 'utf8')).posts; } catch (e) {}
+  const missing = [];
+  for (const p of posts) {
+    const { pc, az } = shareNames(p.content_html || '');
+    if (pc && !cmap[pc]) missing.push(pc);
+    if (az && !cmap[az]) missing.push(az);
+  }
+  return { missing, pagePosts: posts.length };
+}
+
+function defaultCsv() {
+  const dir = path.join(REPO, 'data', '_upload');
+  if (!fs.existsSync(dir)) return '';
+  const f = fs.readdirSync(dir).find(x => /^last_upload\.(csv|txt|xlsx?)$/i.test(x));
+  return f ? path.join(dir, f) : '';
+}
+
+// ============ 验证(残留 + 索引) ============
+function verifyAll() {
+  const postsObj = JSON.parse(fs.readFileSync(path.join(REPO, 'data/posts.json'), 'utf8'));
+  const idx = JSON.parse(fs.readFileSync(path.join(REPO, 'data/posts-index.json'), 'utf8'));
+  const residue = [];
+  for (const p of postsObj.posts) {
+    const c = p.content || '';
+    const dl = p.download || '';
+    const codes = [...new Set([...c.matchAll(/pwd=([A-Za-z0-9]+)/g)].map(m => m[1]))];
+    const foreign = codes.filter(x => !dl.includes('pwd=' + x));
+    if (foreign.length) residue.push({ id: p.id, pwd: foreign });
+    if (/52acgyxj|acgyxjvip/.test(c)) residue.push({ id: p.id, domain: true });
+    if (/UC网盘|drive\.uc\.cn|夸克|115\.com|xunlei/i.test(c)) residue.push({ id: p.id, otherDrive: true });
+  }
+  const rp = idx.randomPosts || [];
+  const newIds = postsObj.posts.map(p => p.id).sort((a, b) => b - a).slice(0, 10);
+  const newInRp = rp.filter(x => x && newIds.includes(x.id)).map(x => x.id);
+  return {
+    postCount: postsObj.posts.length,
+    total: idx.pagination && idx.pagination.total,
+    rpCount: rp.length,
+    newInRp,
+    residue,
+    tags: (idx.tags || idx.posts && idx.tags || []).length || undefined,
+  };
+}
+
+// ============ git ============
+async function gitCommitPush() {
+  const { execSync } = require('child_process');
+  const sh = (cmd, env) => execSync(cmd, { cwd: REPO, env: { ...process.env, ...env }, stdio: 'pipe' }).toString();
+
+  sh('git add data/posts.json data/posts-index.json assets/img');
+  try { sh('git add -u scripts'); } catch (e) {}
+  try { sh('git add scripts/deploy_batch.js scripts/console.js scripts/one_click.js'); } catch (e) {}
+  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  let commitOut = '';
+  try {
+    commitOut = sh(`git commit -m "chore: 控制台部署批次 (${stamp})"`);
+    log('[git] commit 完成');
+  } catch (e) {
+    const msg = String(e.stdout || e.message || '');
+    if (/nothing to commit/i.test(msg)) { log('[git] 无改动可提交'); return { committed: false, pushed: false }; }
+    throw new Error('git commit 失败: ' + msg.split('\n')[0]);
+  }
+
+  for (let i = 1; i <= 3; i++) {
+    try { sh('git push origin HEAD'); log(`[git] ✅ 直连 push 成功 (第 ${i} 次)`); return { committed: true, pushed: 'direct' }; }
+    catch (e) { log(`[git] 直连 push 失败 ${i}/3`); await new Promise(r => setTimeout(r, 1500)); }
+  }
+  sh('git push origin HEAD', { http_proxy: PROXY, https_proxy: PROXY });
+  log('[git] ✅ 代理 push 成功');
+  return { committed: true, pushed: 'proxy' };
+}
+
 // ============ HTTP 服务 ============
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://localhost');
@@ -183,6 +322,42 @@ const server = http.createServer((req, res) => {
       .split('__BASE__').join(BASE)
       .split('__PROXY__').join(PROXY);
     res.end(html);
+    return;
+  }
+
+  if (api === '/api/upload' && req.method === 'POST') {
+    res.setHeader('Content-Type', 'application/json');
+    const chunks = [];
+    req.on('data', c => chunks.push(c));
+    req.on('end', () => {
+      try {
+        const buf = Buffer.concat(chunks);
+        const filename = u.searchParams.get('filename') || 'upload.csv';
+        const page = u.searchParams.get('page') || '5';
+        const dir = path.join(REPO, 'data', '_upload');
+        fs.mkdirSync(dir, { recursive: true });
+        const ext = (filename.match(/\.(xlsx?|csv|txt)$/i) || ['.csv'])[0];
+        const saved = path.join(dir, 'last_upload' + ext);
+        fs.writeFileSync(saved, buf);
+        const parsed = parseUploadedTable(buf, filename);
+        const { missing, pagePosts } = uploadMissing(page, parsed.cmap);
+        log(`[上传] ${filename} -> ${parsed.isXlsx ? 'xlsx' : 'csv'} ${Object.keys(parsed.cmap).length} 条 | 第${page}页 ${pagePosts} 篇 | 缺 ${missing.length}`);
+        res.end(JSON.stringify({
+          ok: true,
+          isXlsx: parsed.isXlsx,
+          links: parsed.cmap,
+          linkCount: Object.keys(parsed.cmap).length,
+          savedPath: saved,
+          page,
+          pagePosts,
+          missing,
+          missingCount: missing.length,
+        }));
+      } catch (e) {
+        log('[上传] 失败: ' + e.message);
+        res.end(JSON.stringify({ ok: false, error: String(e.message || e) }));
+      }
+    });
     return;
   }
 
@@ -225,6 +400,26 @@ const server = http.createServer((req, res) => {
             res.end(JSON.stringify({ ok: true, out, download: `/api/download?type=xlsx&page=${p.page}` }));
             break;
           }
+          case 'deploy': {
+            const mode = p.mode === 'commit' ? 'commit' : 'preview';
+            const csvPath = p.csvPath || defaultCsv();
+            if (mode === 'commit' && !csvPath) throw new Error('commit 前请先上传回填表');
+            const args = [path.join('scripts', 'deploy_batch.js'), '--page', String(p.page || 5), '--mode', mode];
+            if (csvPath) args.push('--csv', csvPath);
+            const out = await runNode(args, {}, 1800000);
+            res.end(JSON.stringify({ ok: true, mode, csvPath, tail: out.slice(-1500) }));
+            break;
+          }
+          case 'rebuild': {
+            const out = await runNode([path.join('scripts', 'rebuild_index.js')], {}, 180000);
+            res.end(JSON.stringify({ ok: true, tail: out.slice(-600) }));
+            break;
+          }
+          case 'git': {
+            const r = await gitCommitPush();
+            res.end(JSON.stringify({ ok: true, ...r }));
+            break;
+          }
           default:
             res.end(JSON.stringify({ ok: false, error: '未知操作 ' + act }));
         }
@@ -233,6 +428,12 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ ok: false, error: String(e.message || e) }));
       }
     });
+    return;
+  }
+
+  if (api === '/api/verify') {
+    res.setHeader('Content-Type', 'application/json');
+    try { res.end(JSON.stringify(verifyAll())); } catch (e) { res.end(JSON.stringify({ error: String(e.message || e) })); }
     return;
   }
 
@@ -323,6 +524,25 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </div>
 
 <div class="card">
+  <div style="font-size:13px;color:var(--acc);font-weight:700;margin-bottom:8px">② 匹配 &amp; 部署 &amp; 发布</div>
+  <div class="row">
+    <input type="file" id="file" accept=".csv,.xlsx,.xls,.txt" style="font-size:12px;color:var(--mut)">
+    <button onclick="uploadCsv()">① 上传回填表</button>
+    <span id="up_status" class="kv">未选择文件</span>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button onclick="act('deploy',{mode:'preview'})">② preview(不写库)</button>
+    <button onclick="act('deploy',{mode:'commit'})">③ commit(写库+本地化)</button>
+    <button onclick="act('rebuild')">④ rebuild_index</button>
+    <button onclick="act('git')">⑤ git commit + push</button>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <button onclick="verify()">⑥ 验证</button>
+    <span id="verify_result" class="kv"></span>
+  </div>
+</div>
+
+<div class="card">
   <div style="font-size:13px;color:var(--acc);font-weight:700;margin-bottom:8px">运行日志</div>
   <div class="log" id="log"></div>
 </div>
@@ -354,10 +574,12 @@ async function callApi(url, opt){
   return data;
 }
 
+const LABEL = { fetch: '抓取本页', xlsx: '生成待填 Excel', deploy: '部署', rebuild: '重建索引', git: 'git 提交推送' };
+
 async function act(a, opts = {}){
   if (busy) return;
   setBusy(true);
-  setStatus(a === 'xlsx' ? '正在请求 /api/action/xlsx …' : '正在请求 /api/action/fetch …', 'wait');
+  setStatus('⏳ ' + (LABEL[a] || a) + ' 执行中 …', 'wait');
   try {
     const r = await callApi('/api/action/' + a, {
       method: 'POST',
@@ -373,11 +595,53 @@ async function act(a, opts = {}){
       setStatus('✅ 抓取完成: 第 ' + el('p').value + ' 页 ' + (r.count || 0) + ' 篇, 输出: ' + (r.out || '无'), 'ok');
     } else if (a === 'xlsx') {
       setStatus('✅ Excel 已生成: ' + (r.out || '无'), 'ok');
+    } else if (a === 'deploy') {
+      setStatus('✅ ' + r.mode + ' 完成 (回填表: ' + (r.csvPath || '无') + ') — 看下方日志', 'ok');
+    } else if (a === 'rebuild') {
+      setStatus('✅ rebuild_index 完成', 'ok');
+    } else if (a === 'git') {
+      setStatus(r.committed ? ('✅ 已提交并推送 (push=' + (r.pushed || '?') + ')') : '✅ 无改动可提交', 'ok');
     }
   } catch (e) {
     setBusy(false);
     setStatus('❌ ' + ((e && e.message) ? e.message : e), 'err');
     alert((e && e.message) ? e.message : String(e));
+  }
+}
+
+async function uploadCsv(){
+  const f = el('file').files[0];
+  const box = el('up_status');
+  if (!f) { box.textContent = '请先选择 csv 或 xlsx 回填表'; box.style.color = 'var(--err)'; return; }
+  box.textContent = '上传识别中: ' + f.name;
+  box.style.color = 'var(--mut)';
+  try {
+    const buf = await f.arrayBuffer();
+    const r = await callApi('/api/upload?page=' + el('p').value + '&filename=' + encodeURIComponent(f.name), {
+      method: 'POST',
+      body: new Uint8Array(buf),
+    });
+    const miss = r.missingCount ? ('缺 ' + r.missingCount + ' 个: ' + r.missing.join(',')) : '分享名全覆盖 ✓';
+    box.textContent = '✓ ' + f.name + ' (' + (r.isXlsx ? 'xlsx' : 'csv') + ') 识别 ' + r.linkCount + ' 条 | 第' + r.page + '页 ' + r.pagePosts + ' 篇 | ' + miss;
+    box.style.color = r.missingCount ? 'var(--err)' : 'var(--ok)';
+    setStatus('✅ 回填表已上传, ' + miss, r.missingCount ? 'err' : 'ok');
+  } catch (e) {
+    box.textContent = '❌ ' + ((e && e.message) ? e.message : e);
+    box.style.color = 'var(--err)';
+  }
+}
+
+async function verify(){
+  const box = el('verify_result');
+  try {
+    const r = await callApi('/api/verify', {});
+    const bad = r.residue && r.residue.length;
+    box.textContent = '文章 ' + r.postCount + ' 篇 · index.total ' + r.total + ' · 推荐 ' + r.rpCount + ' 条 · 新文章在推荐 ' + ((r.newInRp || []).join(',') || '无') + ' · ' + (bad ? ('残留 ' + JSON.stringify(r.residue)) : '无残留 ✓');
+    box.style.color = bad ? 'var(--err)' : 'var(--ok)';
+    setStatus(bad ? '⚠️ 发现残留, 见右侧' : '✅ 验证通过', bad ? 'err' : 'ok');
+  } catch (e) {
+    box.textContent = '❌ ' + ((e && e.message) ? e.message : e);
+    box.style.color = 'var(--err)';
   }
 }
 

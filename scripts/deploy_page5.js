@@ -80,35 +80,43 @@ function loadCsvLinks() {
 }
 
 // 从原文正文区提取:介绍段 + 图片(保留懒加载)
+// 从原文正文区提取图文(按原站 single-content 子节点顺序原样输出, 图就停在原站它所在的段落位置)
+// 替代旧的"先抓所有段落再批量拼图"逻辑 —— 那是导致详情页"文字堆在上、图堆在下"的根因
+// (AGENTS.md #12/#40 的彻底修复: 不再依赖事后 fix_content_interleave.js 补丁)
 function extractBody(html) {
   const $ = cheerio.load(html);
-  const imgs = [];
-  const seen = new Set();
-  $('img').each((i, el) => {
-    const s = $(el).attr('data-src') || $(el).attr('data-lazy-src') || $(el).attr('src');
-    if (!s) return;
-    // 排除头像/广告/logo;保留正文图(imagetwist/acg.lol/uploads 等图床)
-    if (/avatar|qlogo|cravatar|loading\.gif|top\/lolis/i.test(s)) return;
-    if (i === 0) return;
-    if (seen.has(s)) return;
-    seen.add(s); imgs.push(s);
-    if (!/imagetwist|uploads\/\d{4}/i.test(s)) return;
-    if (/loading\.gif|avatar|qlogo|top\/lolis|logo/i.test(s)) return;
-    if (i === 0) return;
-    if (seen.has(s)) return;
-    seen.add(s); imgs.push(s);
+  const sec = $('div.single-content');
+  if (!sec.length) return '';
+  // 修懒加载: data-src -> src
+  sec.find('img').each((i, el) => {
+    const dataSrc = $(el).attr('data-src') || $(el).attr('data-lazy-src');
+    if (dataSrc) {
+      $(el).attr('src', dataSrc);
+      $(el).removeAttr('data-src');
+      $(el).removeAttr('data-lazy-src');
+    }
+    $(el).attr('loading', 'lazy');
+    $(el).attr('decoding', 'async');
   });
-  const imgHtml = imgs.map(s => '<p><img src="' + s + '" loading="lazy"></p>').join('\n');
-  const paras = [];
-  $('div[align="left"], p').each((i, el) => {
-    if ($(el).closest('article.widget-post, aside, .widget, #comments').length) return;
-    const txt = ($(el).text() || '').replace(/\s+/g, ' ').trim();
-    if (!txt || txt.length < 2) return;
-    if (/网盘|pan\.baidu|drive\.uc|quark|139\.com|115\.com|xunlei/i.test(txt)) return;
-    if (/^(上一篇|下一篇|取消回复|\d+\s*评论|暂无评论)/.test(txt)) return;
-    paras.push('<p>' + txt.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>');
+  sec.find('script, iframe').remove();
+  // 清掉原站自带网盘块(本批下载区由 deploy 末尾 buildBaiduBlock 追加, 原站旧码不能留)
+  sec.find('h4').each((i, el) => {
+    const t = $(el).text();
+    if (/百度网盘|UC网盘|迅雷|夸克|115|移动云/i.test(t)) $(el).remove();
   });
-  return paras.join('\n') + '\n' + imgHtml;
+  sec.find('p').each((i, el) => {
+    const t = $(el).text();
+    if (/pan\.baidu|drive\.uc|quark|139\.com|115\.com|xunlei|百度网盘/i.test(t)) $(el).remove();
+  });
+  // 清掉原站"前作/相关/更多"推荐块 + 52acgyxj 域名锚点
+  sec.find('blockquote.wp-embedded-content').remove();
+  sec.find('a[href*="52acgyxj.com"]').remove();
+  sec.find('strong, span').each((i, el) => {
+    const t = ($(el).text() || '').trim();
+    if (/^前作[:：]/.test(t)) $(el).remove();
+  });
+  // 按原站子节点顺序原样输出(图文天然交错)
+  return sec.html().trim();
 }
 
 function coverFrom(content) {
