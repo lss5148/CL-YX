@@ -3,3 +3,6 @@ data/ref_article.html
 data/test_article.html
 data/acgyx_home.html
 admin_response.html
+data/_upload/
+console_err.log
+console_out.log
