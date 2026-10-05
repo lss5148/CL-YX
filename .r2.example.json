@@ -1,0 +1,7 @@
+{
+  "accountId": "在 Cloudflare Dashboard 右侧或 URL 里那串 32 位 ID",
+  "bucket": "你的 R2 bucket 名, 例如 cl-yx-img",
+  "publicBase": "R2 公开域名, 例如 https://pub-xxxxxxxx.r2.dev 或 https://img.你的域名.com",
+  "accessKeyId": "R2 API Token 的 Access Key ID",
+  "secretAccessKey": "R2 API Token 的 Secret Access Key"
+}

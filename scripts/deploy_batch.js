@@ -245,6 +245,32 @@ function isImage(buf) {
   return MAGIC.some(([sig]) => buf.length >= sig.length && buf.slice(0, sig.length).equals(sig));
 }
 
+// ---------- R2 (存在 .r2.json 时启用) ----------
+function loadR2() {
+  const f = path.join(REPO, '.r2.json');
+  if (!fs.existsSync(f)) return null;
+  try {
+    const c = JSON.parse(fs.readFileSync(f, 'utf8'));
+    if (!c.accountId || !c.bucket || !c.publicBase || !c.accessKeyId || !c.secretAccessKey) return null;
+    if (/^在 |^你的 /.test(String(c.accountId))) return null;
+    const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+    const s3 = new S3Client({
+      region: 'auto',
+      endpoint: `https://${c.accountId}.r2.cloudflarestorage.com`,
+      credentials: { accessKeyId: c.accessKeyId, secretAccessKey: c.secretAccessKey },
+    });
+    return {
+      s3, PutObjectCommand, bucket: c.bucket,
+      publicBase: String(c.publicBase).replace(/\/+$/, ''),
+    };
+  } catch (e) {
+    console.log('  [R2] 配置读取失败, 回退本地化: ' + e.message);
+    return null;
+  }
+}
+
+const MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };
+
 // ---------- 主流程 ----------
 async function main() {
   const pagePosts = JSON.parse(fs.readFileSync(POSTS_FILE, 'utf8')).posts;
@@ -317,9 +343,13 @@ async function main() {
     return;
   }
 
-  // ---- 图片本地化 ----
+  // ---- 图片处理: 配了 R2 就上传对象存储, 否则本地化 ----
+  const r2 = loadR2();
+  console.log(r2 ? `图片去向: R2 (${r2.bucket})` : '图片去向: 本地 assets/img (未配置 .r2.json)');
+
   const assetsDir = path.join(REPO, 'assets', 'img');
-  fs.mkdirSync(assetsDir, { recursive: true });
+  if (!r2) fs.mkdirSync(assetsDir, { recursive: true });
+
   const uniq = new Set();
   for (const p of newPosts) {
     let m;
@@ -328,7 +358,7 @@ async function main() {
     if (p.image && !p.image.startsWith('/assets/')) uniq.add(p.image);
   }
   const imgList = [...uniq];
-  console.log(`待本地化 ${imgList.length} 张`);
+  console.log(`待处理图片 ${imgList.length} 张`);
 
   const localMap = {};
   let okDl = 0, reuse = 0, failDl = 0;
@@ -337,6 +367,32 @@ async function main() {
     const hash = u.replace(/[^a-z0-9]/gi, '').slice(-16);
     const fname = `img_${hash}.${ext}`;
     const dest = path.join(assetsDir, fname);
+
+    if (r2) {
+      // 上传到 R2 (已下载到本地的同名文件也可直接复用上传)
+      try {
+        let buf;
+        if (fs.existsSync(dest) && fs.statSync(dest).size > 0 && isImage(fs.readFileSync(dest))) {
+          buf = fs.readFileSync(dest); reuse++;
+        } else {
+          buf = await fetchImage(u);
+          if (!isImage(buf)) { failDl++; console.log('  非图片, 跳过: ' + u.slice(0, 70)); continue; }
+        }
+        await r2.s3.send(new r2.PutObjectCommand({
+          Bucket: r2.bucket, Key: fname, Body: buf,
+          ContentType: MIME[ext] || 'application/octet-stream',
+          CacheControl: 'public, max-age=31536000, immutable',
+        }));
+        localMap[u] = r2.publicBase + '/' + fname;
+        okDl++;
+      } catch (e) {
+        failDl++;
+        console.log('  失败(保持外链): ' + u.slice(0, 70) + ' -> ' + e.message);
+      }
+      continue;
+    }
+
+    // 本地化(原逻辑)
     const local = '/assets/img/' + fname;
     if (fs.existsSync(dest) && fs.statSync(dest).size > 0 && isImage(fs.readFileSync(dest))) {
       localMap[u] = local; reuse++; continue;
@@ -350,7 +406,7 @@ async function main() {
       console.log('  失败(保持外链): ' + u.slice(0, 70) + ' -> ' + e.message);
     }
   }
-  console.log(`图片: 新下载 ${okDl}, 复用 ${reuse}, 失败 ${failDl}`);
+  console.log(`图片: 成功 ${okDl}, 复用 ${reuse}, 失败 ${failDl}`);
 
   for (const p of newPosts) {
     p.content = p.content.replace(/<img[^>]+src="([^"]+)"/g, (mm, src) => localMap[src] ? mm.replace(src, localMap[src]) : mm);
